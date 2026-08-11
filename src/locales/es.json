@@ -1,0 +1,209 @@
+{
+  "lang": {
+    "switchTo": "English",
+    "current": "ES"
+  },
+  "nav": {
+    "appName": "Proyectos",
+    "dashboard": "Panel",
+    "projects": "Proyectos",
+    "dailyLogs": "Registros diarios",
+    "weeklyReports": "Reportes semanales",
+    "documents": "Documentos",
+    "rfis": "RFIs",
+    "submittals": "Presentaciones",
+    "punchList": "Lista de pendientes",
+    "directory": "Directorio",
+    "users": "Usuarios",
+    "more": "Más",
+    "language": "Idioma",
+    "signOut": "Cerrar sesión"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "Aún no hay nada aquí."
+  },
+  "role": {
+    "admin": "Administrador",
+    "pm": "Gerente de proyecto"
+  },
+  "home": {
+    "welcome": "Bienvenido, {{name}}"
+  },
+  "common": {
+    "loading": "Cargando…",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "close": "Cerrar",
+    "optional": "opcional",
+    "notes": "Notas",
+    "search": "Buscar",
+    "date": "Fecha",
+    "status": "Estado",
+    "project": "Proyecto",
+    "noProjectsYet": "Aún no hay proyectos.",
+    "couldNotSave": "No se pudo guardar. Inténtalo de nuevo.",
+    "comingSoon": "Esta función está en la hoja de ruta a corto plazo — los registros diarios ya están disponibles."
+  },
+  "dashboard": {
+    "title": "Panel",
+    "subtitle": "Tus proyectos de un vistazo",
+    "recentLogs": "Registros diarios recientes",
+    "noLogsYet": "Aún no hay registros diarios."
+  },
+  "projects": {
+    "title": "Proyectos",
+    "subtitle": "Trabajos identificados por # de estimado, compartidos con Inventory",
+    "estimateNumber": "# de estimado",
+    "clientName": "Cliente",
+    "searchLabel": "Buscar",
+    "searchPlaceholder": "Busca por nombre, # de estimado o empresa…",
+    "lookup": "Buscar",
+    "notFound": "No se encontró ningún proyecto con ese # de estimado.",
+    "noCompany": "Sin empresa",
+    "noResults": "Ningún proyecto coincide con \"{{query}}\".",
+    "createPrompt": "Aún no existe un proyecto para el estimado #{{number}}.",
+    "createButton": "Buscar / crear #{{number}}"
+  },
+  "dailyLogs": {
+    "title": "Registros diarios",
+    "subtitle": "Reportes de campo por proyecto y fecha",
+    "newLog": "+ Nuevo registro",
+    "logDate": "Fecha",
+    "weather": "Clima",
+    "crewCount": "Cantidad de cuadrilla",
+    "workPerformed": "Trabajo realizado",
+    "delays": "Retrasos",
+    "notes": "Notas",
+    "saveLog": "Guardar registro",
+    "workRequired": "Describe el trabajo realizado.",
+    "projectRequired": "Elige un proyecto.",
+    "noLogsYet": "Aún no hay registros diarios para este proyecto.",
+    "photos": "Fotos",
+    "addPhoto": "Agregar foto",
+    "queuedOffline": "Guardado sin conexión — se sincronizará cuando vuelvas a estar en línea.",
+    "pendingSync": "{{count}} registro(s) esperando sincronizar",
+    "syncedSuccess": "Se sincronizaron {{count}} registro(s) en cola.",
+    "today": "Hoy",
+    "addForDay": "+ Agregar para este día",
+    "noLogsThisDay": "No hay registros para este día.",
+    "loggedAt": "Registrado a las {{time}}",
+    "weatherUnavailable": "Clima no disponible",
+    "noPhaseAssociated": "Sin fase asociada",
+    "phaseLabel": "Fase {{number}}: {{name}}",
+    "comments": "Comentarios",
+    "description": "Descripción",
+    "noComments": "Aún no hay comentarios.",
+    "commentPlaceholder": "Haz una pregunta…",
+    "postComment": "Publicar",
+    "photosRequired": "Se requiere al menos una foto.",
+    "addPhotos": "+ Agregar fotos",
+    "photosSelected": "{{count}} foto(s) seleccionada(s)"
+  },
+  "weeklyReports": {
+    "title": "Reportes semanales",
+    "subtitle": "Resúmenes de avance escritos por tu equipo de proyecto, uno por semana",
+    "newReport": "+ Nuevo reporte",
+    "weekStart": "Semana que inicia",
+    "weekOf": "Semana del {{start}} al {{end}}",
+    "summary": "Resumen de avance",
+    "summaryPlaceholder": "¿Qué pasó en el proyecto esta semana?",
+    "summaryRequired": "Describe el avance de esta semana.",
+    "accomplishments": "Logros",
+    "accomplishmentsPlaceholder": "Cosas notables completadas esta semana",
+    "delaysIssues": "Retrasos / Problemas",
+    "delaysIssuesPlaceholder": "Algo que haya retrasado el trabajo",
+    "nextWeekPlan": "Plan para la próxima semana",
+    "nextWeekPlanPlaceholder": "Qué está planeado a continuación",
+    "saveReport": "Guardar reporte",
+    "noReportsYet": "Aún no hay reportes semanales para este proyecto.",
+    "reportedBy": "Reportado por {{name}}",
+    "dailyLogCount": "{{count}} registro(s) diario(s) esta semana"
+  },
+  "directory": {
+    "title": "Directorio",
+    "subtitle": "A quién contactar en este proyecto, y su rol",
+    "clientContacts": "Contactos del Cliente",
+    "administrativeStaff": "Administrativo JCCS",
+    "fieldManagers": "Gerentes de Proyecto en Campo",
+    "noContacts": "Aún no hay contactos."
+  },
+  "documents": {
+    "title": "Documentos",
+    "subtitle": "Planos, especificaciones y archivos versionados por proyecto"
+  },
+  "rfis": {
+    "title": "RFIs",
+    "subtitle": "Solicitudes de información"
+  },
+  "submittals": {
+    "title": "Presentaciones",
+    "subtitle": "Flujo de revisión de presentaciones"
+  },
+  "punchList": {
+    "title": "Lista de pendientes",
+    "subtitle": "Seguimiento de deficiencias y aprobación"
+  },
+  "users": {
+    "title": "Usuarios",
+    "subtitle": "Acceso del personal y cuentas del portal de clientes"
+  },
+  "projectDetail": {
+    "overview": "Resumen",
+    "noClientsAssigned": "Sin usuarios de cliente asignados"
+  },
+  "phases": {
+    "manage": "Administrar fases",
+    "noneYet": "Aún no hay fases.",
+    "noActive": "Sin fase activa · {{total}} fase(s)",
+    "summary": "{{name}} · Fase {{position}} de {{total}}",
+    "newPhaseName": "Nombre de la nueva fase",
+    "addPhase": "Agregar fase",
+    "status": {
+      "upcoming": "Próxima",
+      "current": "Actual",
+      "completed": "Completada"
+    }
+  },
+  "timeline": {
+    "empty": "Aún no hay nada registrado para este proyecto.",
+    "dailyLogAdded": "Registro diario agregado",
+    "phaseAdded": "Fase agregada: {{name}}",
+    "phaseStarted": "Fase iniciada: {{name}}",
+    "phaseCompleted": "Fase completada: {{name}}"
+  },
+  "portal": {
+    "welcome": "Bienvenido, {{name}}",
+    "overview": "Resumen",
+    "dailyLogs": "Registros diarios",
+    "weeklyReports": "Reportes semanales",
+    "documents": "Documentos",
+    "punchList": "Lista de pendientes",
+    "directory": "Directorio",
+    "signOut": "Cerrar sesión",
+    "readOnlyNotice": "Esta es una vista de solo lectura de tu proyecto."
+  },
+  "errorBoundary": {
+    "title": "Algo salió mal",
+    "message": "Esta pantalla tuvo un error y no se pudo cargar. Recargar generalmente lo soluciona — si sigue ocurriendo, toma una captura de este mensaje (incluyendo los detalles abajo).",
+    "backToDashboard": "Volver al panel"
+  },
+  "offlineBanner": {
+    "message": "Estás sin conexión — los cambios no se guardarán hasta que vuelvas a estar en línea."
+  },
+  "auth": {
+    "appName": "JCCS Projects",
+    "signInSubtitle": "Inicia sesión en tu cuenta",
+    "emailOrPhone": "Correo o teléfono",
+    "password": "Contraseña",
+    "signIn": "Iniciar sesión",
+    "noAccess": "¿Sin acceso? Contacta a tu administrador de Projects.",
+    "enterIdentifier": "Ingresa tu correo o teléfono.",
+    "setupRequired": "Tu cuenta necesita una contraseña configurada en FieldClock primero — inicia sesión allí una vez, luego vuelve.",
+    "notProvisioned": "Esta cuenta aún no está configurada para Projects. Pide a un administrador que te agregue.",
+    "signInFailed": "Error al iniciar sesión. Verifica tus credenciales e inténtalo de nuevo.",
+    "email": "Correo electrónico"
+  }
+}

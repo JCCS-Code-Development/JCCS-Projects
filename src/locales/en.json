@@ -1,0 +1,209 @@
+{
+  "lang": {
+    "switchTo": "Español",
+    "current": "EN"
+  },
+  "nav": {
+    "appName": "Projects",
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "dailyLogs": "Daily Logs",
+    "weeklyReports": "Weekly Reports",
+    "documents": "Documents",
+    "rfis": "RFIs",
+    "submittals": "Submittals",
+    "punchList": "Punch List",
+    "directory": "Directory",
+    "users": "Users",
+    "more": "More",
+    "language": "Language",
+    "signOut": "Sign Out"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Nothing here yet."
+  },
+  "role": {
+    "admin": "Admin",
+    "pm": "Project Manager"
+  },
+  "home": {
+    "welcome": "Welcome, {{name}}"
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "optional": "optional",
+    "notes": "Notes",
+    "search": "Search",
+    "date": "Date",
+    "status": "Status",
+    "project": "Project",
+    "noProjectsYet": "No projects yet.",
+    "couldNotSave": "Could not save. Try again.",
+    "comingSoon": "This feature is on the near-term roadmap — daily logs are live today."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Your projects at a glance",
+    "recentLogs": "Recent daily logs",
+    "noLogsYet": "No daily logs yet."
+  },
+  "projects": {
+    "title": "Projects",
+    "subtitle": "Estimate #-tracked jobs, shared with Inventory",
+    "estimateNumber": "Estimate #",
+    "clientName": "Client",
+    "searchLabel": "Search",
+    "searchPlaceholder": "Search by name, estimate #, or company…",
+    "lookup": "Look up",
+    "notFound": "No project found with that estimate #.",
+    "noCompany": "No Company",
+    "noResults": "No projects match \"{{query}}\".",
+    "createPrompt": "No project found for estimate #{{number}} yet.",
+    "createButton": "Look up / create #{{number}}"
+  },
+  "dailyLogs": {
+    "title": "Daily Logs",
+    "subtitle": "Field reports by project and date",
+    "newLog": "+ New Log",
+    "logDate": "Date",
+    "weather": "Weather",
+    "crewCount": "Crew count",
+    "workPerformed": "Work performed",
+    "delays": "Delays",
+    "notes": "Notes",
+    "saveLog": "Save Log",
+    "workRequired": "Describe the work performed.",
+    "projectRequired": "Choose a project.",
+    "noLogsYet": "No daily logs for this project yet.",
+    "photos": "Photos",
+    "addPhoto": "Add photo",
+    "queuedOffline": "Saved offline — will sync when you're back online.",
+    "pendingSync": "{{count}} log(s) waiting to sync",
+    "syncedSuccess": "Synced {{count}} queued log(s).",
+    "today": "Today",
+    "addForDay": "+ Add for this day",
+    "noLogsThisDay": "No logs for this day.",
+    "loggedAt": "Logged at {{time}}",
+    "weatherUnavailable": "Weather unavailable",
+    "noPhaseAssociated": "No phase associated",
+    "phaseLabel": "Phase {{number}}: {{name}}",
+    "comments": "Comments",
+    "description": "Description",
+    "noComments": "No comments yet.",
+    "commentPlaceholder": "Ask a question…",
+    "postComment": "Post",
+    "photosRequired": "At least one photo is required.",
+    "addPhotos": "+ Add photos",
+    "photosSelected": "{{count}} photo(s) selected"
+  },
+  "weeklyReports": {
+    "title": "Weekly Reports",
+    "subtitle": "Progress summaries written by your project team, one per week",
+    "newReport": "+ New Report",
+    "weekStart": "Week starting",
+    "weekOf": "Week of {{start}} – {{end}}",
+    "summary": "Progress summary",
+    "summaryPlaceholder": "What happened on the project this week?",
+    "summaryRequired": "Describe this week's progress.",
+    "accomplishments": "Accomplishments",
+    "accomplishmentsPlaceholder": "Notable completions this week",
+    "delaysIssues": "Delays / Issues",
+    "delaysIssuesPlaceholder": "Anything that slowed the work down",
+    "nextWeekPlan": "Plan for Next Week",
+    "nextWeekPlanPlaceholder": "What's planned next",
+    "saveReport": "Save Report",
+    "noReportsYet": "No weekly reports for this project yet.",
+    "reportedBy": "Reported by {{name}}",
+    "dailyLogCount": "{{count}} daily log(s) this week"
+  },
+  "directory": {
+    "title": "Directory",
+    "subtitle": "Who to contact on this project, and their role",
+    "clientContacts": "Client Contacts",
+    "administrativeStaff": "Administrative JCCS",
+    "fieldManagers": "On-Field Project Managers",
+    "noContacts": "No contacts yet."
+  },
+  "documents": {
+    "title": "Documents",
+    "subtitle": "Drawings, specs, and versioned files per project"
+  },
+  "rfis": {
+    "title": "RFIs",
+    "subtitle": "Requests for information"
+  },
+  "submittals": {
+    "title": "Submittals",
+    "subtitle": "Submittal review workflow"
+  },
+  "punchList": {
+    "title": "Punch List",
+    "subtitle": "Deficiency tracking and sign-off"
+  },
+  "users": {
+    "title": "Users",
+    "subtitle": "Staff access and client portal accounts"
+  },
+  "projectDetail": {
+    "overview": "Overview",
+    "noClientsAssigned": "No client users assigned"
+  },
+  "phases": {
+    "manage": "Manage Phases",
+    "noneYet": "No phases yet.",
+    "noActive": "No active phase · {{total}} phase(s)",
+    "summary": "{{name}} · Phase {{position}} of {{total}}",
+    "newPhaseName": "New phase name",
+    "addPhase": "Add Phase",
+    "status": {
+      "upcoming": "Upcoming",
+      "current": "Current",
+      "completed": "Completed"
+    }
+  },
+  "timeline": {
+    "empty": "Nothing logged for this project yet.",
+    "dailyLogAdded": "Daily log added",
+    "phaseAdded": "Phase added: {{name}}",
+    "phaseStarted": "Phase started: {{name}}",
+    "phaseCompleted": "Phase completed: {{name}}"
+  },
+  "portal": {
+    "welcome": "Welcome, {{name}}",
+    "overview": "Overview",
+    "dailyLogs": "Daily Logs",
+    "weeklyReports": "Weekly Reports",
+    "documents": "Documents",
+    "punchList": "Punch List",
+    "directory": "Directory",
+    "signOut": "Sign Out",
+    "readOnlyNotice": "This is a read-only view of your project."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "message": "This screen hit an error and couldn't load. Reloading usually fixes it — if it keeps happening, screenshot this message (including the details below).",
+    "backToDashboard": "Back to Dashboard"
+  },
+  "offlineBanner": {
+    "message": "You're offline — changes won't save until you're back online."
+  },
+  "auth": {
+    "appName": "JCCS Projects",
+    "signInSubtitle": "Sign in to your account",
+    "emailOrPhone": "Email or phone",
+    "password": "Password",
+    "signIn": "Sign In",
+    "noAccess": "No access? Contact your Projects admin.",
+    "enterIdentifier": "Enter your email or phone.",
+    "setupRequired": "Your account needs a password set up in FieldClock first — sign in there once, then come back.",
+    "notProvisioned": "This account isn't set up for Projects yet. Ask an admin to add you.",
+    "signInFailed": "Sign in failed. Check your credentials and try again.",
+    "email": "Email"
+  }
+}

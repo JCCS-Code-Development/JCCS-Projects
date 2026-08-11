@@ -1,0 +1,28 @@
+node_modules
+dist
+dev-dist
+.env.local
+api/config/config.php
+.DS_Store
+
+# Local-only mocks of FieldClock's login and Projects' own client-portal auth
+# — let the real Login pages work against throwaway test accounts without
+# hitting production. Never deploy these.
+api/auth/login.php
+api/auth/refresh.php
+api/auth/logout.php
+
+# Uploaded daily-log photos, document versions, RFI/submittal attachments,
+# punch-item photos — the directory structure + .htaccess stay tracked,
+# actual uploads don't.
+api/uploads/daily-logs/*
+!api/uploads/daily-logs/.gitkeep
+api/uploads/documents/*
+!api/uploads/documents/.gitkeep
+api/uploads/rfis/*
+!api/uploads/rfis/.gitkeep
+api/uploads/submittals/*
+!api/uploads/submittals/.gitkeep
+api/uploads/punch-items/*
+!api/uploads/punch-items/.gitkeep
+api/mail_outbox.log
