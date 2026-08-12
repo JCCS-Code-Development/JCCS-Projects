@@ -199,7 +199,24 @@
   },
   "punchList": {
     "title": "Punch List",
-    "subtitle": "Deficiency tracking and sign-off"
+    "subtitle": "Deficiency tracking and sign-off — anyone can flag one, staff close it out",
+    "newItem": "+ New Item",
+    "itemTitle": "Title",
+    "titleRequired": "Give this item a title.",
+    "photosRequired": "At least one photo is required.",
+    "location": "Location",
+    "dueDate": "Due Date",
+    "due": "Due {{date}}",
+    "flaggedBy": "Flagged by {{name}}",
+    "before": "Before",
+    "after": "After",
+    "addAfterPhoto": "+ After Photo",
+    "noItems": "No punch list items for this project yet.",
+    "status": {
+      "open": "Open",
+      "ready_for_review": "Ready for Review",
+      "closed": "Closed"
+    }
   },
   "users": {
     "title": "Users",

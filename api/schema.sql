@@ -280,6 +280,14 @@ CREATE TABLE submittal_versions (
   UNIQUE KEY uq_submittal_version (submittal_id, version_number)
 );
 
+-- Unlike Submittals (staff-only creation), either side can flag a punch
+-- item — a client walking their own site is a completely normal source of
+-- "this isn't finished/right" — but only staff move it through
+-- open -> ready_for_review -> closed; there's no client-facing status verb
+-- anywhere (see portal/punch-items.php). created_by_type/created_by_name
+-- follow the same dual-authorship, denormalized-name convention as
+-- daily_log_comments, since staff and clients have nothing in common to
+-- join against.
 CREATE TABLE punch_items (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   project_number VARCHAR(4) NOT NULL,
@@ -287,16 +295,25 @@ CREATE TABLE punch_items (
   description TEXT NULL,
   location_note VARCHAR(150) NULL,
   status ENUM('open','ready_for_review','closed') DEFAULT 'open',
+  created_by_type ENUM('staff','client') NOT NULL,
   created_by INT UNSIGNED NOT NULL,
+  created_by_name VARCHAR(150) NOT NULL,
   due_date DATE NULL,
+  closed_by INT UNSIGNED NULL,
+  closed_by_name VARCHAR(150) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  closed_at TIMESTAMP NULL
+  closed_at TIMESTAMP NULL,
+  INDEX idx_project_status (project_number, status)
 );
 
+-- 'before' photos are required at creation (either author); 'after' photos
+-- are added by staff as proof when moving an item toward closed.
 CREATE TABLE punch_item_photos (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   punch_item_id INT UNSIGNED NOT NULL,
   phase ENUM('before','after') DEFAULT 'before',
   file_path VARCHAR(255) NOT NULL,
+  uploaded_by_type ENUM('staff','client') NOT NULL,
+  uploaded_by_name VARCHAR(150) NOT NULL,
   uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

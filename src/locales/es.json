@@ -199,7 +199,24 @@
   },
   "punchList": {
     "title": "Lista de pendientes",
-    "subtitle": "Seguimiento de deficiencias y aprobación"
+    "subtitle": "Seguimiento de deficiencias y aprobación — cualquiera puede marcar una, el personal la cierra",
+    "newItem": "+ Nuevo ítem",
+    "itemTitle": "Título",
+    "titleRequired": "Dale un título a este ítem.",
+    "photosRequired": "Se requiere al menos una foto.",
+    "location": "Ubicación",
+    "dueDate": "Fecha límite",
+    "due": "Vence {{date}}",
+    "flaggedBy": "Marcado por {{name}}",
+    "before": "Antes",
+    "after": "Después",
+    "addAfterPhoto": "+ Foto de después",
+    "noItems": "Aún no hay ítems de lista de pendientes para este proyecto.",
+    "status": {
+      "open": "Abierto",
+      "ready_for_review": "Listo para revisión",
+      "closed": "Cerrado"
+    }
   },
   "users": {
     "title": "Usuarios",

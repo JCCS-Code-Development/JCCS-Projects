@@ -9,7 +9,7 @@ import DailyLogsTab from './project-tabs/DailyLogsTab'
 import WeeklyReportsTab from './project-tabs/WeeklyReportsTab'
 import DocumentsTab from './project-tabs/DocumentsTab'
 import SubmittalsTab from './project-tabs/SubmittalsTab'
-import ComingSoonTab from '../project-tabs/ComingSoonTab'
+import PunchListTab from './project-tabs/PunchListTab'
 import ProjectDirectory from '../../components/ProjectDirectory'
 import PhasesViewModal from '../../components/PhasesViewModal'
 
@@ -58,12 +58,13 @@ export default function PortalProjectDetail() {
   const [targetReportId] = useState(() => searchParams.get('report'))
   const [targetDocId] = useState(() => searchParams.get('doc'))
   const [targetSubmittalId] = useState(() => searchParams.get('submittal'))
+  const [targetItemId] = useState(() => searchParams.get('item'))
   const [phasesViewOpen, setPhasesViewOpen] = useState(false)
 
   useEffect(() => {
-    if (!targetLogId && !targetReportId && !targetDocId && !targetSubmittalId) return
+    if (!targetLogId && !targetReportId && !targetDocId && !targetSubmittalId && !targetItemId) return
     const next = new URLSearchParams(searchParams)
-    next.delete('log'); next.delete('report'); next.delete('doc'); next.delete('submittal')
+    next.delete('log'); next.delete('report'); next.delete('doc'); next.delete('submittal'); next.delete('item')
     setSearchParams(next, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -102,7 +103,7 @@ export default function PortalProjectDetail() {
       {tab === 'weekly-reports' && <WeeklyReportsTab projectNumber={projectNumber} targetReportId={targetReportId} />}
       {tab === 'documents'  && <DocumentsTab projectNumber={projectNumber} targetDocId={targetDocId} />}
       {tab === 'submittals' && <SubmittalsTab projectNumber={projectNumber} targetSubmittalId={targetSubmittalId} />}
-      {tab === 'punch-list' && <ComingSoonTab />}
+      {tab === 'punch-list' && <PunchListTab projectNumber={projectNumber} targetItemId={targetItemId} />}
       {tab === 'directory'  && <ProjectDirectory projectNumber={projectNumber} fetchContacts={getPortalContacts} />}
     </>
   )

@@ -1,9 +1,11 @@
 import clientPortalClient from './clientPortalClient'
 
 // Client-portal reads — scoped server-side to whatever project_numbers are
-// in this client's client_project_access rows. The one write exception is
-// daily-log comments (a two-way question/answer thread) and marking a
-// notification resolved — everything else here stays read-only.
+// in this client's client_project_access rows. Write exceptions: daily-log
+// comments (a two-way question/answer thread), marking a notification
+// resolved, and creating a punch list item (clients can flag a deficiency
+// themselves, but never change its status — see portal/punch-items.php).
+// Everything else here stays read-only.
 export const listPortalProjects = () =>
   clientPortalClient.get('/portal/projects.php').then((r) => r.data)
 
@@ -48,3 +50,19 @@ export const listPortalSubmittals = (params = {}) =>
 
 export const getPortalSubmittalVersions = (submittalId) =>
   clientPortalClient.get('/portal/submittals.php', { params: { id: submittalId } }).then((r) => r.data)
+
+export const listPortalPunchItems = (params = {}) =>
+  clientPortalClient.get('/portal/punch-items.php', { params }).then((r) => r.data)
+
+// Photos are required at creation — always multipart/form-data. No
+// due_date field — that's a staff scheduling decision, not client-settable.
+export const createPortalPunchItem = (payload, photos) => {
+  const form = new FormData()
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && value !== '') form.append(key, value)
+  })
+  photos.forEach((file) => form.append('photos[]', file))
+  return clientPortalClient.post('/portal/punch-items.php', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then((r) => r.data)
+}
