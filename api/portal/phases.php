@@ -23,6 +23,6 @@ if (!in_array($projectNumber, $auth['projects'], true)) {
 }
 
 $pdo  = getPDO();
-$stmt = $pdo->prepare('SELECT id, name, sequence, status, start_date, end_date, updated_at, created_at FROM phases WHERE project_number = ? ORDER BY sequence, id');
+$stmt = $pdo->prepare('SELECT id, name, scope, sequence, status, start_date, end_date, updated_at, created_at FROM phases WHERE project_number = ? ORDER BY sequence, id');
 $stmt->execute([$projectNumber]);
 echo json_encode(['phases' => $stmt->fetchAll()]);

@@ -6,6 +6,7 @@ import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import WeeklyReportCard from '../../components/WeeklyReportCard'
 import { listWeeklyReports, createWeeklyReport } from '../../api/weeklyReports'
+import { consumeOnce } from '../../utils/consumeOnce'
 
 const defaultWeekStart = () => format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
 const emptyForm = { week_start: defaultWeekStart(), summary: '', accomplishments: '', delays_issues: '', next_week_plan: '' }
@@ -22,7 +23,6 @@ export default function WeeklyReportsTab({ projectNumber, targetReportId }) {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const jumpedToTargetRef = useRef(false)
   const reportRefs = useRef({})
 
   const load = useCallback(() => {
@@ -35,11 +35,13 @@ export default function WeeklyReportsTab({ projectNumber, targetReportId }) {
 
   useEffect(load, [load])
 
+  // consumeOnce guards this (not a plain ref) since this component
+  // remounts fresh every time the Weekly Reports tab is revisited.
   useEffect(() => {
-    if (!targetReportId || jumpedToTargetRef.current || reports.length === 0) return
+    if (!targetReportId || reports.length === 0) return
     const el = reportRefs.current[targetReportId]
     if (!el) return
-    jumpedToTargetRef.current = true
+    if (!consumeOnce(`report-scroll:${targetReportId}`)) return
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [targetReportId, reports])
 

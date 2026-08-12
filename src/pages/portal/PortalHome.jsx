@@ -5,6 +5,57 @@ import Card from '../../components/ui/Card'
 import { listPortalProjects } from '../../api/portal'
 
 const ChevronIcon = () => <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6"/></svg>
+// Mirrors ProjectsHome's signal — is_active/status are cached from
+// Inventory into project_cache (see projects/index.php's cacheProjects()),
+// which is the only source the client portal has (no live Inventory call).
+const isActive = (p) => p.is_active !== 0 && p.is_active !== false && p.status !== 'completed'
+
+function groupByCompany(list, noCompanyLabel) {
+  const map = new Map()
+  for (const p of list) {
+    const key = p.client_name?.trim() || noCompanyLabel
+    if (!map.has(key)) map.set(key, [])
+    map.get(key).push(p)
+  }
+  const entries = [...map.entries()]
+  entries.sort(([a], [b]) => {
+    if (a === noCompanyLabel) return 1
+    if (b === noCompanyLabel) return -1
+    return a.localeCompare(b)
+  })
+  return entries
+}
+
+function ProjectGroups({ groups, inactiveLabel }) {
+  return groups.map(([company, companyProjects]) => (
+    <div key={company} className="flex flex-col gap-2">
+      <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">{company}</h2>
+      <div className="grid grid-cols-1 sm:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] gap-3">
+        {companyProjects.map((p) => (
+          <Link key={p.project_number} to={`/portal/projects/${p.project_number}`}
+            className={`flex items-center justify-between gap-3 rounded-2xl shadow-sm border px-5 py-4 lg:px-6 lg:py-5 transition-all ${
+              inactiveLabel
+                ? 'bg-gray-50 border-gray-100 opacity-70 hover:opacity-100 hover:border-gray-300'
+                : 'bg-white border-gray-100 hover:border-brand-300 hover:shadow-md'
+            }`}>
+            <span className="min-w-0">
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="block text-sm lg:text-base font-semibold text-gray-900 truncate">{p.name}</span>
+                {inactiveLabel && (
+                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">
+                    {inactiveLabel}
+                  </span>
+                )}
+              </span>
+              <span className="block text-xs lg:text-sm text-gray-400 mt-0.5">#{p.project_number}</span>
+            </span>
+            <ChevronIcon />
+          </Link>
+        ))}
+      </div>
+    </div>
+  ))
+}
 
 // Same company → project drill-down as the staff side's ProjectsHome, just
 // read-only and scoped to whatever's in client_project_access.
@@ -12,27 +63,18 @@ export default function PortalHome() {
   const { t } = useTranslation()
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
+  // Active/Inactive are two separate tabs — inactive here means "marked
+  // completed by an admin" in Inventory (status='completed' and/or is_active=0).
+  const [view, setView] = useState('active')
 
   useEffect(() => {
     listPortalProjects().then((data) => setProjects(data.projects ?? [])).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  const groups = useMemo(() => {
-    const noCompany = t('projects.noCompany')
-    const map = new Map()
-    for (const p of projects) {
-      const key = p.client_name?.trim() || noCompany
-      if (!map.has(key)) map.set(key, [])
-      map.get(key).push(p)
-    }
-    const entries = [...map.entries()]
-    entries.sort(([a], [b]) => {
-      if (a === noCompany) return 1
-      if (b === noCompany) return -1
-      return a.localeCompare(b)
-    })
-    return entries
-  }, [projects, t])
+  const activeProjects = useMemo(() => projects.filter(isActive), [projects])
+  const inactiveProjects = useMemo(() => projects.filter((p) => !isActive(p)), [projects])
+  const groups = useMemo(() => groupByCompany(activeProjects, t('projects.noCompany')), [activeProjects, t])
+  const inactiveGroups = useMemo(() => groupByCompany(inactiveProjects, t('projects.noCompany')), [inactiveProjects, t])
 
   return (
     <div className="flex flex-col gap-4">
@@ -46,23 +88,36 @@ export default function PortalHome() {
       ) : projects.length === 0 ? (
         <Card><p className="text-sm text-gray-400">{t('common.noProjectsYet')}</p></Card>
       ) : (
-        groups.map(([company, companyProjects]) => (
-          <div key={company} className="flex flex-col gap-2">
-            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">{company}</h2>
-            <div className="grid grid-cols-1 sm:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] gap-3">
-              {companyProjects.map((p) => (
-                <Link key={p.project_number} to={`/portal/projects/${p.project_number}`}
-                  className="flex items-center justify-between gap-3 bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4 lg:px-6 lg:py-5 hover:border-brand-300 hover:shadow-md transition-all">
-                  <span className="min-w-0">
-                    <span className="block text-sm lg:text-base font-semibold text-gray-900 truncate">{p.name}</span>
-                    <span className="block text-xs lg:text-sm text-gray-400 mt-0.5">#{p.project_number}</span>
-                  </span>
-                  <ChevronIcon />
-                </Link>
-              ))}
-            </div>
+        <>
+          <div className="inline-flex bg-gray-100 rounded-xl p-1 gap-1 w-fit">
+            <button onClick={() => setView('active')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                view === 'active' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              {t('projects.activeTab')} <span className="text-gray-400">({activeProjects.length})</span>
+            </button>
+            <button onClick={() => setView('inactive')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                view === 'inactive' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              {t('projects.inactiveTab')} <span className="text-gray-400">({inactiveProjects.length})</span>
+            </button>
           </div>
-        ))
+
+          {view === 'active' ? (
+            groups.length === 0 ? (
+              <Card><p className="text-sm text-gray-400">{t('projects.noActiveProjects')}</p></Card>
+            ) : (
+              <ProjectGroups groups={groups} />
+            )
+          ) : (
+            inactiveGroups.length === 0 ? (
+              <Card><p className="text-sm text-gray-400">{t('projects.noInactiveProjects')}</p></Card>
+            ) : (
+              <ProjectGroups groups={inactiveGroups} inactiveLabel={t('projects.inactiveBadge')} />
+            )
+          )}
+        </>
       )}
     </div>
   )

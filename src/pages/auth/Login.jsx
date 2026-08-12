@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
@@ -26,8 +26,20 @@ import { useClientAuthStore } from '../../store/clientAuthStore'
 export default function Login() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const { login: staffLogin, logout: staffLogout } = useAuthStore()
   const { login: portalLogin } = useClientAuthStore()
+
+  // A notification email's quicklink survives the login detour via
+  // ClientRoute/ProtectedRoute stashing the intended URL in navigation
+  // state (see those files) — reuse it here so login actually lands the
+  // user back on the specific update, not a generic home screen. Guarded
+  // by which portal it belongs to, since this one form can end up
+  // authenticating either track and a mismatched redirect (e.g. a staff
+  // login honoring a stray /portal/... target) would just bounce again.
+  const from = location.state?.from
+  const clientRedirect = from?.pathname?.startsWith('/portal') ? `${from.pathname}${from.search ?? ''}` : '/portal'
+  const staffRedirect = from && !from.pathname?.startsWith('/portal') ? `${from.pathname}${from.search ?? ''}` : '/'
 
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword]     = useState('')
@@ -43,7 +55,7 @@ export default function Login() {
     try {
       const clientData = await clientLogin(identifier.trim(), password)
       portalLogin(clientData.client, clientData.token, clientData.refreshToken)
-      navigate('/portal', { replace: true })
+      navigate(clientRedirect, { replace: true })
       return
     } catch (err) {
       if (err?.response?.status === 429) {
@@ -63,7 +75,7 @@ export default function Login() {
       staffLogin(data.user, data.token, data.refreshToken)
       const access = await verifyProjectsAccess()
       staffLogin({ ...data.user, role: access.role }, data.token, data.refreshToken)
-      navigate('/', { replace: true })
+      navigate(staffRedirect, { replace: true })
     } catch (err) {
       staffLogout()
       if (err?.response?.status === 403) {

@@ -23,6 +23,10 @@
     "title": "Notifications",
     "empty": "Nothing here yet."
   },
+  "translate": {
+    "disclaimer": "Automatically translated — tap to show original",
+    "showTranslated": "Show translated"
+  },
   "role": {
     "admin": "Admin",
     "pm": "Project Manager"
@@ -65,7 +69,13 @@
     "noCompany": "No Company",
     "noResults": "No projects match \"{{query}}\".",
     "createPrompt": "No project found for estimate #{{number}} yet.",
-    "createButton": "Look up / create #{{number}}"
+    "createButton": "Look up / create #{{number}}",
+    "inactiveProjects": "Inactive Projects",
+    "inactiveBadge": "Inactive",
+    "activeTab": "Active",
+    "inactiveTab": "Inactive",
+    "noActiveProjects": "No active projects.",
+    "noInactiveProjects": "No inactive projects — nothing has been marked completed yet."
   },
   "dailyLogs": {
     "title": "Daily Logs",
@@ -132,7 +142,35 @@
   },
   "documents": {
     "title": "Documents",
-    "subtitle": "Drawings, specs, and versioned files per project"
+    "subtitle": "Drawings, scopes, and versioned files, organized by division",
+    "categories": {
+      "drawing": "Drawings",
+      "scope": "Scopes",
+      "estimate": "Estimate",
+      "contract": "Contracts",
+      "permit": "Permits"
+    },
+    "estimatePlaceholder": "Coming soon — estimates will appear here once linked to Inventory.",
+    "noDocuments": "No documents yet.",
+    "upload": "Upload",
+    "uploadTitle": "Upload {{category}}",
+    "docTitle": "Title",
+    "titleRequired": "Give this document a title.",
+    "fileRequired": "Choose a file to upload.",
+    "notes": "Notes",
+    "file": "File",
+    "versionHistory": "Version History",
+    "noVersions": "No versions yet.",
+    "versionLabel": "Version {{number}}",
+    "current": "Current",
+    "uploadedBy": "{{name}} · {{date}}",
+    "download": "Download",
+    "addVersion": "Add new version",
+    "noPreview": "No preview available for this file type.",
+    "downloadToView": "Download to view",
+    "preview": "Preview",
+    "priorityTitle": "Key Documents",
+    "prioritySubtitle": "The estimate and blueprints, front and center"
   },
   "rfis": {
     "title": "RFIs",
@@ -140,7 +178,24 @@
   },
   "submittals": {
     "title": "Submittals",
-    "subtitle": "Submittal review workflow"
+    "subtitle": "Submittal review workflow — status and full resubmission history per item",
+    "newSubmittal": "+ New Submittal",
+    "noSubmittals": "No submittals for this project yet.",
+    "docTitle": "Title",
+    "titleRequired": "Give this submittal a title.",
+    "fileRequired": "Choose a file to upload.",
+    "specSection": "Spec Section",
+    "dueDate": "Due Date",
+    "due": "Due {{date}}",
+    "submittedBy": "Submitted by {{name}}",
+    "resubmit": "Resubmit",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "approved_as_noted": "Approved as Noted",
+      "revise_resubmit": "Revise & Resubmit",
+      "rejected": "Rejected"
+    }
   },
   "punchList": {
     "title": "Punch List",
@@ -161,6 +216,11 @@
     "summary": "{{name}} · Phase {{position}} of {{total}}",
     "newPhaseName": "New phase name",
     "addPhase": "Add Phase",
+    "scopePlaceholder": "Scope of work for this phase — what should get done",
+    "viewTitle": "Phases",
+    "timeframe": "{{start}} – {{end}}",
+    "noTimeframe": "No dates set",
+    "blueprintReference": "Blueprints — Visual Reference",
     "status": {
       "upcoming": "Upcoming",
       "current": "Current",
@@ -180,6 +240,7 @@
     "dailyLogs": "Daily Logs",
     "weeklyReports": "Weekly Reports",
     "documents": "Documents",
+    "submittals": "Submittals",
     "punchList": "Punch List",
     "directory": "Directory",
     "signOut": "Sign Out",

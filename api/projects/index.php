@@ -62,12 +62,17 @@ echo json_encode($result['data']);
 
 function cacheProjects(PDO $pdo, array $projects): void {
     $stmt = $pdo->prepare(
-        'INSERT INTO project_cache (project_number, name, client_name, client_address, updated_at)
-         VALUES (?, ?, ?, ?, NOW())
+        'INSERT INTO project_cache (project_number, name, client_name, client_address, is_active, status, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, NOW())
          ON DUPLICATE KEY UPDATE name = VALUES(name), client_name = VALUES(client_name),
-             client_address = VALUES(client_address), updated_at = NOW()'
+             client_address = VALUES(client_address), is_active = VALUES(is_active),
+             status = VALUES(status), updated_at = NOW()'
     );
     foreach ($projects as $p) {
-        $stmt->execute([$p['project_number'], $p['name'], $p['client_name'] ?? null, $p['client_address'] ?? null]);
+        $stmt->execute([
+            $p['project_number'], $p['name'], $p['client_name'] ?? null, $p['client_address'] ?? null,
+            array_key_exists('is_active', $p) ? (int)$p['is_active'] : 1,
+            $p['status'] ?? 'active',
+        ]);
     }
 }

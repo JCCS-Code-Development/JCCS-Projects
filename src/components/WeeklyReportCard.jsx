@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { format, parseISO } from 'date-fns'
+import AutoTranslatedText from './AutoTranslatedText'
 
 const CalendarIcon = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="4" width="18" height="17" rx="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 2v4M16 2v4M3 9h18"/></svg>
 const PhaseIcon    = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M5 3v18M5 4h11l-2 4 2 4H5"/></svg>
@@ -14,7 +15,7 @@ function Section({ label, text }) {
   return (
     <div className="flex flex-col gap-1">
       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</p>
-      <p className="text-sm text-gray-700 whitespace-pre-line">{text}</p>
+      <AutoTranslatedText text={text} className="text-sm text-gray-700 whitespace-pre-line" />
     </div>
   )
 }

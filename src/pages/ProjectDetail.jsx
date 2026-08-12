@@ -7,6 +7,8 @@ import { listPhases } from '../api/phases'
 import TimelineTab from './project-tabs/TimelineTab'
 import DailyLogsTab from './project-tabs/DailyLogsTab'
 import WeeklyReportsTab from './project-tabs/WeeklyReportsTab'
+import DocumentsTab from './project-tabs/DocumentsTab'
+import SubmittalsTab from './project-tabs/SubmittalsTab'
 import ComingSoonTab from './project-tabs/ComingSoonTab'
 import PhaseStepperPill from './project-tabs/PhaseStepperPill'
 import PhasesManagerModal from './project-tabs/PhasesManagerModal'
@@ -33,7 +35,7 @@ export default function ProjectDetail() {
   const { projectNumber } = useParams()
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [project, setProject] = useState(null)
   const [phases, setPhases] = useState([])
   const [clients, setClients] = useState([])
@@ -42,9 +44,31 @@ export default function ProjectDetail() {
   // land on that tab directly instead of always defaulting to overview.
   const requestedTab = searchParams.get('tab')
   const [tab, setTab] = useState(TAB_KEYS.includes(requestedTab) ? requestedTab : 'overview')
-  const targetLogId = searchParams.get('log')
-  const targetReportId = searchParams.get('report')
+  // Captured out of the URL once (the child tab components consume these
+  // to jump to/open a specific item — see e.g. DocumentsBoard's targetDocId
+  // handling). The URL itself is stripped of them right after, purely for
+  // a clean address bar — switching tabs only changes local `tab` state,
+  // never the URL, so left alone these would sit in the URL forever. The
+  // VALUES here deliberately stay in state though (not nulled): a child's
+  // own data fetch is async, and clearing this before that resolves would
+  // race it — the actual "don't re-trigger on a later remount" guard lives
+  // in each child via utils/consumeOnce (sessionStorage-backed, so it
+  // survives the remount that clearing this value here could not solve
+  // safely on its own).
+  const [targetLogId] = useState(() => searchParams.get('log'))
+  const [targetReportId] = useState(() => searchParams.get('report'))
+  const [targetDocId] = useState(() => searchParams.get('doc'))
+  const [targetSubmittalId] = useState(() => searchParams.get('submittal'))
   const [phasesManagerOpen, setPhasesManagerOpen] = useState(false)
+
+  useEffect(() => {
+    if (!targetLogId && !targetReportId && !targetDocId && !targetSubmittalId) return
+    const next = new URLSearchParams(searchParams)
+    next.delete('log'); next.delete('report'); next.delete('doc'); next.delete('submittal')
+    setSearchParams(next, { replace: true })
+    // Runs once on mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadPhases = () => listPhases(projectNumber).then((data) => setPhases(data.phases ?? [])).catch(() => {})
 
@@ -83,9 +107,9 @@ export default function ProjectDetail() {
       {tab === 'overview'    && <TimelineTab projectNumber={projectNumber} canManagePhases phases={phases} onManagePhases={() => setPhasesManagerOpen(true)} />}
       {tab === 'daily-logs'  && <DailyLogsTab projectNumber={projectNumber} location={project.client_address} targetLogId={targetLogId} />}
       {tab === 'weekly-reports' && <WeeklyReportsTab projectNumber={projectNumber} targetReportId={targetReportId} />}
-      {tab === 'documents'   && <ComingSoonTab subtitle={t('documents.subtitle')} />}
+      {tab === 'documents'   && <DocumentsTab projectNumber={projectNumber} targetDocId={targetDocId} />}
       {tab === 'rfis'        && <ComingSoonTab subtitle={t('rfis.subtitle')} />}
-      {tab === 'submittals'  && <ComingSoonTab subtitle={t('submittals.subtitle')} />}
+      {tab === 'submittals'  && <SubmittalsTab projectNumber={projectNumber} targetSubmittalId={targetSubmittalId} />}
       {tab === 'punch-list'  && <ComingSoonTab subtitle={t('punchList.subtitle')} />}
       {tab === 'directory'   && <ProjectDirectory projectNumber={projectNumber} fetchContacts={getProjectContacts} />}
     </>

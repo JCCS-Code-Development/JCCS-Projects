@@ -12,6 +12,7 @@ import { useToast } from '../../components/ToastProvider'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { listDailyLogs, createDailyLog, listDailyLogComments, createDailyLogComment } from '../../api/dailyLogs'
 import { enqueueDailyLog, getQueuedCount, flushDailyLogQueue } from '../../utils/offlineQueue'
+import { consumeOnce } from '../../utils/consumeOnce'
 
 const ChevronLeft  = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
 const ChevronRight = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -39,7 +40,6 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [pendingCount, setPendingCount] = useState(0)
-  const jumpedToTargetRef = useRef(false)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -55,12 +55,15 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
   // Deep-link from a notification: once the target log shows up in the
   // loaded list, jump the calendar to its date — only once, so a manual
   // date click afterward (or a reload triggered by creating a new log)
-  // doesn't yank the user back.
+  // doesn't yank the user back. consumeOnce (not a plain ref) is what makes
+  // that "once" hold across remounts too — this component remounts fresh
+  // every time the Daily Logs tab is revisited, so a ref alone would let a
+  // later visit snap the calendar back to this date again.
   useEffect(() => {
-    if (!targetLogId || jumpedToTargetRef.current) return
+    if (!targetLogId) return
     const match = logs.find((l) => String(l.id) === String(targetLogId))
     if (!match) return
-    jumpedToTargetRef.current = true
+    if (!consumeOnce(`log-jump:${targetLogId}`)) return
     setSelectedDate(match.log_date)
     setViewMonth(startOfMonth(parseISO(match.log_date)))
   }, [targetLogId, logs])

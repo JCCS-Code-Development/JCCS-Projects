@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
@@ -6,6 +6,7 @@ import {
 } from 'date-fns'
 import { listPortalDailyLogs, listPortalDailyLogComments, createPortalDailyLogComment } from '../../../api/portal'
 import DailyLogCard from '../../../components/DailyLogCard'
+import { consumeOnce } from '../../../utils/consumeOnce'
 
 const ChevronLeft  = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
 const ChevronRight = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -20,7 +21,6 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
   const [loading, setLoading] = useState(true)
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(new Date()))
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), 'yyyy-MM-dd'))
-  const jumpedToTargetRef = useRef(false)
 
   useEffect(() => {
     listPortalDailyLogs({ project_number: projectNumber })
@@ -30,12 +30,14 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
   }, [projectNumber])
 
   // Deep-link from a notification: once the target log shows up in the
-  // loaded list, jump the calendar to its date — only once.
+  // loaded list, jump the calendar to its date — only once. consumeOnce
+  // (not a plain ref) is what makes that "once" hold across remounts too —
+  // this component remounts fresh every time the Daily Logs tab is revisited.
   useEffect(() => {
-    if (!targetLogId || jumpedToTargetRef.current) return
+    if (!targetLogId) return
     const match = logs.find((l) => String(l.id) === String(targetLogId))
     if (!match) return
-    jumpedToTargetRef.current = true
+    if (!consumeOnce(`log-jump:${targetLogId}`)) return
     setSelectedDate(match.log_date)
     setViewMonth(startOfMonth(parseISO(match.log_date)))
   }, [targetLogId, logs])

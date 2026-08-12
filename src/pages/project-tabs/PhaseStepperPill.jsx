@@ -5,23 +5,23 @@ const PhaseIcon = ({ s = 'w-3.5 h-3.5' }) => <svg className={s} fill="none" view
 // A horizontal dot-and-line stepper — one dot per phase, in sequence order
 // — encapsulated in a pill. Filled/brand dots for completed and current
 // phases (line between them filled too), hollow gray dots for upcoming
-// ones. Click opens the full phase breakdown (PhasesManagerModal, lifted to
-// ProjectDetail so both this pill and the Overview tab's "Manage Phases"
-// button share the same modal instance) — staff only. The client portal
-// renders this same pill with readOnly, which drops the click handler and
-// hover affordance entirely (clients can see progress, never edit it; the
-// editable modal is never even loaded on that side).
-export default function PhaseStepperPill({ phases, onClick, readOnly = false }) {
+// ones. Clicking it always opens SOME phase breakdown — which one is the
+// caller's call: staff wire up PhasesManagerModal (full edit), the client
+// portal wires up PhasesViewModal (read-only: name, timeframe, scope per
+// phase) — this component itself has no opinion on editability, it just
+// renders the summary and calls whatever onClick it's given.
+export default function PhaseStepperPill({ phases, onClick }) {
   const { t } = useTranslation()
   const sorted = [...phases].sort((a, b) => a.sequence - b.sequence)
   const currentIndex = sorted.findIndex((p) => p.status === 'current')
   const current = currentIndex >= 0 ? sorted[currentIndex] : null
-  const Tag = readOnly ? 'div' : 'button'
-  const interactiveClass = readOnly ? '' : 'hover:border-brand-300 hover:bg-brand-100/30 transition-colors'
+  const clickable = typeof onClick === 'function'
+  const Tag = clickable ? 'button' : 'div'
+  const interactiveClass = clickable ? 'hover:border-brand-300 hover:bg-brand-100/30 transition-colors' : ''
 
   if (sorted.length === 0) {
     return (
-      <Tag onClick={readOnly ? undefined : onClick}
+      <Tag onClick={onClick}
         className={`flex items-center gap-1.5 bg-white border border-gray-200 rounded-full pl-2.5 pr-3 py-1 text-xs font-medium text-gray-700 ${interactiveClass}`}>
         <PhaseIcon s="w-3.5 h-3.5 text-brand-500" />
         {t('phases.noneYet')}
@@ -30,7 +30,7 @@ export default function PhaseStepperPill({ phases, onClick, readOnly = false }) 
   }
 
   return (
-    <Tag onClick={readOnly ? undefined : onClick} title={sorted.map((p) => p.name).join(' → ')}
+    <Tag onClick={onClick} title={sorted.map((p) => p.name).join(' → ')}
       className={`flex items-center gap-2.5 bg-white border border-gray-200 rounded-full pl-2.5 pr-3 py-1.5 text-xs font-medium text-gray-700 ${interactiveClass}`}>
       <PhaseIcon s="w-3.5 h-3.5 text-brand-500" />
       <span className="whitespace-nowrap">

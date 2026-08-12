@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { format, parseISO } from 'date-fns'
 import Button from './ui/Button'
+import AutoTranslatedText from './AutoTranslatedText'
 
 const ClockIcon    = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
 const WeatherIcon  = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M17.5 19a4.5 4.5 0 000-9 6 6 0 00-11.4 2A4 4 0 007 19h10.5z"/></svg>
@@ -217,7 +218,7 @@ export default function DailyLogCard({ log, location, listComments, createCommen
         <PhotoCarousel photos={log.photos} />
         <div className="flex flex-col gap-2 min-w-0 flex-1">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('dailyLogs.description')}</p>
-          <p className="text-sm text-gray-700 whitespace-pre-line">{log.work_performed}</p>
+          <AutoTranslatedText text={log.work_performed} className="text-sm text-gray-700 whitespace-pre-line" />
         </div>
       </div>
 
@@ -237,7 +238,7 @@ export default function DailyLogCard({ log, location, listComments, createCommen
                 c.author_type === 'client' ? 'bg-brand-100 text-brand-900 self-end' : 'bg-gray-100 text-gray-800 self-start'
               }`}>
                 <p className="text-xs font-semibold opacity-70">{c.author_name}</p>
-                <p className="whitespace-pre-line">{c.message}</p>
+                <AutoTranslatedText text={c.message} className="whitespace-pre-line" />
               </div>
             ))}
           </div>

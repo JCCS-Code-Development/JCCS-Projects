@@ -62,6 +62,11 @@ CREATE TABLE project_cache (
   name VARCHAR(150) NOT NULL,
   client_name VARCHAR(150) NULL,
   client_address VARCHAR(255) NULL,
+  -- Mirrors Inventory's own projects.is_active/status — lets both the staff
+  -- home and the client portal home separate active jobs from
+  -- inactive/completed ones without a live Inventory call.
+  is_active TINYINT(1) DEFAULT 1,
+  status VARCHAR(20) DEFAULT 'active',
   -- Geocoded once from client_address (Census geocoder, free/no-key) and
   -- cached here so the weather auto-fetch on daily-log creation doesn't
   -- re-geocode on every single log — only when these are still NULL.
@@ -79,6 +84,10 @@ CREATE TABLE phases (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   project_number VARCHAR(4) NOT NULL,
   name VARCHAR(150) NOT NULL,
+  -- Scope of work for this phase — what should actually get done, distinct
+  -- from the name (a short label like "Framing"). Shows up on the Overview
+  -- timeline entry for the phase and is editable from Manage Phases.
+  scope TEXT NULL,
   sequence INT UNSIGNED NOT NULL,
   status ENUM('upcoming','current','completed') DEFAULT 'upcoming',
   start_date DATE NULL,
@@ -185,23 +194,31 @@ CREATE TABLE notifications (
 --    Documents/RFIs/Submittals/Punch List can follow the exact same
 --    CRUD+role-gating pattern established by daily-logs/*.php) ──────────
 
+-- Static, fixed set of divisions (not user-creatable) — 'estimate' is a
+-- placeholder category with no upload UI yet (estimates will eventually
+-- come from jccs-inventory's data instead of a manual upload here).
 CREATE TABLE documents (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   project_number VARCHAR(4) NOT NULL,
-  category ENUM('drawing','spec','other') DEFAULT 'other',
+  category ENUM('drawing','scope','estimate','contract','permit') NOT NULL,
   title VARCHAR(200) NOT NULL,
   is_active TINYINT(1) DEFAULT 1,
   created_by INT UNSIGNED NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_project_category (project_number, category)
 );
 
+-- Every upload against a document is append-only (never overwritten) so a
+-- full revision history is always available — see documents/versions.php.
 CREATE TABLE document_versions (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   document_id INT UNSIGNED NOT NULL,
   version_number INT UNSIGNED NOT NULL,
   file_path VARCHAR(255) NOT NULL,
+  original_filename VARCHAR(255) NOT NULL,
   notes VARCHAR(255) NULL,
   uploaded_by INT UNSIGNED NOT NULL,
+  uploaded_by_name VARCHAR(150) NOT NULL,
   uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_doc_version (document_id, version_number)
 );
@@ -228,6 +245,9 @@ CREATE TABLE rfi_responses (
   responded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- submittal_number is sequential PER PROJECT (assigned in app code as
+-- MAX(submittal_number)+1), matching daily_logs' natural-key convention —
+-- there's no local `projects` table to hang an AUTO_INCREMENT scope off of.
 CREATE TABLE submittals (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   project_number VARCHAR(4) NOT NULL,
@@ -236,19 +256,26 @@ CREATE TABLE submittals (
   spec_section VARCHAR(50) NULL,
   status ENUM('pending','approved','approved_as_noted','revise_resubmit','rejected') DEFAULT 'pending',
   submitted_by INT UNSIGNED NOT NULL,
+  submitted_by_name VARCHAR(150) NOT NULL,
   reviewed_by INT UNSIGNED NULL,
+  reviewed_by_name VARCHAR(150) NULL,
   reviewed_at TIMESTAMP NULL,
   due_date DATE NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_project_submittal (project_number, submittal_number)
 );
 
+-- Append-only, same versioning convention as document_versions — a full
+-- resubmission history survives every review cycle.
 CREATE TABLE submittal_versions (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   submittal_id INT UNSIGNED NOT NULL,
   version_number INT UNSIGNED NOT NULL,
   file_path VARCHAR(255) NOT NULL,
+  original_filename VARCHAR(255) NOT NULL,
+  notes VARCHAR(255) NULL,
   uploaded_by INT UNSIGNED NOT NULL,
+  uploaded_by_name VARCHAR(150) NOT NULL,
   uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_submittal_version (submittal_id, version_number)
 );

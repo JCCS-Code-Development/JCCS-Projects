@@ -23,6 +23,10 @@
     "title": "Notificaciones",
     "empty": "Aún no hay nada aquí."
   },
+  "translate": {
+    "disclaimer": "Traducido automáticamente — toca para ver el original",
+    "showTranslated": "Mostrar traducido"
+  },
   "role": {
     "admin": "Administrador",
     "pm": "Gerente de proyecto"
@@ -65,7 +69,13 @@
     "noCompany": "Sin empresa",
     "noResults": "Ningún proyecto coincide con \"{{query}}\".",
     "createPrompt": "Aún no existe un proyecto para el estimado #{{number}}.",
-    "createButton": "Buscar / crear #{{number}}"
+    "createButton": "Buscar / crear #{{number}}",
+    "inactiveProjects": "Proyectos inactivos",
+    "inactiveBadge": "Inactivo",
+    "activeTab": "Activos",
+    "inactiveTab": "Inactivos",
+    "noActiveProjects": "No hay proyectos activos.",
+    "noInactiveProjects": "No hay proyectos inactivos — aún no se ha marcado ninguno como completado."
   },
   "dailyLogs": {
     "title": "Registros diarios",
@@ -132,7 +142,35 @@
   },
   "documents": {
     "title": "Documentos",
-    "subtitle": "Planos, especificaciones y archivos versionados por proyecto"
+    "subtitle": "Planos, alcances y archivos versionados, organizados por división",
+    "categories": {
+      "drawing": "Planos",
+      "scope": "Alcances",
+      "estimate": "Estimado",
+      "contract": "Contratos",
+      "permit": "Permisos"
+    },
+    "estimatePlaceholder": "Próximamente — los estimados aparecerán aquí una vez vinculados a Inventory.",
+    "noDocuments": "Aún no hay documentos.",
+    "upload": "Subir",
+    "uploadTitle": "Subir {{category}}",
+    "docTitle": "Título",
+    "titleRequired": "Dale un título a este documento.",
+    "fileRequired": "Elige un archivo para subir.",
+    "notes": "Notas",
+    "file": "Archivo",
+    "versionHistory": "Historial de versiones",
+    "noVersions": "Aún no hay versiones.",
+    "versionLabel": "Versión {{number}}",
+    "current": "Actual",
+    "uploadedBy": "{{name}} · {{date}}",
+    "download": "Descargar",
+    "addVersion": "Agregar nueva versión",
+    "noPreview": "No hay vista previa disponible para este tipo de archivo.",
+    "downloadToView": "Descargar para ver",
+    "preview": "Vista previa",
+    "priorityTitle": "Documentos clave",
+    "prioritySubtitle": "El estimado y los planos, en primer plano"
   },
   "rfis": {
     "title": "RFIs",
@@ -140,7 +178,24 @@
   },
   "submittals": {
     "title": "Presentaciones",
-    "subtitle": "Flujo de revisión de presentaciones"
+    "subtitle": "Flujo de revisión de presentaciones — estado e historial completo de reenvíos por ítem",
+    "newSubmittal": "+ Nueva presentación",
+    "noSubmittals": "Aún no hay presentaciones para este proyecto.",
+    "docTitle": "Título",
+    "titleRequired": "Dale un título a esta presentación.",
+    "fileRequired": "Elige un archivo para subir.",
+    "specSection": "Sección de especificación",
+    "dueDate": "Fecha límite",
+    "due": "Vence {{date}}",
+    "submittedBy": "Enviado por {{name}}",
+    "resubmit": "Reenviar",
+    "status": {
+      "pending": "Pendiente",
+      "approved": "Aprobado",
+      "approved_as_noted": "Aprobado con notas",
+      "revise_resubmit": "Revisar y reenviar",
+      "rejected": "Rechazado"
+    }
   },
   "punchList": {
     "title": "Lista de pendientes",
@@ -161,6 +216,11 @@
     "summary": "{{name}} · Fase {{position}} de {{total}}",
     "newPhaseName": "Nombre de la nueva fase",
     "addPhase": "Agregar fase",
+    "scopePlaceholder": "Alcance de trabajo para esta fase — qué se debe hacer",
+    "viewTitle": "Fases",
+    "timeframe": "{{start}} – {{end}}",
+    "noTimeframe": "Sin fechas definidas",
+    "blueprintReference": "Planos — Referencia visual",
     "status": {
       "upcoming": "Próxima",
       "current": "Actual",
@@ -180,6 +240,7 @@
     "dailyLogs": "Registros diarios",
     "weeklyReports": "Reportes semanales",
     "documents": "Documentos",
+    "submittals": "Presentaciones",
     "punchList": "Lista de pendientes",
     "directory": "Directorio",
     "signOut": "Cerrar sesión",

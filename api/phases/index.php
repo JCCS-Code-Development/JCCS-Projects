@@ -54,11 +54,12 @@ if ($method === 'GET') {
     }
 
     $pdo->prepare(
-        'INSERT INTO phases (project_number, name, sequence, status, start_date, end_date, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO phases (project_number, name, scope, sequence, status, start_date, end_date, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     )->execute([
         $projectNumber,
         sanitizeString($body['name']),
+        !empty($body['scope']) ? sanitizeString($body['scope']) : null,
         $sequence,
         $status,
         !empty($body['start_date']) ? $body['start_date'] : null,

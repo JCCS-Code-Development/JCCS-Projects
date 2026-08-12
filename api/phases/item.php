@@ -29,6 +29,7 @@ if ($scope !== null && !in_array($phase['project_number'], $scope, true)) {
 if ($method === 'PUT') {
     $body = jsonBody();
     $name      = isset($body['name']) ? sanitizeString($body['name']) : $phase['name'];
+    $scope     = array_key_exists('scope', $body) ? (($body['scope'] !== '' && $body['scope'] !== null) ? sanitizeString($body['scope']) : null) : $phase['scope'];
     $sequence  = isset($body['sequence']) ? (int)$body['sequence'] : $phase['sequence'];
     $status    = in_array($body['status'] ?? null, ['upcoming', 'current', 'completed'], true) ? $body['status'] : $phase['status'];
     $startDate = array_key_exists('start_date', $body) ? ($body['start_date'] ?: null) : $phase['start_date'];
@@ -42,8 +43,8 @@ if ($method === 'PUT') {
             ->execute([$phase['project_number'], $id]);
     }
 
-    $pdo->prepare('UPDATE phases SET name = ?, sequence = ?, status = ?, start_date = ?, end_date = ? WHERE id = ?')
-        ->execute([$name, $sequence, $status, $startDate, $endDate, $id]);
+    $pdo->prepare('UPDATE phases SET name = ?, scope = ?, sequence = ?, status = ?, start_date = ?, end_date = ? WHERE id = ?')
+        ->execute([$name, $scope, $sequence, $status, $startDate, $endDate, $id]);
     echo json_encode(['message' => 'Phase updated']);
 
 } elseif ($method === 'DELETE') {

@@ -46,7 +46,7 @@ export default function TimelineTab({ projectNumber, canManagePhases, phases = [
         phase.status === 'current' ? t('timeline.phaseStarted', { name: phase.name }) :
         phase.status === 'completed' ? t('timeline.phaseCompleted', { name: phase.name }) :
         t('timeline.phaseAdded', { name: phase.name }),
-      detail: null,
+      detail: phase.scope || null,
     }))
     return [...logEvents, ...phaseEvents].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
   }, [logs, phases, t])

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import WeeklyReportCard from '../../../components/WeeklyReportCard'
 import { listPortalWeeklyReports } from '../../../api/portal'
+import { consumeOnce } from '../../../utils/consumeOnce'
 
 // Read-only — scoped to a single project (still constrained server-side to
 // client_project_access). No create affordance anywhere on this side.
@@ -9,7 +10,6 @@ export default function WeeklyReportsTab({ projectNumber, targetReportId }) {
   const { t } = useTranslation()
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
-  const jumpedToTargetRef = useRef(false)
   const reportRefs = useRef({})
 
   useEffect(() => {
@@ -19,11 +19,13 @@ export default function WeeklyReportsTab({ projectNumber, targetReportId }) {
       .finally(() => setLoading(false))
   }, [projectNumber])
 
+  // consumeOnce guards this (not a plain ref) since this component remounts
+  // fresh every time the Weekly Reports tab is revisited.
   useEffect(() => {
-    if (!targetReportId || jumpedToTargetRef.current || reports.length === 0) return
+    if (!targetReportId || reports.length === 0) return
     const el = reportRefs.current[targetReportId]
     if (!el) return
-    jumpedToTargetRef.current = true
+    if (!consumeOnce(`report-scroll:${targetReportId}`)) return
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [targetReportId, reports])
 

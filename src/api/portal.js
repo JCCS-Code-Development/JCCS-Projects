@@ -36,3 +36,15 @@ export const listPortalWeeklyReports = (params = {}) =>
 
 export const getPortalContacts = (projectNumber) =>
   clientPortalClient.get('/portal/contacts.php', { params: { project_number: projectNumber } }).then((r) => r.data)
+
+export const listPortalDocuments = (params = {}) =>
+  clientPortalClient.get('/portal/documents.php', { params }).then((r) => r.data)
+
+export const getPortalDocumentVersions = (documentId) =>
+  clientPortalClient.get('/portal/documents.php', { params: { id: documentId } }).then((r) => r.data)
+
+export const listPortalSubmittals = (params = {}) =>
+  clientPortalClient.get('/portal/submittals.php', { params }).then((r) => r.data)
+
+export const getPortalSubmittalVersions = (submittalId) =>
+  clientPortalClient.get('/portal/submittals.php', { params: { id: submittalId } }).then((r) => r.data)
