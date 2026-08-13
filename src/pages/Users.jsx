@@ -93,7 +93,13 @@ function StaffSection({ projects }) {
 
   const pickEmployee = (emp) => {
     setPickedEmployee(emp)
-    setForm((f) => ({ ...f, fieldclock_user_id: String(emp.id), name: emp.name, email: f.email || emp.email }))
+    setForm((f) => ({
+      ...f,
+      fieldclock_user_id: String(emp.id),
+      name: emp.name,
+      email: f.email || emp.email || '',
+      phone: f.phone || emp.phone || '',
+    }))
     setEmployeeSearch('')
   }
   const clearPickedEmployee = () => {
@@ -198,7 +204,7 @@ function StaffSection({ projects }) {
                   <div className="flex items-center justify-between gap-2 rounded-xl border border-brand-300 bg-brand-100/40 px-4 py-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{pickedEmployee.name}</p>
-                      <p className="text-xs text-gray-500 truncate">{pickedEmployee.email}</p>
+                      <p className="text-xs text-gray-500 truncate">{pickedEmployee.email}{pickedEmployee.phone ? ` · ${pickedEmployee.phone}` : ''}</p>
                     </div>
                     <button type="button" onClick={clearPickedEmployee} className="text-xs font-semibold text-gray-400 hover:text-gray-600 shrink-0">
                       {t('common.change')}

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Card from '../components/ui/Card'
-import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import { useToast } from '../components/ToastProvider'
 import { listProjects, resolveProject } from '../api/projects'
@@ -135,14 +134,19 @@ export default function ProjectsHome() {
         <p className="text-sm text-gray-500">{t('projects.subtitle')}</p>
       </div>
 
-      <Card className="max-w-md lg:max-w-2xl">
-        <Input
-          label={t('projects.searchLabel')}
+      <div className="relative max-w-md lg:max-w-xl">
+        <svg className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          aria-label={t('projects.searchLabel')}
           placeholder={t('projects.searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          className="w-full rounded-full border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm shadow-sm outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
         />
-      </Card>
+      </div>
 
       {showCreatePrompt && (
         <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 max-w-md lg:max-w-2xl">
