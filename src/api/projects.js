@@ -14,5 +14,9 @@ export const getProjectClients = (projectNumber) =>
 export const resolveProject = (projectNumber) =>
   client.post('/projects/resolve.php', { project_number: projectNumber }).then((r) => r.data)
 
+// Full creation (name + client fields), admin-only — see api/projects/index.php.
+export const createProject = (payload) =>
+  client.post('/projects/index.php', payload).then((r) => r.data)
+
 export const getProjectContacts = (projectNumber) =>
   client.get('/projects/contacts.php', { params: { project_number: projectNumber } }).then((r) => r.data)

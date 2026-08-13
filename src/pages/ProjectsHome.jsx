@@ -3,8 +3,55 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
+import Modal from '../components/ui/Modal'
+import Input from '../components/ui/Input'
 import { useToast } from '../components/ToastProvider'
-import { listProjects, resolveProject } from '../api/projects'
+import { useAuthStore } from '../store/authStore'
+import { listProjects, resolveProject, createProject } from '../api/projects'
+
+const EMPTY_NEW_PROJECT = { project_number: '', name: '', client_name: '', client_address: '' }
+
+function NewProjectModal({ isOpen, onClose, onCreated }) {
+  const { t } = useTranslation()
+  const [form, setForm] = useState(EMPTY_NEW_PROJECT)
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  const handleClose = () => { setForm(EMPTY_NEW_PROJECT); setError(''); onClose() }
+
+  const handleSave = async () => {
+    if (!/^\d{4}$/.test(form.project_number.trim())) { setError(t('projects.estimateNumberInvalid')); return }
+    if (!form.name.trim()) { setError(t('projects.nameRequired')); return }
+    setSaving(true); setError('')
+    try {
+      await createProject({
+        project_number: form.project_number.trim(),
+        name: form.name.trim(),
+        client_name: form.client_name.trim(),
+        client_address: form.client_address.trim(),
+      })
+      setForm(EMPTY_NEW_PROJECT)
+      onCreated()
+    } catch (err) {
+      setError(err?.response?.data?.error ?? t('common.couldNotSave'))
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('projects.newProjectTitle')}>
+      <div className="flex flex-col gap-4">
+        <Input label={t('projects.estimateNumber')} inputMode="numeric" maxLength={4}
+          placeholder="1234" value={form.project_number} onChange={set('project_number')} />
+        <Input label={t('projects.projectName')} value={form.name} onChange={set('name')} />
+        <Input label={`${t('projects.clientName')} (${t('common.optional')})`} value={form.client_name} onChange={set('client_name')} />
+        <Input label={`${t('projects.clientAddress')} (${t('common.optional')})`} value={form.client_address} onChange={set('client_address')} />
+        {error && <p className="text-xs text-red-500">{error}</p>}
+        <Button onClick={handleSave} loading={saving} fullWidth>{t('projects.createProject')}</Button>
+      </div>
+    </Modal>
+  )
+}
 
 const ChevronIcon = () => <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6"/></svg>
 
@@ -68,10 +115,12 @@ function groupByCompany(list, noCompanyLabel) {
 export default function ProjectsHome() {
   const { t } = useTranslation()
   const toast = useToast()
+  const isAdmin = useAuthStore((s) => s.user?.role === 'admin')
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [looking, setLooking] = useState(false)
+  const [showNewProject, setShowNewProject] = useState(false)
   // Active/Inactive are now two separate tabs (not one page with a section
   // tacked on below) — inactive here means "marked completed by an admin"
   // in Inventory (status='completed' and/or is_active=0).
@@ -129,9 +178,14 @@ export default function ProjectsHome() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">{t('projects.title')}</h1>
-        <p className="text-sm text-gray-500">{t('projects.subtitle')}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">{t('projects.title')}</h1>
+          <p className="text-sm text-gray-500">{t('projects.subtitle')}</p>
+        </div>
+        {isAdmin && (
+          <Button size="sm" onClick={() => setShowNewProject(true)}>{t('projects.newProject')}</Button>
+        )}
       </div>
 
       <div className="relative max-w-md lg:max-w-xl">
@@ -194,6 +248,14 @@ export default function ProjectsHome() {
             )
           )}
         </>
+      )}
+
+      {isAdmin && (
+        <NewProjectModal
+          isOpen={showNewProject}
+          onClose={() => setShowNewProject(false)}
+          onCreated={() => { setShowNewProject(false); load() }}
+        />
       )}
     </div>
   )

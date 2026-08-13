@@ -7,6 +7,7 @@ require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/jwt.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../middleware/validate.php';
 require_once __DIR__ . '/../services/inventory_client.php';
 
 // Thin same-origin proxy — the frontend only ever talks to this domain.
@@ -14,6 +15,44 @@ require_once __DIR__ . '/../services/inventory_client.php';
 // source of truth. See services/inventory_client.php for why this is a
 // server-to-server call rather than a browser cross-origin request.
 $auth = requireAuth();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Full project creation (name + client fields), admin-only on this side —
+    // resolve.php already covers the "bare project from a 4-digit number"
+    // case for everyone. Inventory ALSO gates its own POST /projects to its
+    // own admins, so this can still 403 downstream if the signed-in person
+    // isn't an Inventory admin too; that error is passed through as-is.
+    requireAdmin($auth);
+    $body = jsonBody();
+    requireFields($body, ['name', 'project_number']);
+
+    $projectNumber = trim((string)$body['project_number']);
+    if (!preg_match('/^\d{4}$/', $projectNumber)) {
+        http_response_code(422); exit(json_encode(['error' => 'Estimate # must be exactly 4 digits']));
+    }
+
+    $result = inventoryCreateProject($auth['raw_token'], [
+        'name'            => sanitizeString($body['name']),
+        'project_number'  => $projectNumber,
+        'client_name'     => !empty($body['client_name']) ? sanitizeString($body['client_name']) : null,
+        'client_address'  => !empty($body['client_address']) ? sanitizeString($body['client_address']) : null,
+    ]);
+
+    if ($result['status'] === 200 || $result['status'] === 201) {
+        $pdo = getPDO();
+        $pdo->prepare(
+            'INSERT INTO project_cache (project_number, name, client_name, client_address, updated_at)
+             VALUES (?, ?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE name = VALUES(name), client_name = VALUES(client_name),
+                 client_address = VALUES(client_address), updated_at = NOW()'
+        )->execute([$projectNumber, $body['name'], $body['client_name'] ?? null, $body['client_address'] ?? null]);
+    }
+
+    http_response_code($result['status']);
+    echo json_encode($result['data']);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') { http_response_code(405); exit; }
 
 $pdo    = getPDO();

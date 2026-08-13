@@ -40,3 +40,11 @@ function inventoryListProjects(string $bearerToken): array {
 function inventoryResolveProject(string $bearerToken, string $projectNumber): array {
     return inventoryRequest('POST', '/projects/resolve.php', $bearerToken, ['project_number' => $projectNumber]);
 }
+
+// Full project creation (name + client fields) — Inventory itself gates this
+// to ITS OWN admins (requireInventoryAdmin), independent of whether the
+// caller is a Projects admin. A Projects admin who isn't also an Inventory
+// admin will get a 403 back from Inventory, passed straight through.
+function inventoryCreateProject(string $bearerToken, array $fields): array {
+    return inventoryRequest('POST', '/projects/index.php', $bearerToken, $fields);
+}
