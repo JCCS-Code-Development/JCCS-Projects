@@ -12,9 +12,9 @@ clientsClaim()
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
-// Runtime cache: API reads, so recently-viewed stock stays visible offline
+// Runtime cache: API reads, so recently-viewed project data stays visible offline
 registerRoute(
-  ({ url }) => /\/api\/(?:items|locations|vendors|reports)\//.test(url.pathname),
+  ({ url }) => /\/api\/(?:daily-logs|weekly-reports|documents|rfis|submittals|punch-items|projects)\//.test(url.pathname),
   new NetworkFirst({
     cacheName: 'api-reads-v1',
     networkTimeoutSeconds: 5,
