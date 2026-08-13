@@ -1,11 +1,11 @@
 # JCCS Projects
 
-A Procore-style project management app for JCCS — daily field logs, versioned
-project documents, RFIs/submittals, and a punch list — styled to match
-`jccs-fieldclock` and `jccs-inventory` (same React + Tailwind stack, layout
-conventions, own **red** brand palette). Daily Logs is the first fully-built
-feature end to end; Documents/RFIs/Submittals/Punch List are scaffolded pages
-with the schema ready but no endpoints yet (see `api/schema.sql`).
+A Procore-style project management app for JCCS — daily field logs, weekly
+progress reports, versioned project documents, submittals, a punch list, a
+project contacts directory, and an in-app + email notification center —
+styled to match `jccs-fieldclock` and `jccs-inventory` (same React + Tailwind
+stack, layout conventions, own **red** brand palette). See "What's built vs.
+scaffolded" below for the one remaining gap (RFIs).
 
 ## Stack
 
@@ -53,14 +53,32 @@ have no FieldClock identity to call Inventory with directly.
    INSERT INTO projects_staff_roles (fieldclock_user_id, name, role)
    VALUES (<their FieldClock user id>, '<their name>', 'admin');
    ```
-3. Copy `api/config/config.example.php` → `api/config/config.php` on the server, fill
-   in the new database credentials, paste in FieldClock's `JWT_SECRET` exactly, and
-   generate a fresh `CLIENT_JWT_SECRET` (e.g. `php -r "echo bin2hex(random_bytes(32));"`)
-   — do NOT reuse FieldClock's secret for this one.
+3. Copy `api/config/config.example.php` → `api/config/config.php` on the server (never
+   commit `config.php` itself — gitignored, same as FieldClock's/Inventory's), and fill
+   in:
+   - New database credentials.
+   - `JWT_SECRET` — paste in **verbatim** from FieldClock's production config. Do not
+     generate a new one; it has to match so a FieldClock-issued token validates here too.
+   - `CLIENT_JWT_SECRET` — generate a **fresh** one (`php -r "echo bin2hex(random_bytes(32));"`),
+     never reuse FieldClock's or any other app's secret.
+   - `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`FROM_EMAIL`/`FROM_NAME` — a mailbox
+     created in cPanel's Email Accounts works (e.g. `notifications@projects.jccs-services.com`).
+     Client-visible updates (new daily logs, documents, submittals, punch items) email
+     clients as well as notifying them in-app. Leave `SMTP_HOST` out entirely and email
+     just no-ops (logged to `api/mail_outbox.log`, never blocks the request) if you want
+     to stand the app up before email is ready.
+   - `INVENTORY_API_URL` / `FRONTEND_ORIGIN` / `APP_URL` — already correct in the example
+     for the `projects.jccs-services.com` subdomain; adjust only if that changes.
 4. To onboard a client: insert into `clients` (bcrypt-hash their password with
    `password_hash()`) and grant project access via `client_project_access`.
-5. `npm install && npm run build`, then deploy via `.cpanel.yml` (update the
-   `secure_backups` path for `projects-config.php` to match wherever you keep it).
+5. `npm install && npm run build` locally — `dist/` is committed to this repo (same as
+   FieldClock/Inventory), since cPanel's Git Version Control has no Node to build it
+   itself. **Any `src/` change needs a fresh `npm run build` + commit of the resulting
+   `dist/` diff to actually go live** — pushing source alone does nothing on its own.
+6. Deploy via cPanel → Git Version Control → pull, which runs `.cpanel.yml`
+   (update the `secure_backups` path for `projects-config.php` to match wherever you
+   keep it, and the `DEPLOYPATH`/cPanel username if this is a different account than
+   FieldClock/Inventory's).
 
 ## Local development
 
@@ -83,10 +101,30 @@ FieldClock's login — see Inventory's `.env.local` for the same pattern.
 
 ## What's built vs. scaffolded
 
-- **Built end-to-end**: staff + client auth, project picker/lookup (proxied),
-  Daily Logs (create/list/detail, photo upload, offline queue for spotty job-site
-  connectivity), client portal read-only Daily Logs feed.
-- **Scaffolded (schema + nav + placeholder page, no endpoints yet)**: Documents
-  (versioned uploads), RFIs, Submittals, Punch List, Users (admin management of
-  `projects_staff_roles` + `clients`). Each should follow the exact CRUD +
-  `pmProjectScope()` role-gating pattern already established in `api/daily-logs/*.php`.
+- **Built end-to-end, staff + client portal both**:
+  - Staff + client auth (unified login, auto-detects which track), project
+    picker/lookup (proxied to Inventory), Active/Inactive project tabs.
+  - Daily Logs — calendar view, create with required photos, offline queue for
+    spotty job-site connectivity, auto-fetched weather/location, two-way comment
+    thread, auto-translation of free text to the viewer's language.
+  - Weekly Reports — narrative rollups with an auto-computed daily-log count and
+    phase snapshot for that week.
+  - Documents — five static divisions (Drawings, Scopes, Estimate placeholder,
+    Contracts, Permits) with a colored priority row for Estimate + Drawings,
+    append-only versioning with full history, file-type thumbnails, and an
+    in-page preview (image/PDF/video) with a download action — nothing opens a
+    new tab.
+  - Submittals — staff review workflow (status, resubmission resets to pending);
+    read-only in the client portal.
+  - Punch List — either staff or a client can flag an item; only staff move it
+    through open → ready for review → closed.
+  - Phases — scope-of-work per phase, a read-only client-portal view with a
+    blueprint visual-reference strip pulled from Documents.
+  - Project Directory — client contacts / administrative JCCS / on-field PMs.
+  - Notification center — in-app "pending until resolved/clicked," plus email
+    for every client-visible update.
+- **Scaffolded (schema + nav placeholder, no endpoints yet)**: RFIs, and the
+  Users admin page (currently `projects_staff_roles`/`clients` rows are managed
+  by hand in the database — see First-time setup above). Each should follow the
+  exact CRUD + `pmProjectScope()` role-gating pattern already established
+  throughout `api/`.
