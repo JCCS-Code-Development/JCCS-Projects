@@ -1,7 +1,8 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/vm3xrrup9tqw/public_html/projects
+    - export DEPLOYPATH=/home/vm3xrrup9tqw/public_html/jccs-projects
+    - /bin/mkdir -p $DEPLOYPATH/api
     - /bin/cp -Rf api/. $DEPLOYPATH/api/
     - /bin/cp -Rf dist/. $DEPLOYPATH/
     - /bin/cp -f /home/vm3xrrup9tqw/secure_backups/projects-config.php $DEPLOYPATH/api/config/config.php
