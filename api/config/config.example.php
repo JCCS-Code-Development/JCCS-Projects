@@ -54,3 +54,17 @@ define('APP_URL', 'https://projects.jccs-services.com/api');
 // (api/projects/board-summary.php). Use the SAME value as OPS_BOARD_TOKEN in
 // FieldClock's, Inventory's and the Calendar app's config.php. CHANGE_ME disables.
 define('OPS_BOARD_TOKEN', 'CHANGE_ME');
+
+// ── Estimates & invoices depot: email → project sorting ───────────────────
+// A dedicated mailbox you BCC on every InvoiceToGo estimate/invoice. The
+// cron api/cron/ingest-invoicetogo.php reads it, files each PDF under its
+// project by the 4-digit Estimate # in the subject/filename/PDF text, and
+// drops unmatched ones in the Unfiled tray. Needs the PHP imap extension.
+define('DEPOT_IMAP_HOST',   'mail.jccs-services.com');
+define('DEPOT_IMAP_PORT',   993);
+define('DEPOT_IMAP_USER',   'depot@projects.jccs-services.com');
+define('DEPOT_IMAP_PASS',   'CHANGE_ME');
+define('DEPOT_IMAP_FOLDER', 'INBOX');
+
+// Guard for hitting cron scripts over HTTP instead of the CLI.
+define('CRON_SECRET', 'CHANGE_ME');
