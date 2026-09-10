@@ -55,10 +55,13 @@ function renderNotificationEmail(array $o): string {
             . '" style="color:#6b6b6b;text-decoration:underline;">Manage email preferences</a></div>';
     }
 
-    $badgeHtml = $badge === '' ? '' :
-        '<span style="display:inline-block;background:' . $e($accent) . ';color:#ffffff;'
-        . 'font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;'
-        . 'padding:5px 10px;border-radius:3px;">' . $e($badge) . '</span>';
+    // Full-width maroon band, centred white label — matches the hand-tuned
+    // Canva layout. Rendered as its own table row (see below), not inside the
+    // padded content cell.
+    $badgeRow = $badge === '' ? '' :
+        '<tr><td style="background:' . $e($accent) . ';padding:10px 28px;text-align:center;">'
+        . '<span style="color:#ffffff;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;">'
+        . $e($badge) . '</span></td></tr>';
 
     $metaHtml = $meta === '' ? '' :
         '<div style="color:#6b6b6b;font-size:13px;margin:10px 0 0;">' . $e($meta) . '</div>';
@@ -88,9 +91,9 @@ function renderNotificationEmail(array $o): string {
     $teaserHtml .= $attachHtml;
 
     $buttonHtml = $btnUrl === '' ? '' :
-        '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px;"><tr><td '
-        . 'style="background:' . $e($accent) . ';border-radius:4px;">'
-        . '<a href="' . $e($btnUrl) . '" style="display:inline-block;padding:12px 26px;color:#ffffff;'
+        '<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:24px auto 6px;">'
+        . '<tr><td style="background:' . $e($accent) . ';border-radius:24px;">'
+        . '<a href="' . $e($btnUrl) . '" style="display:inline-block;padding:13px 32px;color:#ffffff;'
         . 'font-size:14px;font-weight:700;text-decoration:none;">' . $e($btnLabel) . '</a>'
         . '</td></tr></table>';
 
@@ -110,15 +113,15 @@ function renderNotificationEmail(array $o): string {
           </td>
         </tr>
         <tr>
-          <td style="padding:16px 28px;border-bottom:1px solid #e2d9d9;">
+          <td style="padding:16px 28px;">
             <div style="font-size:15px;color:#222222;">{$projLine}</div>
             <div style="font-size:13px;color:#6b6b6b;margin:3px 0 0;">{$projAddr}</div>
           </td>
         </tr>
+        {$badgeRow}
         <tr>
-          <td style="padding:24px 28px;">
-            {$badgeHtml}
-            <div style="font-size:20px;font-weight:700;color:#222222;margin:14px 0 0;">{$headline}</div>
+          <td style="padding:22px 28px;">
+            <div style="font-size:20px;font-weight:700;color:#222222;">{$headline}</div>
             {$metaHtml}
             {$teaserHtml}
             {$buttonHtml}
