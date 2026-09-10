@@ -219,7 +219,7 @@ CREATE TABLE notifications (
 CREATE TABLE documents (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   project_number VARCHAR(4) NOT NULL,
-  category ENUM('drawing','scope','estimate','contract','permit') NOT NULL,
+  category ENUM('drawing','scope','estimate','addon_estimate','contract','permit') NOT NULL,
   title VARCHAR(200) NOT NULL,
   is_active TINYINT(1) DEFAULT 1,
   created_by INT UNSIGNED NOT NULL,

@@ -26,7 +26,7 @@ const MAX_UPLOAD_BYTES = 150 * 1024 * 1024; // raised from 25MB to accommodate v
 // They're never executed (uploads/documents/.htaccess disables that) and
 // never rendered inline, only downloaded, so this is the right-sized check.
 const ALLOWED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'dwg', 'dxf', 'mp4', 'mov', 'webm'];
-const CATEGORIES = ['drawing', 'scope', 'estimate', 'contract', 'permit'];
+const CATEGORIES = ['drawing', 'scope', 'estimate', 'addon_estimate', 'contract', 'permit'];
 
 $auth   = requireAuth();
 $pdo    = getPDO();

@@ -166,7 +166,8 @@
       "scope": "Scopes",
       "estimate": "Estimate",
       "contract": "Contracts",
-      "permit": "Permits"
+      "permit": "Permits",
+      "addon_estimate": "Add-On Estimates"
     },
     "estimatePlaceholder": "Coming soon — estimates will appear here once linked to Inventory.",
     "noDocuments": "No documents yet.",

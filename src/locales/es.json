@@ -166,7 +166,8 @@
       "scope": "Alcances",
       "estimate": "Estimado",
       "contract": "Contratos",
-      "permit": "Permisos"
+      "permit": "Permisos",
+      "addon_estimate": "Estimaciones adicionales"
     },
     "estimatePlaceholder": "Próximamente — los estimados aparecerán aquí una vez vinculados a Inventory.",
     "noDocuments": "Aún no hay documentos.",

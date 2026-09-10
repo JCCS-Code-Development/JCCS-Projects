@@ -25,8 +25,11 @@ const UploadIcon    = ({ s = 'w-3.5 h-3.5' }) => <svg className={s} fill="none" 
 // surface from jccs-inventory's own data), so it renders a fixed
 // empty-state card instead of a document list either place.
 const PRIORITY_CATEGORIES = [
-  { key: 'estimate', icon: EstimateIcon, placeholder: true, colorClass: 'bg-indigo-50 border-indigo-100', headerClass: 'text-indigo-700' },
-  { key: 'drawing',  icon: BlueprintIcon, colorClass: 'bg-amber-50 border-amber-100', headerClass: 'text-amber-700' },
+  { key: 'estimate',       icon: EstimateIcon,  placeholder: true, colorClass: 'bg-indigo-50 border-indigo-100', headerClass: 'text-indigo-700' },
+  // Add-on estimates that complement the main estimate — uploadable, sits
+  // right beside the Estimate card so the two read as one estimates area.
+  { key: 'addon_estimate', icon: EstimateIcon,  colorClass: 'bg-indigo-50 border-indigo-100', headerClass: 'text-indigo-700' },
+  { key: 'drawing',        icon: BlueprintIcon, colorClass: 'bg-amber-50 border-amber-100',   headerClass: 'text-amber-700' },
 ]
 const STANDARD_CATEGORIES = [
   { key: 'scope',    icon: ScopeIcon },
@@ -223,7 +226,7 @@ export default function DocumentsBoard({ projectNumber, fetchDocuments, fetchVer
           found first without hunting through the full division grid. */}
       <div className="flex flex-col gap-2">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">{t('documents.priorityTitle')}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
           {PRIORITY_CATEGORIES.map((category) => (
             <CategoryCard key={category.key} category={category} items={category.placeholder ? [] : byCategory(category.key)}
               colorClass={category.colorClass} headerClass={category.headerClass} {...cardProps} />
