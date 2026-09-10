@@ -54,10 +54,12 @@ function notifyProjectStaff(PDO $pdo, string $projectNumber, string $type, strin
     }
 }
 
-// Notifies AND emails every client with access to a project — the one
-// trigger that's explicitly required to send an actual email, not just an
-// in-app notification (staff uploading/creating something new on a project).
+// Notifies every client with access to a project (in-app), and ALSO emails
+// them only when $extra['email'] is set — currently just weekly reports.
+// Everything else (daily logs, documents, submittals, punch items) is
+// in-app only; the account-setup invite is a separate email path.
 // $extra (optional) can carry:
+//   'email'       => true   — also send the branded email
 //   'attachments' => ['count' => N, 'label' => 'photos'|'files'|'documents']
 //   'metaLine'    => "Posted by Jane Doe"
 function notifyProjectClients(PDO $pdo, string $projectNumber, string $type, string $title, ?string $body, string $linkPath, array $extra = []): void {
@@ -87,14 +89,17 @@ function notifyProjectClients(PDO $pdo, string $projectNumber, string $type, str
          JOIN client_project_access cpa ON cpa.client_id = c.id
          WHERE cpa.project_number = ? AND c.is_active = 1'
     );
+    $sendMail = !empty($extra['email']);
     $stmt->execute([$projectNumber]);
     foreach ($stmt->fetchAll() as $client) {
         notifyClient($pdo, (int)$client['id'], $projectNumber, $type, $title, $body, $linkPath);
-        sendEmail(
-            $client['email'],
-            $title,
-            notificationEmailText($baseOpts),
-            renderNotificationEmail($baseOpts)
-        );
+        if ($sendMail) {
+            sendEmail(
+                $client['email'],
+                $title,
+                notificationEmailText($baseOpts),
+                renderNotificationEmail($baseOpts)
+            );
+        }
     }
 }

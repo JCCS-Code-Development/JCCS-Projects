@@ -159,16 +159,12 @@ if ($method === 'GET') {
 
     // Every staff-created daily log is "an update uploaded to the project" —
     // notify + email every client with access to it.
-    $notifyExtra = ['metaLine' => 'Posted by ' . $auth['name']];
-    if (count($movedFiles) > 0) {
-        $notifyExtra['attachments'] = ['count' => count($movedFiles), 'label' => 'photos'];
-    }
+    // In-app notification only — daily logs no longer email clients.
     notifyProjectClients(
         $pdo, $projectNumber, 'daily_log_created',
         "New daily log on project #{$projectNumber}",
         $workPerformed,
-        "/portal/projects/{$projectNumber}?tab=daily-logs&log={$logId}",
-        $notifyExtra
+        "/portal/projects/{$projectNumber}?tab=daily-logs&log={$logId}"
     );
 
     echo json_encode(['id' => $logId, 'message' => 'Daily log saved']);

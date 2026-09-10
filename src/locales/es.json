@@ -52,7 +52,8 @@
     "noProjectsYet": "Aún no hay proyectos.",
     "couldNotSave": "No se pudo guardar. Inténtalo de nuevo.",
     "comingSoon": "Esta función está en la hoja de ruta a corto plazo — los registros diarios ya están disponibles.",
-    "soon": "Pronto"
+    "soon": "Pronto",
+    "deletePermanently": "Eliminar permanentemente"
   },
   "dashboard": {
     "title": "Panel",
@@ -121,7 +122,10 @@
     "photosRequired": "Se requiere al menos una foto.",
     "addPhotos": "+ Agregar fotos",
     "photosSelected": "{{count}} foto(s) seleccionada(s)",
-    "loggedBy": "por {{name}}"
+    "loggedBy": "por {{name}}",
+    "deleteTitle": "Eliminar registro diario permanentemente",
+    "deleteConfirm": "¿Eliminar permanentemente este registro diario? También se quitarán sus fotos y comentarios. No se puede deshacer.",
+    "deleted": "Registro diario eliminado."
   },
   "weeklyReports": {
     "title": "Reportes semanales",
@@ -141,7 +145,10 @@
     "saveReport": "Guardar reporte",
     "noReportsYet": "Aún no hay reportes semanales para este proyecto.",
     "reportedBy": "Reportado por {{name}}",
-    "dailyLogCount": "{{count}} registro(s) diario(s) esta semana"
+    "dailyLogCount": "{{count}} registro(s) diario(s) esta semana",
+    "deleteTitle": "Eliminar reporte semanal permanentemente",
+    "deleteConfirm": "¿Eliminar permanentemente este reporte semanal? No se puede deshacer.",
+    "deleted": "Reporte semanal eliminado."
   },
   "directory": {
     "title": "Directorio",
@@ -276,7 +283,11 @@
     "resetPassword": "Restablecer contraseña",
     "passwordHelper": "Al menos 8 caracteres. El cliente podrá iniciar sesión con esto de inmediato.",
     "inviteHelper": "Déjalo en blanco para enviar al cliente una invitación para crear su propia contraseña.",
-    "addClientInvite": "Crear y enviar invitación"
+    "addClientInvite": "Crear y enviar invitación",
+    "deleteClientPermanently": "Eliminar este cliente permanentemente",
+    "deleteClientTitle": "Eliminar cliente permanentemente",
+    "deleteClientConfirm": "¿Eliminar permanentemente a {{name}}? Esto quita su acceso al portal, su inicio de sesión y los comentarios que haya publicado. No se puede deshacer.",
+    "deleteClientConfirmBtn": "Eliminar permanentemente"
   },
   "projectDetail": {
     "overview": "Resumen",

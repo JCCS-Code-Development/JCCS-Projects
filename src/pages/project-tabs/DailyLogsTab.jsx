@@ -9,8 +9,10 @@ import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import DailyLogCard from '../../components/DailyLogCard'
 import { useToast } from '../../components/ToastProvider'
+import { useConfirm } from '../../components/ConfirmProvider'
+import { useAuthStore } from '../../store/authStore'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
-import { listDailyLogs, createDailyLog, listDailyLogComments, createDailyLogComment } from '../../api/dailyLogs'
+import { listDailyLogs, createDailyLog, deleteDailyLog, listDailyLogComments, createDailyLogComment } from '../../api/dailyLogs'
 import { enqueueDailyLog, getQueuedCount, flushDailyLogQueue } from '../../utils/offlineQueue'
 import { consumeOnce } from '../../utils/consumeOnce'
 
@@ -27,6 +29,8 @@ const emptyForm = { log_date: todayStr(), work_performed: '', notes: '' }
 export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
   const { t } = useTranslation()
   const toast = useToast()
+  const confirmDialog = useConfirm()
+  const isAdmin = useAuthStore((s) => s.user?.role === 'admin')
   const isOnline = useOnlineStatus()
   const fileRef = useRef(null)
 
@@ -109,6 +113,17 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
   }
 
   const removePhoto = (i) => setPhotos((prev) => prev.filter((_, idx) => idx !== i))
+
+  const handleDeleteLog = async (log) => {
+    if (!await confirmDialog(t('dailyLogs.deleteConfirm'), { danger: true, title: t('dailyLogs.deleteTitle'), confirmLabel: t('common.deletePermanently') })) return
+    try {
+      await deleteDailyLog(log.id)
+      toast.success(t('dailyLogs.deleted'))
+      load()
+    } catch (err) {
+      toast.error(err?.response?.data?.error ?? t('common.couldNotSave'))
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -223,7 +238,8 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
           <div className="flex flex-col gap-3">
             {selectedLogs.map((log) => (
               <DailyLogCard key={log.id} log={log} location={location}
-                listComments={listDailyLogComments} createComment={createDailyLogComment} />
+                listComments={listDailyLogComments} createComment={createDailyLogComment}
+                onDelete={isAdmin ? handleDeleteLog : undefined} />
             ))}
           </div>
         )}

@@ -5,6 +5,7 @@ import AutoTranslatedText from './AutoTranslatedText'
 const CalendarIcon = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="4" width="18" height="17" rx="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 2v4M16 2v4M3 9h18"/></svg>
 const PhaseIcon    = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M5 3v18M5 4h11l-2 4 2 4H5"/></svg>
 const LogIcon      = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 2h6l5 5v13a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2z"/><path strokeLinecap="round" strokeLinejoin="round" d="M14 2v5h5M9 13h6M9 17h6"/></svg>
+const TrashIcon    = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M10 11v6M14 11v6M5 7l1 13a2 2 0 002 2h8a2 2 0 002-2l1-13M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
 
 function fmtDate(d) {
   try { return format(parseISO(d), 'MMM d, yyyy') } catch { return d }
@@ -25,7 +26,7 @@ function Section({ label, text }) {
 // covers (photos, weather, per-day crew). The daily-log-count badge and
 // phase snapshot ARE pulled from that daily-log data though, so the report
 // still points back at the underlying evidence without repeating it.
-export default function WeeklyReportCard({ report, highlighted = false, innerRef }) {
+export default function WeeklyReportCard({ report, highlighted = false, innerRef, onDelete }) {
   const { t } = useTranslation()
 
   return (
@@ -50,6 +51,12 @@ export default function WeeklyReportCard({ report, highlighted = false, innerRef
           <span className="flex items-center gap-1 bg-gray-100 text-gray-600 text-xs font-medium px-2 py-1 rounded-full">
             <LogIcon s="w-3 h-3" /> {t('weeklyReports.dailyLogCount', { count: report.daily_log_count })}
           </span>
+          {onDelete && (
+            <button type="button" onClick={() => onDelete(report)} aria-label={t('common.delete')}
+              className="text-gray-300 hover:text-red-600 transition-colors p-1 -m-1">
+              <TrashIcon />
+            </button>
+          )}
         </div>
       </div>
 

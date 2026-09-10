@@ -5,7 +5,10 @@ import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import WeeklyReportCard from '../../components/WeeklyReportCard'
-import { listWeeklyReports, createWeeklyReport } from '../../api/weeklyReports'
+import { useToast } from '../../components/ToastProvider'
+import { useConfirm } from '../../components/ConfirmProvider'
+import { useAuthStore } from '../../store/authStore'
+import { listWeeklyReports, createWeeklyReport, deleteWeeklyReport } from '../../api/weeklyReports'
 import { consumeOnce } from '../../utils/consumeOnce'
 
 const defaultWeekStart = () => format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
@@ -16,6 +19,9 @@ const emptyForm = { week_start: defaultWeekStart(), summary: '', accomplishments
 // infrequent (one per week at most) so a simple newest-first list is enough.
 export default function WeeklyReportsTab({ projectNumber, targetReportId }) {
   const { t } = useTranslation()
+  const toast = useToast()
+  const confirmDialog = useConfirm()
+  const isAdmin = useAuthStore((s) => s.user?.role === 'admin')
 
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
@@ -65,6 +71,17 @@ export default function WeeklyReportsTab({ projectNumber, targetReportId }) {
     }
   }
 
+  const handleDelete = async (report) => {
+    if (!await confirmDialog(t('weeklyReports.deleteConfirm'), { danger: true, title: t('weeklyReports.deleteTitle'), confirmLabel: t('common.deletePermanently') })) return
+    try {
+      await deleteWeeklyReport(report.id)
+      toast.success(t('weeklyReports.deleted'))
+      load()
+    } catch (err) {
+      toast.error(err?.response?.data?.error ?? t('common.couldNotSave'))
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -81,7 +98,8 @@ export default function WeeklyReportsTab({ projectNumber, targetReportId }) {
           {reports.map((report) => (
             <WeeklyReportCard key={report.id} report={report}
               highlighted={String(report.id) === String(targetReportId)}
-              innerRef={(el) => { reportRefs.current[report.id] = el }} />
+              innerRef={(el) => { reportRefs.current[report.id] = el }}
+              onDelete={isAdmin ? handleDelete : undefined} />
           ))}
         </div>
       )}

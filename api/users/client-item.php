@@ -76,7 +76,27 @@ if ($method === 'PUT') {
     echo json_encode(['message' => 'Updated']);
 
 } elseif ($method === 'DELETE') {
-    $pdo->prepare('UPDATE clients SET is_active = 0 WHERE id = ?')->execute([$id]);
-    echo json_encode(['message' => 'Deactivated']);
+    // ?permanent=1 hard-deletes the client and everything scoped to them
+    // (portal access, tokens, in-app notifications, comments they posted).
+    // Irreversible. Default is still a soft deactivate.
+    if (!empty($_GET['permanent'])) {
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare('DELETE FROM client_project_access  WHERE client_id = ?')->execute([$id]);
+            $pdo->prepare('DELETE FROM client_refresh_tokens  WHERE client_id = ?')->execute([$id]);
+            $pdo->prepare('DELETE FROM client_setup_tokens    WHERE client_id = ?')->execute([$id]);
+            $pdo->prepare("DELETE FROM notifications WHERE recipient_type = 'client' AND recipient_id = ?")->execute([$id]);
+            $pdo->prepare("DELETE FROM daily_log_comments WHERE author_type = 'client' AND author_id = ?")->execute([$id]);
+            $pdo->prepare('DELETE FROM clients WHERE id = ?')->execute([$id]);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            http_response_code(500); exit(json_encode(['error' => 'Could not delete the client']));
+        }
+        echo json_encode(['message' => 'Client permanently deleted']);
+    } else {
+        $pdo->prepare('UPDATE clients SET is_active = 0 WHERE id = ?')->execute([$id]);
+        echo json_encode(['message' => 'Deactivated']);
+    }
 
 } else { http_response_code(405); }

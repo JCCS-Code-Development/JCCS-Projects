@@ -120,13 +120,14 @@ if ($method === 'GET') {
     }
     $reportId = (int)$pdo->lastInsertId();
 
-    // Same "update uploaded to the project" trigger as a new daily log —
-    // notify + email every client with access to it.
+    // Weekly reports are the one project update that still emails clients
+    // (everything else is in-app only) — 'email' => true opts this in.
     notifyProjectClients(
         $pdo, $projectNumber, 'weekly_report_created',
         "New weekly report on project #{$projectNumber}",
         $summary,
-        "/portal/projects/{$projectNumber}?tab=weekly-reports&report={$reportId}"
+        "/portal/projects/{$projectNumber}?tab=weekly-reports&report={$reportId}",
+        ['email' => true, 'metaLine' => 'Posted by ' . $auth['name']]
     );
 
     echo json_encode(['id' => $reportId, 'message' => 'Weekly report saved']);

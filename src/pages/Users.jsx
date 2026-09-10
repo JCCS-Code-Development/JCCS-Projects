@@ -11,7 +11,7 @@ import { useConfirm } from '../components/ConfirmProvider'
 import { useAuthStore } from '../store/authStore'
 import {
   listUsers, createUser, updateUser, deactivateUser,
-  listClientAccounts, createClientAccount, updateClientAccount, deactivateClientAccount,
+  listClientAccounts, createClientAccount, updateClientAccount, deactivateClientAccount, deleteClientAccount,
 } from '../api/users'
 import { listEmployees } from '../api/fieldclockAuth'
 import { listProjects } from '../api/projects'
@@ -363,6 +363,18 @@ function ClientsSection({ projects }) {
     catch (err) { toast.error(err?.response?.data?.error ?? t('common.couldNotSave')) }
   }
 
+  const handlePermanentDelete = async () => {
+    if (!await confirmDialog(t('users.deleteClientConfirm', { name: modal.name }), { danger: true, title: t('users.deleteClientTitle'), confirmLabel: t('users.deleteClientConfirmBtn') })) return
+    setSaving(true); setError('')
+    try {
+      await deleteClientAccount(modal.id)
+      setModal(null); load()
+    } catch (err) {
+      setError(err?.response?.data?.error ?? t('common.couldNotSave'))
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
@@ -494,6 +506,10 @@ function ClientsSection({ projects }) {
               </div>
               {error && <p className="text-xs text-red-500">{error}</p>}
               <Button onClick={handleEditSave} loading={saving} fullWidth>{t('users.saveUser')}</Button>
+              <button type="button" onClick={handlePermanentDelete}
+                className="text-xs font-semibold text-red-600 hover:text-red-700 mt-1 self-center">
+                {t('users.deleteClientPermanently')}
+              </button>
             </>
           )}
         </div>

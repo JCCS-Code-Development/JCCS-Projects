@@ -14,6 +14,7 @@ const ChevronLeft  = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewB
 const ChevronRight = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
 const CloseIcon    = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
 const NoImageIcon  = ({ s = 'w-7 h-7' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.5-4.5a2 2 0 012.8 0L16 16M13.5 9.5h.01M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z"/><path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18"/></svg>
+const TrashIcon    = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M10 11v6M14 11v6M5 7l1 13a2 2 0 002 2h8a2 2 0 002-2l1-13M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
 
 function fmtDateTime(ts) {
   try { return format(ts.includes('T') || ts.includes(' ') ? new Date(ts.replace(' ', 'T')) : parseISO(ts), 'h:mm a') }
@@ -154,7 +155,7 @@ function PhotoCarousel({ photos }) {
 // comment thread is writable, via the injected listComments/createComment
 // functions so this component stays agnostic of which of the two entirely
 // separate auth/API tracks (staff vs client) it's being used from.
-export default function DailyLogCard({ log, location, listComments, createComment }) {
+export default function DailyLogCard({ log, location, listComments, createComment, onDelete }) {
   const { t } = useTranslation()
   const [comments, setComments] = useState([])
   const [loadingComments, setLoadingComments] = useState(true)
@@ -188,12 +189,20 @@ export default function DailyLogCard({ log, location, listComments, createCommen
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-5 pt-4 pb-3 border-b border-gray-100">
-        <p className="text-sm font-bold text-gray-900">{log.log_date}</p>
-        <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-          <ClockIcon s="w-3.5 h-3.5" /> {t('dailyLogs.loggedAt', { time: fmtDateTime(log.created_at) })}
-          {log.created_by_name && <span>· {t('dailyLogs.loggedBy', { name: log.created_by_name })}</span>}
-        </p>
+      <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-bold text-gray-900">{log.log_date}</p>
+          <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+            <ClockIcon s="w-3.5 h-3.5" /> {t('dailyLogs.loggedAt', { time: fmtDateTime(log.created_at) })}
+            {log.created_by_name && <span>· {t('dailyLogs.loggedBy', { name: log.created_by_name })}</span>}
+          </p>
+        </div>
+        {onDelete && (
+          <button type="button" onClick={() => onDelete(log)} aria-label={t('common.delete')}
+            className="shrink-0 text-gray-300 hover:text-red-600 transition-colors p-1 -m-1">
+            <TrashIcon />
+          </button>
+        )}
       </div>
 
       <div className="px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4 border-b border-gray-100 text-sm">

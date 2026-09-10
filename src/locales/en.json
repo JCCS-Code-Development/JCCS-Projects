@@ -52,7 +52,8 @@
     "noProjectsYet": "No projects yet.",
     "couldNotSave": "Could not save. Try again.",
     "comingSoon": "This feature is on the near-term roadmap — daily logs are live today.",
-    "soon": "Soon"
+    "soon": "Soon",
+    "deletePermanently": "Delete permanently"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -121,7 +122,10 @@
     "photosRequired": "At least one photo is required.",
     "addPhotos": "+ Add photos",
     "photosSelected": "{{count}} photo(s) selected",
-    "loggedBy": "by {{name}}"
+    "loggedBy": "by {{name}}",
+    "deleteTitle": "Permanently delete daily log",
+    "deleteConfirm": "Permanently delete this daily log? Its photos and comments will be removed too. This cannot be undone.",
+    "deleted": "Daily log deleted."
   },
   "weeklyReports": {
     "title": "Weekly Reports",
@@ -141,7 +145,10 @@
     "saveReport": "Save Report",
     "noReportsYet": "No weekly reports for this project yet.",
     "reportedBy": "Reported by {{name}}",
-    "dailyLogCount": "{{count}} daily log(s) this week"
+    "dailyLogCount": "{{count}} daily log(s) this week",
+    "deleteTitle": "Permanently delete weekly report",
+    "deleteConfirm": "Permanently delete this weekly report? This cannot be undone.",
+    "deleted": "Weekly report deleted."
   },
   "directory": {
     "title": "Directory",
@@ -276,7 +283,11 @@
     "resetPassword": "Reset Password",
     "passwordHelper": "At least 8 characters. The client can sign in with this right away.",
     "inviteHelper": "Leave blank to email the client an invite to set their own password.",
-    "addClientInvite": "Create & send invite"
+    "addClientInvite": "Create & send invite",
+    "deleteClientPermanently": "Delete this client permanently",
+    "deleteClientTitle": "Permanently delete client",
+    "deleteClientConfirm": "Permanently delete {{name}}? This removes their portal access, sign-in, and any comments they posted. This cannot be undone.",
+    "deleteClientConfirmBtn": "Delete permanently"
   },
   "projectDetail": {
     "overview": "Overview",

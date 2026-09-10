@@ -11,3 +11,4 @@ export const listClientAccounts = () => client.get('/users/clients.php').then((r
 export const createClientAccount = (payload) => client.post('/users/clients.php', payload).then((r) => r.data)
 export const updateClientAccount = (id, payload) => client.put(`/users/client-item.php?id=${id}`, payload).then((r) => r.data)
 export const deactivateClientAccount = (id) => client.delete(`/users/client-item.php?id=${id}`).then((r) => r.data)
+export const deleteClientAccount = (id) => client.delete(`/users/client-item.php?id=${id}&permanent=1`).then((r) => r.data)

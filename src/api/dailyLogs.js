@@ -6,6 +6,9 @@ export const listDailyLogs = (params = {}) =>
 export const getDailyLog = (id) =>
   client.get(`/daily-logs/item.php?id=${id}`).then((r) => r.data)
 
+export const deleteDailyLog = (id) =>
+  client.delete(`/daily-logs/item.php?id=${id}`).then((r) => r.data)
+
 // Photos are required at creation — this always posts multipart/form-data,
 // never JSON. `photos` is an array of File objects (>=1, enforced both here
 // via the caller and server-side).
