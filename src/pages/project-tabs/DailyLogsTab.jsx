@@ -101,7 +101,10 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
   }
 
   const handleFilesChosen = (e) => {
-    setPhotos((prev) => [...prev, ...Array.from(e.target.files ?? [])])
+    // Grab the files synchronously — the setState updater runs after we
+    // clear the input below, at which point e.target.files is already empty.
+    const chosen = Array.from(e.target.files ?? [])
+    setPhotos((prev) => [...prev, ...chosen])
     if (fileRef.current) fileRef.current.value = ''
   }
 

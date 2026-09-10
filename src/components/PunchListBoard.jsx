@@ -89,7 +89,8 @@ export default function PunchListBoard({ projectNumber, fetchItems, createItem, 
   }
 
   const handleFilesChosen = (e) => {
-    setPhotos((prev) => [...prev, ...Array.from(e.target.files ?? [])])
+    const chosen = Array.from(e.target.files ?? [])
+    setPhotos((prev) => [...prev, ...chosen])
     if (fileRef.current) fileRef.current.value = ''
   }
   const removePhoto = (i) => setPhotos((prev) => prev.filter((_, idx) => idx !== i))
