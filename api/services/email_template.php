@@ -11,63 +11,47 @@
 // sendEmail($to, $subject, $text, $html).
 
 function renderNotificationEmail(array $o): string {
-    $accent    = $o['accent']      ?? '#741B1B';
-    $appName   = $o['appName']     ?? 'JCCS Projects';
-    $label     = $o['headerLabel'] ?? 'PROJECT UPDATE';
-    $badge     = $o['badge']       ?? '';
-    $headline  = $o['headline']    ?? '';
-    $projNum   = $o['projectNumber']  ?? '';
-    $projName  = $o['projectName']    ?? '';
-    $projAddr  = $o['projectAddress'] ?? '';
-    $meta      = $o['metaLine']    ?? '';
-    $teaser    = $o['teaser']      ?? '';
-    $btnLabel  = $o['buttonLabel'] ?? 'View in Client Portal';
-    $btnUrl    = $o['buttonUrl']   ?? '';
-    $prefsUrl  = $o['preferencesUrl'] ?? '';
-    $logoUrl   = $o['logoUrl']     ?? '';
+    $accent   = $o['accent']         ?? '#741B1B';
+    $appName  = $o['appName']        ?? 'JCCS Projects';
+    $badge    = $o['badge']          ?? '';
+    $headline = $o['headline']       ?? '';
+    $projNum  = $o['projectNumber']  ?? '';
+    $projName = $o['projectName']    ?? '';
+    $meta     = $o['metaLine']       ?? '';
+    $teaser   = $o['teaser']         ?? '';
+    $btnLabel = $o['buttonLabel']    ?? 'View in Client Portal';
+    $btnUrl   = $o['buttonUrl']      ?? '';
+    $prefsUrl = $o['preferencesUrl'] ?? '';
+    $logoUrl  = $o['logoUrl']        ?? '';
 
     $e = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 
-    // White knockout logo when a URL is given (public/jccs-logo-white.png on
-    // the app origin); bold text wordmark as the fallback.
+    // White knockout logo (public/jccs-logo-white.png on the app origin);
+    // bold text wordmark as the fallback when images are blocked or no URL.
     $logoHtml = $logoUrl !== ''
-        ? '<img src="' . $e($logoUrl) . '" alt="JCCS Services" width="132" height="45" style="display:block;border:0;">'
-        : '<span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:.04em;">JCCS <span style="font-weight:400;">SERVICES</span></span>';
+        ? '<img src="' . $e($logoUrl) . '" alt="JCCS Services" width="118" height="40" style="display:block;border:0;">'
+        : '<span style="color:#ffffff;font-size:17px;font-weight:700;letter-spacing:.04em;">JCCS <span style="font-weight:400;">SERVICES</span></span>';
 
-    $projLine = $e($projName);
-    if ($projNum !== '') {
-        $projLine = 'Project #' . $e($projNum)
-            . ($projName !== '' ? '&nbsp;&nbsp;&middot;&nbsp;&nbsp;' . $e($projName) : '');
-    }
+    // Small, quiet uppercase label — not a colour band.
+    $labelHtml = $badge === '' ? '' :
+        '<div style="font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:#9a9a9a;">'
+        . $e($badge) . '</div>';
 
-    $footerLines = $o['footerLines'] ?? [
-        "You're receiving this because you have access to this project in the {$appName} client portal.",
-        'Sign in at the portal with your email address and the password you set.',
-        'This mailbox is not monitored. For anything about your project, contact your JCCS project manager.',
-        'JCCS Services &middot; noreply@jccs-services.com',
-    ];
-    $footerHtml = '';
-    foreach ($footerLines as $line) {
-        $footerHtml .= '<div style="margin:0 0 4px;">' . $e($line) . '</div>';
-    }
-    if ($prefsUrl !== '') {
-        $footerHtml .= '<div style="margin:8px 0 0;"><a href="' . $e($prefsUrl)
-            . '" style="color:#6b6b6b;text-decoration:underline;">Manage email preferences</a></div>';
-    }
-
-    // Full-width maroon band, centred white label — matches the hand-tuned
-    // Canva layout. Rendered as its own table row (see below), not inside the
-    // padded content cell.
-    $badgeRow = $badge === '' ? '' :
-        '<tr><td style="background:' . $e($accent) . ';padding:10px 28px;text-align:center;">'
-        . '<span style="color:#ffffff;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;">'
-        . $e($badge) . '</span></td></tr>';
-
+    // Project + who/when, as a subdued sub-line under the headline.
+    $subParts = [];
+    if ($projName !== '')      { $subParts[] = $e($projName); }
+    elseif ($projNum !== '')   { $subParts[] = 'Project #' . $e($projNum); }
+    $subHtml = $subParts ? '<div style="font-size:14px;color:#6b6b6b;margin:9px 0 0;">' . implode(' &middot; ', $subParts) . '</div>' : '';
     $metaHtml = $meta === '' ? '' :
-        '<div style="color:#6b6b6b;font-size:13px;margin:10px 0 0;">' . $e($meta) . '</div>';
+        '<div style="font-size:13px;color:#9a9a9a;margin:3px 0 0;">' . $e($meta) . '</div>';
 
-    // Attachment indicator — pass 'attachments' as a ready string
-    // ("3 photos") or ['count' => N, 'label' => 'photos'|'files'].
+    // Body text — a quiet left rule, no heavy box.
+    $teaserHtml = $teaser === '' ? '' :
+        '<div style="border-left:3px solid ' . $e($accent) . ';padding:2px 0 2px 14px;margin:22px 0 0;'
+        . 'color:#333333;font-size:14px;line-height:1.6;">' . nl2br($e($teaser)) . '</div>';
+
+    // Attachment indicator — 'attachments' as a string ("3 photos") or
+    // ['count' => N, 'label' => 'photos'|'files']. Plain text, no pill.
     $attachText = '';
     if (!empty($o['attachments'])) {
         $a = $o['attachments'];
@@ -80,56 +64,53 @@ function renderNotificationEmail(array $o): string {
         }
     }
     $attachHtml = $attachText === '' ? '' :
-        '<div style="margin:12px 0 0;color:#6b6b6b;font-size:13px;">'
-        . '<span style="display:inline-block;border:1px solid #e2d9d9;border-radius:3px;'
-        . 'padding:3px 9px;background:#faf7f7;">&#128206; ' . $e($attachText) . ' attached</span></div>';
-
-    $teaserHtml = $teaser === '' ? '' :
-        '<div style="background:#f7f3f3;border:1px solid #e2d9d9;border-radius:4px;'
-        . 'padding:14px 16px;margin:18px 0 0;color:#333333;font-size:14px;line-height:1.5;">'
-        . $e($teaser) . '</div>';
-    $teaserHtml .= $attachHtml;
+        '<div style="font-size:13px;color:#9a9a9a;margin:14px 0 0;">&#128206;&nbsp; ' . $e($attachText) . ' attached</div>';
 
     $buttonHtml = $btnUrl === '' ? '' :
-        '<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:28px auto 12px;">'
-        . '<tr><td style="background:' . $e($accent) . ';border-radius:28px;">'
-        . '<a href="' . $e($btnUrl) . '" style="display:inline-block;padding:14px 42px;color:#ffffff;'
-        . 'font-size:14px;font-weight:700;text-decoration:none;">' . $e($btnLabel) . '</a>'
+        '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 4px;"><tr>'
+        . '<td style="background:' . $e($accent) . ';border-radius:6px;">'
+        . '<a href="' . $e($btnUrl) . '" style="display:inline-block;padding:12px 26px;color:#ffffff;'
+        . 'font-size:14px;font-weight:600;text-decoration:none;">' . $e($btnLabel) . ' &rarr;</a>'
         . '</td></tr></table>';
+
+    $footerLines = $o['footerLines'] ?? [
+        "You're receiving this because you have client-portal access to this project.",
+        'Sign in with your email address and the password you set.',
+        'This mailbox is not monitored &mdash; for anything about your project, contact your project manager.',
+    ];
+    $footerHtml = '';
+    foreach ($footerLines as $line) {
+        $footerHtml .= '<div style="margin:0 0 5px;">' . $e($line) . '</div>';
+    }
+    $prefsLink = $prefsUrl !== ''
+        ? ' &nbsp;&middot;&nbsp; <a href="' . $e($prefsUrl) . '" style="color:#9a9a9a;text-decoration:underline;">Email preferences</a>'
+        : '';
 
     return <<<HTML
 <!doctype html>
 <html>
-<body style="margin:0;padding:0;background:#eeeeee;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eeeeee;padding:24px 0;">
-    <tr><td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;font-family:Helvetica,Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f0f0f0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;">
+    <tr><td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:10px;overflow:hidden;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
         <tr>
-          <td style="background:{$accent};padding:18px 28px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-              <td>{$logoHtml}</td>
-              <td align="right" style="color:#ffffff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;vertical-align:middle;">{$label}</td>
-            </tr></table>
-          </td>
+          <td style="background:{$accent};padding:16px 28px;">{$logoHtml}</td>
         </tr>
         <tr>
-          <td style="padding:16px 28px 14px;border-bottom:1px solid #e2d9d9;">
-            <div style="font-size:15px;color:#222222;">{$projLine}</div>
-            <div style="font-size:13px;color:#6b6b6b;margin:3px 0 0;">{$projAddr}</div>
-          </td>
-        </tr>
-        {$badgeRow}
-        <tr>
-          <td style="padding:24px 28px;">
-            <div style="font-size:20px;font-weight:700;color:#222222;">{$headline}</div>
+          <td style="padding:30px 28px 28px;">
+            {$labelHtml}
+            <div style="font-size:19px;font-weight:700;color:#1a1a1a;line-height:1.35;margin:7px 0 0;">{$headline}</div>
+            {$subHtml}
             {$metaHtml}
             {$teaserHtml}
+            {$attachHtml}
             {$buttonHtml}
           </td>
         </tr>
         <tr>
-          <td style="background:#f7f3f3;border-top:1px solid #e2d9d9;padding:18px 28px;color:#6b6b6b;font-size:12px;line-height:1.5;">
+          <td style="border-top:1px solid #ececec;padding:20px 28px 24px;color:#9a9a9a;font-size:12px;line-height:1.6;">
             {$footerHtml}
+            <div style="margin:8px 0 0;">JCCS Services{$prefsLink}</div>
           </td>
         </tr>
       </table>
