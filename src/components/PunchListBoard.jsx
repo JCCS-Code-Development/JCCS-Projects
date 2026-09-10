@@ -212,7 +212,7 @@ export default function PunchListBoard({ projectNumber, fetchItems, createItem, 
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700">{t('dailyLogs.photos')}</label>
-            <input type="file" accept="image/*" capture="environment" multiple className="hidden"
+            <input type="file" accept="image/*" multiple className="hidden"
               onChange={handleFilesChosen} id="punch-item-photos" />
             <Button type="button" variant="secondary" onClick={() => document.getElementById('punch-item-photos')?.click()}>
               {t('dailyLogs.addPhotos')}
