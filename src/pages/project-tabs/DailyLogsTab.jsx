@@ -18,7 +18,7 @@ const ChevronLeft  = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 
 const ChevronRight = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
 
 const todayStr = () => format(new Date(), 'yyyy-MM-dd')
-const emptyForm = { log_date: todayStr(), crew_count: '', work_performed: '', delays: '', notes: '' }
+const emptyForm = { log_date: todayStr(), work_performed: '', notes: '' }
 
 // Scoped to a single project (no project picker — we're already inside one).
 // A month calendar is the primary view — each day with a log gets a dot,
@@ -112,7 +112,7 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
     if (!form.work_performed.trim()) { setError(t('dailyLogs.workRequired')); return }
     if (photos.length === 0) { setError(t('dailyLogs.photosRequired')); return }
 
-    const payload = { ...form, project_number: projectNumber, crew_count: form.crew_count ? Number(form.crew_count) : null }
+    const payload = { ...form, project_number: projectNumber }
     setSaving(true)
     setError('')
     try {
@@ -230,21 +230,12 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input label={t('dailyLogs.logDate')} type="date" value={form.log_date}
             onChange={(e) => setForm((f) => ({ ...f, log_date: e.target.value }))} />
-          <Input label={t('dailyLogs.crewCount')} type="number" inputMode="numeric" value={form.crew_count}
-            onChange={(e) => setForm((f) => ({ ...f, crew_count: e.target.value }))} />
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">{t('dailyLogs.workPerformed')}</label>
             <textarea rows={4}
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
               value={form.work_performed}
               onChange={(e) => setForm((f) => ({ ...f, work_performed: e.target.value }))} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">{t('dailyLogs.delays')} ({t('common.optional')})</label>
-            <textarea rows={2}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-              value={form.delays}
-              onChange={(e) => setForm((f) => ({ ...f, delays: e.target.value }))} />
           </div>
 
           <div className="flex flex-col gap-2">

@@ -58,7 +58,7 @@ if (empty($projects)) { echo json_encode(['dailyLogs' => []]); exit; }
 
 $placeholders = implode(',', array_fill(0, count($projects), '?'));
 $stmt = $pdo->prepare(
-    "SELECT id, project_number, log_date, weather, phase_id, crew_count, work_performed, delays, created_at
+    "SELECT id, project_number, log_date, weather, phase_id, work_performed, created_at
      FROM daily_logs WHERE project_number IN ($placeholders) ORDER BY log_date DESC, id DESC LIMIT 100"
 );
 $stmt->execute($projects);

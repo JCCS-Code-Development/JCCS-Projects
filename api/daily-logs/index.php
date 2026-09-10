@@ -117,9 +117,7 @@ if ($method === 'GET') {
 
     if (!is_dir(UPLOAD_DIR)) { mkdir(UPLOAD_DIR, 0755, true); }
 
-    $crewCount = isset($_POST['crew_count']) && $_POST['crew_count'] !== '' ? (int)$_POST['crew_count'] : null;
-    $delays    = !empty($_POST['delays']) ? sanitizeString($_POST['delays']) : null;
-    $notes     = !empty($_POST['notes']) ? sanitizeString($_POST['notes']) : null;
+    $notes = !empty($_POST['notes']) ? sanitizeString($_POST['notes']) : null;
 
     // Best-effort, never blocks the write — see weather_client.php.
     $weather = getProjectWeather($pdo, $projectNumber);
@@ -133,11 +131,11 @@ if ($method === 'GET') {
         $pdo->beginTransaction();
 
         $pdo->prepare(
-            'INSERT INTO daily_logs (project_number, log_date, weather, phase_id, crew_count, work_performed, delays, notes, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO daily_logs (project_number, log_date, weather, phase_id, work_performed, notes, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
         )->execute([
-            $projectNumber, $logDate, $weather, $phaseId, $crewCount,
-            sanitizeString($workPerformed), $delays, $notes, $auth['user_id'],
+            $projectNumber, $logDate, $weather, $phaseId,
+            sanitizeString($workPerformed), $notes, $auth['user_id'],
         ]);
         $logId = (int)$pdo->lastInsertId();
 
