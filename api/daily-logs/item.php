@@ -47,7 +47,7 @@ if ($method === 'GET') {
         }
     }
 
-    echo json_encode(['dailyLog' => $log]);
+    echo json_encode($log); // returned as-is (the detail page consumes it directly)
     exit;
 }
 
