@@ -165,7 +165,8 @@ if ($method === 'GET') {
         $pdo, $projectNumber, 'daily_log_created',
         "New daily log on project #{$projectNumber}",
         $workPerformed,
-        "/portal/projects/{$projectNumber}?tab=daily-logs&log={$logId}"
+        "/portal/projects/{$projectNumber}?tab=daily-logs&log={$logId}",
+        count($movedFiles) > 0 ? ['attachments' => ['count' => count($movedFiles), 'label' => 'photos']] : []
     );
 
     echo json_encode(['id' => $logId, 'message' => 'Daily log saved']);

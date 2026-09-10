@@ -30,18 +30,22 @@ define('CLIENT_JWT_EXPIRY', 900); // 15 min, same as FieldClock's staff tokens
 define('INVENTORY_API_URL', 'https://inventory.jccs-services.com/api');
 
 // Outbound email — new document/submittal/punch-item/daily-log/weekly-report
-// updates notify clients in-app AND by email (see services/notify.php);
-// services/mailer.php sends over raw SMTP (SSL), no external library. Leave
-// SMTP_HOST blank/undefined for local dev — sendEmail() silently no-ops
-// and every attempt still lands in api/mail_outbox.log either way. A
-// mailbox created in cPanel's Email Accounts works fine here (e.g.
-// notifications@projects.jccs-services.com) — same as FieldClock's setup.
-define('SMTP_HOST', 'mail.jccs-services.com');
-define('SMTP_PORT', 465);
-define('SMTP_USER', 'notifications@projects.jccs-services.com');
-define('SMTP_PASS', 'CHANGE_ME');
-define('FROM_EMAIL', 'notifications@projects.jccs-services.com');
-define('FROM_NAME', 'JCCS Projects');
+// updates notify clients in-app AND by email (see services/notify.php).
+// services/mailer.php sends as noreply@jccs-services.com through the
+// Microsoft Graph API (client-credentials flow). The three GRAPH_* values
+// come from the shared Entra app registration "JCCS Apps — noreply sender"
+// (Mail.Send application permission, admin-consented, and locked to the
+// noreply mailbox by an Exchange ApplicationAccessPolicy). Use the SAME
+// three values in every JCCS app's config.php, exactly like JWT_SECRET.
+// Leave GRAPH_CLIENT_ID blank/undefined for local dev — sendEmail() silently
+// no-ops and every attempt still lands in api/mail_outbox.log either way.
+define('GRAPH_TENANT_ID',     'f18c618b-9b49-4b5e-81fe-3d00933bc461');
+define('GRAPH_CLIENT_ID',     'de225a21-46d9-48ba-8150-b0228c0e8709');
+define('GRAPH_CLIENT_SECRET', 'CHANGE_ME'); // Entra > app registration > Certificates & secrets > Value
+
+define('MAIL_SENDER', 'noreply@jccs-services.com'); // same in every JCCS app
+define('FROM_NAME',   'JCCS Projects');             // per-app display name on the From line
+define('REPLY_TO',    'projects@jccs-services.com'); // per-app: a real, monitored address
 
 // App
 define('FRONTEND_ORIGIN', 'https://projects.jccs-services.com');

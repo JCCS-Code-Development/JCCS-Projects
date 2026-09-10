@@ -272,7 +272,9 @@
     "grantAccess": "Grant Access",
     "initialPassword": "Initial Password",
     "resetPassword": "Reset Password",
-    "passwordHelper": "At least 8 characters. The client can sign in with this right away."
+    "passwordHelper": "At least 8 characters. The client can sign in with this right away.",
+    "inviteHelper": "Leave blank to email the client an invite to set their own password.",
+    "addClientInvite": "Create & send invite"
   },
   "projectDetail": {
     "overview": "Overview",
@@ -334,6 +336,19 @@
     "setupRequired": "Your account needs a password set up in FieldClock first — sign in there once, then come back.",
     "notProvisioned": "This account isn't set up for Projects yet. Ask an admin to add you.",
     "signInFailed": "Sign in failed. Check your credentials and try again.",
-    "email": "Email"
+    "email": "Email",
+    "setup": {
+      "title": "Set up your account",
+      "forAccount": "Setting the password for",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "submit": "Set password & sign in",
+      "afterHint": "You'll be signed in right after. Next time, use your email and this password.",
+      "tooShort": "Password must be at least 8 characters.",
+      "mismatch": "The passwords don't match.",
+      "failed": "Couldn't set your password. Try again.",
+      "linkInvalid": "This setup link is invalid or has expired. Ask your JCCS project manager to resend it.",
+      "goToSignIn": "Go to sign in"
+    }
   }
 }

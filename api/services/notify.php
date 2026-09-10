@@ -1,5 +1,26 @@
 <?php
 require_once __DIR__ . '/mailer.php';
+require_once __DIR__ . '/email_template.php';
+
+// Short uppercase label for the coloured badge in the client email. Falls
+// back to the raw type prettified, so a new trigger still reads sensibly
+// without a map entry.
+function notificationBadgeLabel(string $type): string {
+    static $labels = [
+        'document_uploaded'  => 'New Document',
+        'submittal_created'  => 'New Submittal',
+        'submittal_revised'  => 'Submittal Revised',
+        'submittal_status'   => 'Submittal Update',
+        'punch_item_created' => 'New Punch Item',
+        'punch_item_closed'  => 'Punch Item Closed',
+        'daily_log_created'  => 'New Daily Log',
+        'weekly_report'      => 'New Weekly Report',
+        'phase_changed'      => 'Phase Update',
+        'rfi_created'        => 'New RFI',
+        'rfi_answered'       => 'RFI Answered',
+    ];
+    return strtoupper($labels[$type] ?? str_replace('_', ' ', $type));
+}
 
 // In-app notification only (no email) — used for things like comments,
 // where an in-app "pending" badge is enough and email would be noisy.
@@ -36,7 +57,31 @@ function notifyProjectStaff(PDO $pdo, string $projectNumber, string $type, strin
 // Notifies AND emails every client with access to a project — the one
 // trigger that's explicitly required to send an actual email, not just an
 // in-app notification (staff uploading/creating something new on a project).
-function notifyProjectClients(PDO $pdo, string $projectNumber, string $type, string $title, ?string $body, string $linkPath): void {
+// $extra (optional) can carry:
+//   'attachments' => ['count' => N, 'label' => 'photos'|'files'|'documents']
+//   'metaLine'    => "Posted by Jane Doe"
+function notifyProjectClients(PDO $pdo, string $projectNumber, string $type, string $title, ?string $body, string $linkPath, array $extra = []): void {
+    $proj = $pdo->prepare('SELECT name, client_address FROM project_cache WHERE project_number = ?');
+    $proj->execute([$projectNumber]);
+    $pc = $proj->fetch() ?: [];
+
+    $origin   = rtrim(FRONTEND_ORIGIN, '/');
+    $baseOpts = [
+        'attachments'    => $extra['attachments'] ?? null,
+        'metaLine'       => $extra['metaLine'] ?? '',
+        'appName'        => defined('FROM_NAME') && FROM_NAME ? FROM_NAME : 'JCCS Projects',
+        'badge'          => notificationBadgeLabel($type),
+        'headline'       => $title,
+        'projectNumber'  => $projectNumber,
+        'projectName'    => $pc['name'] ?? '',
+        'projectAddress' => $pc['client_address'] ?? '',
+        'teaser'         => $body ?? '',
+        'buttonLabel'    => 'View in Client Portal',
+        'buttonUrl'      => $origin . $linkPath,
+        'preferencesUrl' => $origin . '/portal/settings/notifications',
+        'logoUrl'        => $origin . '/jccs-logo-white.png',
+    ];
+
     $stmt = $pdo->prepare(
         'SELECT c.id, c.email, c.name FROM clients c
          JOIN client_project_access cpa ON cpa.client_id = c.id
@@ -45,7 +90,11 @@ function notifyProjectClients(PDO $pdo, string $projectNumber, string $type, str
     $stmt->execute([$projectNumber]);
     foreach ($stmt->fetchAll() as $client) {
         notifyClient($pdo, (int)$client['id'], $projectNumber, $type, $title, $body, $linkPath);
-        $emailBody = ($body ?? $title) . "\n\nView it in the client portal: " . rtrim(FRONTEND_ORIGIN, '/') . $linkPath;
-        sendEmail($client['email'], $title, $emailBody);
+        sendEmail(
+            $client['email'],
+            $title,
+            notificationEmailText($baseOpts),
+            renderNotificationEmail($baseOpts)
+        );
     }
 }

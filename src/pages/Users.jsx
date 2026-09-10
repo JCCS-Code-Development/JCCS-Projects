@@ -330,10 +330,13 @@ function ClientsSection({ projects }) {
   const handleCreateNew = async () => {
     if (!form.name.trim()) { setError(t('users.nameRequired')); return }
     if (!form.email.trim()) { setError(t('users.emailRequired')); return }
-    if (!form.password || form.password.length < 8) { setError(t('users.passwordTooShort')); return }
+    // Password is optional — blank means "email them an invite to set it".
+    if (form.password && form.password.length < 8) { setError(t('users.passwordTooShort')); return }
     setSaving(true); setError('')
     try {
-      await createClientAccount({ email: form.email.trim(), name: form.name.trim(), phone: form.phone.trim(), password: form.password, project_numbers: accessProjects })
+      const payload = { email: form.email.trim(), name: form.name.trim(), phone: form.phone.trim(), project_numbers: accessProjects }
+      if (form.password) payload.password = form.password
+      await createClientAccount(payload)
       setModal(null); load()
     } catch (err) {
       setError(err?.response?.data?.error ?? t('common.couldNotSave'))
@@ -465,14 +468,16 @@ function ClientsSection({ projects }) {
               <Input label={t('common.name')} value={form.name} onChange={set('name')} />
               <Input label={t('users.email')} value={form.email} onChange={set('email')} />
               <Input label={`${t('users.phone')} (${t('common.optional')})`} value={form.phone} onChange={set('phone')} />
-              <Input label={t('users.initialPassword')} type="text" value={form.password} onChange={set('password')}
-                helperText={t('users.passwordHelper')} />
+              <Input label={`${t('users.initialPassword')} (${t('common.optional')})`} type="text" value={form.password} onChange={set('password')}
+                helperText={t('users.inviteHelper')} />
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-gray-700">{t('users.projectAccess')}</label>
                 <ProjectAccessPicker projects={projects} selected={accessProjects} onToggle={toggleAccess} />
               </div>
               {error && <p className="text-xs text-red-500">{error}</p>}
-              <Button onClick={handleCreateNew} loading={saving} fullWidth>{t('users.addClient')}</Button>
+              <Button onClick={handleCreateNew} loading={saving} fullWidth>
+                {form.password ? t('users.addClient') : t('users.addClientInvite')}
+              </Button>
             </>
           )}
 

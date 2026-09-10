@@ -17,6 +17,7 @@ import Users from './pages/Users'
 import PortalHome from './pages/portal/PortalHome'
 import PortalProjectDetail from './pages/portal/PortalProjectDetail'
 import PortalDailyLogDetail from './pages/portal/PortalDailyLogDetail'
+import ClientSetup from './pages/portal/ClientSetup'
 
 function RoleRedirect() {
   const isStaffAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -34,6 +35,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      {/* Client account-setup from the invite email — unauthenticated. */}
+      <Route path="/portal/setup/:token" element={<ClientSetup />} />
 
       {/* Staff (Admin / PM-Lead) */}
       <Route element={<ProtectedRoute />}>

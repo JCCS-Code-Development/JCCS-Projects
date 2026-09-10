@@ -272,7 +272,9 @@
     "grantAccess": "Otorgar acceso",
     "initialPassword": "Contraseña inicial",
     "resetPassword": "Restablecer contraseña",
-    "passwordHelper": "Al menos 8 caracteres. El cliente podrá iniciar sesión con esto de inmediato."
+    "passwordHelper": "Al menos 8 caracteres. El cliente podrá iniciar sesión con esto de inmediato.",
+    "inviteHelper": "Déjalo en blanco para enviar al cliente una invitación para crear su propia contraseña.",
+    "addClientInvite": "Crear y enviar invitación"
   },
   "projectDetail": {
     "overview": "Resumen",
@@ -334,6 +336,19 @@
     "setupRequired": "Tu cuenta necesita una contraseña configurada en FieldClock primero — inicia sesión allí una vez, luego vuelve.",
     "notProvisioned": "Esta cuenta aún no está configurada para Projects. Pide a un administrador que te agregue.",
     "signInFailed": "Error al iniciar sesión. Verifica tus credenciales e inténtalo de nuevo.",
-    "email": "Correo electrónico"
+    "email": "Correo electrónico",
+    "setup": {
+      "title": "Configura tu cuenta",
+      "forAccount": "Estableciendo la contraseña para",
+      "newPassword": "Nueva contraseña",
+      "confirmPassword": "Confirmar contraseña",
+      "submit": "Guardar contraseña e iniciar sesión",
+      "afterHint": "Iniciarás sesión enseguida. La próxima vez, usa tu correo y esta contraseña.",
+      "tooShort": "La contraseña debe tener al menos 8 caracteres.",
+      "mismatch": "Las contraseñas no coinciden.",
+      "failed": "No se pudo establecer tu contraseña. Inténtalo de nuevo.",
+      "linkInvalid": "Este enlace de configuración no es válido o ha expirado. Pídele a tu gerente de proyecto de JCCS que lo reenvíe.",
+      "goToSignIn": "Ir a iniciar sesión"
+    }
   }
 }

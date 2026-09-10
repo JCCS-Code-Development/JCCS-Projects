@@ -8,6 +8,7 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/jwt.php';
 require_once __DIR__ . '/../middleware/auth.php';
 require_once __DIR__ . '/../middleware/validate.php';
+require_once __DIR__ . '/../services/client_invite.php';
 
 // Client provisioning — the "local" mirror of users/index.php's FieldClock
 // search. There's no external directory to search here (clients aren't
@@ -43,15 +44,23 @@ if ($method === 'GET') {
 
 } elseif ($method === 'POST') {
     $body = jsonBody();
-    requireFields($body, ['email', 'name', 'password']);
+    requireFields($body, ['email', 'name']);
 
     $email = strtolower(trim((string)$body['email']));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         http_response_code(422); exit(json_encode(['error' => 'Enter a valid email address']));
     }
-    if (strlen((string)$body['password']) < 8) {
+
+    // Password is optional. If the admin leaves it blank the client is sent
+    // an invite email to set their own; a placeholder hash keeps the NOT
+    // NULL column satisfied and can never match a real login.
+    $sendInvite = empty($body['password']);
+    if (!$sendInvite && strlen((string)$body['password']) < 8) {
         http_response_code(422); exit(json_encode(['error' => 'Password must be at least 8 characters']));
     }
+    $passwordHash = $sendInvite
+        ? password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT)
+        : password_hash((string)$body['password'], PASSWORD_DEFAULT);
 
     $dupe = $pdo->prepare('SELECT id FROM clients WHERE email = ?');
     $dupe->execute([$email]);
@@ -67,7 +76,7 @@ if ($method === 'GET') {
     $pdo->beginTransaction();
     try {
         $pdo->prepare('INSERT INTO clients (email, phone, password_hash, name) VALUES (?, ?, ?, ?)')
-            ->execute([$email, $phone, password_hash((string)$body['password'], PASSWORD_DEFAULT), sanitizeString($body['name'])]);
+            ->execute([$email, $phone, $passwordHash, sanitizeString($body['name'])]);
         $clientId = (int)$pdo->lastInsertId();
 
         if ($projectNumbers) {
@@ -82,6 +91,14 @@ if ($method === 'GET') {
         http_response_code(500); exit(json_encode(['error' => 'Could not save the client']));
     }
 
-    echo json_encode(['id' => $clientId, 'message' => 'Client created']);
+    if ($sendInvite) {
+        sendClientInvite($pdo, $clientId);
+    }
+
+    echo json_encode([
+        'id'      => $clientId,
+        'invited' => $sendInvite,
+        'message' => $sendInvite ? 'Client created — invite email sent' : 'Client created',
+    ]);
 
 } else { http_response_code(405); }

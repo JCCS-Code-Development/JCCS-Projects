@@ -53,6 +53,21 @@ CREATE TABLE client_refresh_tokens (
   expires_at DATETIME NOT NULL
 );
 
+-- Single-use tokens for a client to set their own password. 'setup' is
+-- minted when an admin provisions a client without typing a password — the
+-- invite email links to /portal/setup/<token>; 'reset' backs the
+-- forgot-password flow. Only the SHA-256 hash of the token is stored.
+CREATE TABLE client_setup_tokens (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  client_id INT UNSIGNED NOT NULL,
+  token_hash CHAR(64) NOT NULL UNIQUE,
+  purpose ENUM('setup','reset') NOT NULL DEFAULT 'setup',
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_client (client_id)
+);
+
 -- Read-only cache of Inventory's project fields, refreshed opportunistically
 -- every time staff hits GET /projects/index.php or /projects/resolve.php.
 -- Lets the client portal show project name/address without an Inventory

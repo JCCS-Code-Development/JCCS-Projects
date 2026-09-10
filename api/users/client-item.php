@@ -8,6 +8,7 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/jwt.php';
 require_once __DIR__ . '/../middleware/auth.php';
 require_once __DIR__ . '/../middleware/validate.php';
+require_once __DIR__ . '/../services/client_invite.php';
 
 $auth = requireAuth();
 requireAdmin($auth);
@@ -22,6 +23,15 @@ if (!$stmt->fetch()) { http_response_code(404); exit(json_encode(['error' => 'Cl
 
 if ($method === 'PUT') {
     $body = jsonBody();
+
+    // Re-send the account-setup invite (expired link, wrong address fixed,
+    // client lost the email). Mints a fresh token and mails it.
+    if (!empty($body['resend_invite'])) {
+        $ok = sendClientInvite($pdo, $id);
+        if (!$ok) { http_response_code(502); exit(json_encode(['error' => 'Could not send the invite email'])); }
+        exit(json_encode(['message' => 'Invite email resent']));
+    }
+
     $sets = []; $params = [];
 
     if (array_key_exists('name', $body) && $body['name'] !== '') {
