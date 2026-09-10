@@ -76,7 +76,7 @@ function renderNotificationEmail(array $o): string {
     $footerLines = $o['footerLines'] ?? [
         "You're receiving this because you have client-portal access to this project.",
         'Sign in with your email address and the password you set.',
-        'This mailbox is not monitored &mdash; for anything about your project, contact your project manager.',
+        'This mailbox is not monitored — for anything about your project, contact your project manager.',
     ];
     $footerHtml = '';
     foreach ($footerLines as $line) {
