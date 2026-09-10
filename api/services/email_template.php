@@ -36,8 +36,8 @@ function renderNotificationEmail(array $o): string {
 
     $projLine = $e($projName);
     if ($projNum !== '') {
-        $projLine = '<span style="color:' . $e($accent) . ';font-weight:700;">#' . $e($projNum) . '</span>'
-            . ($projName !== '' ? ' &nbsp;' . $e($projName) : '');
+        $projLine = 'Project #' . $e($projNum)
+            . ($projName !== '' ? '&nbsp;&nbsp;&middot;&nbsp;&nbsp;' . $e($projName) : '');
     }
 
     $footerLines = $o['footerLines'] ?? [
@@ -91,9 +91,9 @@ function renderNotificationEmail(array $o): string {
     $teaserHtml .= $attachHtml;
 
     $buttonHtml = $btnUrl === '' ? '' :
-        '<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:24px auto 6px;">'
-        . '<tr><td style="background:' . $e($accent) . ';border-radius:24px;">'
-        . '<a href="' . $e($btnUrl) . '" style="display:inline-block;padding:13px 32px;color:#ffffff;'
+        '<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:28px auto 12px;">'
+        . '<tr><td style="background:' . $e($accent) . ';border-radius:28px;">'
+        . '<a href="' . $e($btnUrl) . '" style="display:inline-block;padding:14px 42px;color:#ffffff;'
         . 'font-size:14px;font-weight:700;text-decoration:none;">' . $e($btnLabel) . '</a>'
         . '</td></tr></table>';
 
@@ -113,14 +113,14 @@ function renderNotificationEmail(array $o): string {
           </td>
         </tr>
         <tr>
-          <td style="padding:16px 28px;">
+          <td style="padding:16px 28px 14px;border-bottom:1px solid #e2d9d9;">
             <div style="font-size:15px;color:#222222;">{$projLine}</div>
             <div style="font-size:13px;color:#6b6b6b;margin:3px 0 0;">{$projAddr}</div>
           </td>
         </tr>
         {$badgeRow}
         <tr>
-          <td style="padding:22px 28px;">
+          <td style="padding:24px 28px;">
             <div style="font-size:20px;font-weight:700;color:#222222;">{$headline}</div>
             {$metaHtml}
             {$teaserHtml}
