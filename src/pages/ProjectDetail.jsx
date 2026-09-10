@@ -8,7 +8,6 @@ import TimelineTab from './project-tabs/TimelineTab'
 import DailyLogsTab from './project-tabs/DailyLogsTab'
 import WeeklyReportsTab from './project-tabs/WeeklyReportsTab'
 import DocumentsTab from './project-tabs/DocumentsTab'
-import SubmittalsTab from './project-tabs/SubmittalsTab'
 import PunchListTab from './project-tabs/PunchListTab'
 import ComingSoonTab from './project-tabs/ComingSoonTab'
 import PhaseStepperPill from './project-tabs/PhaseStepperPill'
@@ -95,8 +94,8 @@ export default function ProjectDetail() {
     { key: 'daily-logs',  label: t('nav.dailyLogs'), icon: <LogsIcon /> },
     { key: 'weekly-reports', label: t('nav.weeklyReports'), icon: <ReportIcon /> },
     { key: 'documents',   label: t('nav.documents'), icon: <DocsIcon /> },
-    { key: 'rfis',        label: t('nav.rfis'),       icon: <RfiIcon /> },
-    { key: 'submittals',  label: t('nav.submittals'), icon: <SubmittalsIcon /> },
+    { key: 'rfis',        label: t('nav.rfis'),       icon: <RfiIcon />,        soon: true },
+    { key: 'submittals',  label: t('nav.submittals'), icon: <SubmittalsIcon />, soon: true },
     { key: 'punch-list',  label: t('nav.punchList'),  icon: <PunchIcon /> },
     { key: 'directory',   label: t('nav.directory'),  icon: <DirectoryIcon /> },
   ]
@@ -111,7 +110,7 @@ export default function ProjectDetail() {
       {tab === 'weekly-reports' && <WeeklyReportsTab projectNumber={projectNumber} targetReportId={targetReportId} />}
       {tab === 'documents'   && <DocumentsTab projectNumber={projectNumber} targetDocId={targetDocId} />}
       {tab === 'rfis'        && <ComingSoonTab subtitle={t('rfis.subtitle')} />}
-      {tab === 'submittals'  && <SubmittalsTab projectNumber={projectNumber} targetSubmittalId={targetSubmittalId} />}
+      {tab === 'submittals'  && <ComingSoonTab subtitle={t('submittals.subtitle')} />}
       {tab === 'punch-list'  && <PunchListTab projectNumber={projectNumber} targetItemId={targetItemId} />}
       {tab === 'directory'   && <ProjectDirectory projectNumber={projectNumber} fetchContacts={getProjectContacts} />}
     </>
@@ -152,9 +151,12 @@ export default function ProjectDetail() {
         {TABS.map((tb) => (
           <button key={tb.key} onClick={() => setTab(tb.key)}
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-              tab === tb.key ? 'border-brand-500 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+              tab === tb.key ? 'border-brand-500 text-brand-700'
+                : tb.soon ? 'border-transparent text-gray-300'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}>
             {tb.icon}{tb.label}
+            {tb.soon && <span className="text-[9px] font-bold uppercase bg-gray-100 text-gray-400 rounded px-1 py-0.5">{t('common.soon')}</span>}
           </button>
         ))}
       </div>
@@ -169,9 +171,12 @@ export default function ProjectDetail() {
             {TABS.map((tb) => (
               <button key={tb.key} onClick={() => setTab(tb.key)}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-colors ${
-                  tab === tb.key ? 'bg-brand-500 text-white' : 'text-gray-600 hover:bg-gray-50'
+                  tab === tb.key ? 'bg-brand-500 text-white'
+                    : tb.soon ? 'text-gray-300 hover:bg-gray-50'
+                    : 'text-gray-600 hover:bg-gray-50'
                 }`}>
                 {tb.icon}{tb.label}
+                {tb.soon && <span className="ml-auto text-[9px] font-bold uppercase bg-gray-100 text-gray-400 rounded px-1 py-0.5">{t('common.soon')}</span>}
               </button>
             ))}
           </nav>

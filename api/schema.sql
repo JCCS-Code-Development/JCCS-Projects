@@ -133,6 +133,10 @@ CREATE TABLE daily_logs (
   delays TEXT NULL,
   notes TEXT NULL,
   created_by INT UNSIGNED NOT NULL,
+  -- Denormalised at write time from the staff member's FieldClock name —
+  -- same pattern as weekly_reports.created_by_name (no local staff directory
+  -- to join against). NULL for logs created before this column existed.
+  created_by_name VARCHAR(150) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_project_date (project_number, log_date)
 );

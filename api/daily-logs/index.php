@@ -131,11 +131,11 @@ if ($method === 'GET') {
         $pdo->beginTransaction();
 
         $pdo->prepare(
-            'INSERT INTO daily_logs (project_number, log_date, weather, phase_id, work_performed, notes, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO daily_logs (project_number, log_date, weather, phase_id, work_performed, notes, created_by, created_by_name)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         )->execute([
             $projectNumber, $logDate, $weather, $phaseId,
-            sanitizeString($workPerformed), $notes, $auth['user_id'],
+            sanitizeString($workPerformed), $notes, $auth['user_id'], $auth['name'],
         ]);
         $logId = (int)$pdo->lastInsertId();
 
@@ -159,12 +159,16 @@ if ($method === 'GET') {
 
     // Every staff-created daily log is "an update uploaded to the project" —
     // notify + email every client with access to it.
+    $notifyExtra = ['metaLine' => 'Posted by ' . $auth['name']];
+    if (count($movedFiles) > 0) {
+        $notifyExtra['attachments'] = ['count' => count($movedFiles), 'label' => 'photos'];
+    }
     notifyProjectClients(
         $pdo, $projectNumber, 'daily_log_created',
         "New daily log on project #{$projectNumber}",
         $workPerformed,
         "/portal/projects/{$projectNumber}?tab=daily-logs&log={$logId}",
-        count($movedFiles) > 0 ? ['attachments' => ['count' => count($movedFiles), 'label' => 'photos']] : []
+        $notifyExtra
     );
 
     echo json_encode(['id' => $logId, 'message' => 'Daily log saved']);

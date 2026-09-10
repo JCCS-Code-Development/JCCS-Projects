@@ -51,7 +51,8 @@
     "name": "Nombre",
     "noProjectsYet": "Aún no hay proyectos.",
     "couldNotSave": "No se pudo guardar. Inténtalo de nuevo.",
-    "comingSoon": "Esta función está en la hoja de ruta a corto plazo — los registros diarios ya están disponibles."
+    "comingSoon": "Esta función está en la hoja de ruta a corto plazo — los registros diarios ya están disponibles.",
+    "soon": "Pronto"
   },
   "dashboard": {
     "title": "Panel",
@@ -119,7 +120,8 @@
     "postComment": "Publicar",
     "photosRequired": "Se requiere al menos una foto.",
     "addPhotos": "+ Agregar fotos",
-    "photosSelected": "{{count}} foto(s) seleccionada(s)"
+    "photosSelected": "{{count}} foto(s) seleccionada(s)",
+    "loggedBy": "por {{name}}"
   },
   "weeklyReports": {
     "title": "Reportes semanales",

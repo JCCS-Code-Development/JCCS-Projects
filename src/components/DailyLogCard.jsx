@@ -192,6 +192,7 @@ export default function DailyLogCard({ log, location, listComments, createCommen
         <p className="text-sm font-bold text-gray-900">{log.log_date}</p>
         <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
           <ClockIcon s="w-3.5 h-3.5" /> {t('dailyLogs.loggedAt', { time: fmtDateTime(log.created_at) })}
+          {log.created_by_name && <span>· {t('dailyLogs.loggedBy', { name: log.created_by_name })}</span>}
         </p>
       </div>
 

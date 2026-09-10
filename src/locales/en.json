@@ -51,7 +51,8 @@
     "name": "Name",
     "noProjectsYet": "No projects yet.",
     "couldNotSave": "Could not save. Try again.",
-    "comingSoon": "This feature is on the near-term roadmap — daily logs are live today."
+    "comingSoon": "This feature is on the near-term roadmap — daily logs are live today.",
+    "soon": "Soon"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -119,7 +120,8 @@
     "postComment": "Post",
     "photosRequired": "At least one photo is required.",
     "addPhotos": "+ Add photos",
-    "photosSelected": "{{count}} photo(s) selected"
+    "photosSelected": "{{count}} photo(s) selected",
+    "loggedBy": "by {{name}}"
   },
   "weeklyReports": {
     "title": "Weekly Reports",
