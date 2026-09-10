@@ -43,7 +43,7 @@ function sendClientInvite(PDO $pdo, int $clientId): bool {
     $token  = issueClientSetupToken($pdo, $clientId, 'setup');
     $origin = rtrim(FRONTEND_ORIGIN, '/');
     $opts = [
-        'appName'    => defined('FROM_NAME') && FROM_NAME ? FROM_NAME : 'JCCS Projects',
+        'appName'    => 'JCCS Projects', // body copy only; the From-line name is FROM_NAME in config
         'name'       => $client['name'],
         'email'      => $client['email'],
         'projects'   => $projects,

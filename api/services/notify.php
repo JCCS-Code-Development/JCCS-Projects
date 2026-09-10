@@ -69,7 +69,7 @@ function notifyProjectClients(PDO $pdo, string $projectNumber, string $type, str
     $baseOpts = [
         'attachments'    => $extra['attachments'] ?? null,
         'metaLine'       => $extra['metaLine'] ?? '',
-        'appName'        => defined('FROM_NAME') && FROM_NAME ? FROM_NAME : 'JCCS Projects',
+        'appName'        => 'JCCS Projects', // used in body copy; the From-line name is FROM_NAME in config
         'badge'          => notificationBadgeLabel($type),
         'headline'       => $title,
         'projectNumber'  => $projectNumber,
