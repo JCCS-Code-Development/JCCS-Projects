@@ -213,18 +213,31 @@ CREATE TABLE notifications (
 --    Documents/RFIs/Submittals/Punch List can follow the exact same
 --    CRUD+role-gating pattern established by daily-logs/*.php) ──────────
 
--- Static, fixed set of divisions (not user-creatable) — 'estimate' is a
--- placeholder category with no upload UI yet (estimates will eventually
--- come from jccs-inventory's data instead of a manual upload here).
+-- Static, fixed set of divisions (not user-creatable). 'estimate' and
+-- 'invoice' are also the estimates & invoices depot (api/financial-docs/*) —
+-- filed automatically from a Bcc'd InvoiceToGo mailbox (api/cron/
+-- ingest-invoicetogo.php) or uploaded manually; 'addon_estimate' is a plain
+-- uploadable category shown alongside 'estimate' in the Documents tab.
+-- Project '0000' is reserved as the depot's "Unfiled" tray.
 CREATE TABLE documents (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   project_number VARCHAR(4) NOT NULL,
-  category ENUM('drawing','scope','estimate','addon_estimate','contract','permit') NOT NULL,
+  category ENUM('drawing','scope','estimate','addon_estimate','contract','permit','invoice') NOT NULL,
   title VARCHAR(200) NOT NULL,
+  -- Financial-depot metadata — nullable, only populated for estimate/invoice
+  -- rows (manual upload or email ingest). See api/financial-docs/_ingest.php.
+  doc_number       VARCHAR(60)   NULL,
+  amount           DECIMAL(12,2) NULL,
+  issue_date       DATE          NULL,
+  due_date         DATE          NULL,
+  doc_status       VARCHAR(20)   NULL,  -- draft|sent|paid|void|accepted (free text)
+  source           ENUM('manual','email','api') NOT NULL DEFAULT 'manual',
+  match_confidence VARCHAR(10)   NULL,  -- high | low | none (email ingest only)
   is_active TINYINT(1) DEFAULT 1,
   created_by INT UNSIGNED NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_project_category (project_number, category)
+  INDEX idx_project_category (project_number, category),
+  INDEX idx_documents_financial (category, project_number, is_active)
 );
 
 -- Every upload against a document is append-only (never overwritten) so a

@@ -1,13 +1,16 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- JCCS Projects — estimates & invoices depot
--- Run once, by hand, against the production `jccs_projects` database.
+-- JCCS Projects — estimates & invoices depot + Add-On Estimates category
+-- Run once, by hand, against the production `jccs_projects` (aka `projects`)
+-- database. Confirmed against a live DESCRIBE documents on 2026-09-15 — prod
+-- was still at the original 5-category baseline, so this is a single clean
+-- jump straight to the current schema.sql shape.
 --
--- Additive: the `documents` table gains an 'invoice' category (it already had
--- 'estimate') and a handful of nullable financial-metadata columns. Nothing
--- existing is rewritten — every current document keeps working unchanged.
--- Estimates & invoices are just documents in their own categories, so they
--- reuse append-only versioning, preview, history, project scoping and
--- notifications for free.
+-- Additive only: `documents` gains 'addon_estimate' and 'invoice' categories
+-- (it already had 'estimate') and a handful of nullable financial-metadata
+-- columns. Nothing existing is rewritten — every current document keeps
+-- working unchanged. Estimates & invoices are just documents in their own
+-- categories, so they reuse append-only versioning, preview, history,
+-- project scoping and notifications for free.
 --
 -- Reserved project number '0000' is the "Unfiled" tray: a doc the email
 -- ingest couldn't confidently match to a real project lands there for a
@@ -15,7 +18,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 ALTER TABLE documents
-  MODIFY category ENUM('drawing','scope','estimate','contract','permit','invoice') NOT NULL;
+  MODIFY category ENUM('drawing','scope','estimate','addon_estimate','contract','permit','invoice') NOT NULL;
 
 ALTER TABLE documents
   ADD COLUMN doc_number       VARCHAR(60)   NULL AFTER title,
