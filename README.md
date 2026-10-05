@@ -123,8 +123,37 @@ FieldClock's login — see Inventory's `.env.local` for the same pattern.
   - Project Directory — client contacts / administrative JCCS / on-field PMs.
   - Notification center — in-app "pending until resolved/clicked," plus email
     for every client-visible update.
+  - Quote Requests / Site Walks (staff only — not in the client portal) — see
+    below.
 - **Scaffolded (schema + nav placeholder, no endpoints yet)**: RFIs, and the
   Users admin page (currently `projects_staff_roles`/`clients` rows are managed
   by hand in the database — see First-time setup above). Each should follow the
   exact CRUD + `pmProjectScope()` role-gating pattern already established
   throughout `api/`.
+
+## Quote Requests & Site Walks
+
+Intake and tracking for estimates. The estimate itself is still priced and sent
+from InvoiceToGo; this app owns everything before and after that.
+
+- **Roles** — a third staff role, `field` (Field Manager), alongside admin/pm.
+  `requireAuth()` is deny-by-default: it only admits admin + pm unless an
+  endpoint opts in (`requireAuth(ALL_STAFF_ROLES)` / `requireAuth(QR_ROLES)`),
+  so field managers get 403 on every project/log/document/user endpoint and
+  see only the Site Walks screen. PMs have no access to quote requests.
+- **Flow** — field manager (or the office, for phone/email requests) creates a
+  request → submits → admin reviews, can ask the field for missing info, writes
+  the Scope of Work, approves (locks it) → copies it into InvoiceToGo → enters
+  the IT2G Estimate # → marks it sent → accepted / declined. Every transition
+  goes through `api/quote-requests/action.php`, whose rules live in
+  `QR_ACTIONS` (`api/quote-requests/_common.php`); every change is logged to
+  `quote_request_activity`, and scope edits / submissions / approvals are
+  snapshotted in `quote_request_versions`.
+- **Also** — site-walk photos (resized on the phone before upload, retry-safe via
+  `client_uid`), reference documents, an internal comment thread, in-app
+  notifications, a Customers list with contacts, and an admin-editable
+  Materials library (paint colors, laminates, Corian colors, flooring...).
+- **Production setup** — run `api/migrations/2026-10-05_quote_requests.sql` once
+  against the production database, then give field managers the Field Manager
+  role from Users.
+

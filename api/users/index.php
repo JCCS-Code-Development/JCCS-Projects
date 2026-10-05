@@ -21,7 +21,7 @@ requireAdmin($auth);
 $pdo    = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];
 
-const VALID_ROLES = ['admin', 'pm'];
+const VALID_ROLES = ['admin', 'pm', 'field'];
 
 function attachProjectAccess(PDO $pdo, array $users): array {
     if (!$users) return [];
@@ -46,7 +46,7 @@ if ($method === 'GET') {
     $fcId = (int)$body['fieldclock_user_id'];
     $role = $body['role'];
     if (!in_array($role, VALID_ROLES, true)) {
-        http_response_code(422); exit(json_encode(['error' => 'Role must be admin or pm']));
+        http_response_code(422); exit(json_encode(['error' => 'Role must be admin, pm or field']));
     }
 
     $dupe = $pdo->prepare('SELECT fieldclock_user_id FROM projects_staff_roles WHERE fieldclock_user_id = ?');

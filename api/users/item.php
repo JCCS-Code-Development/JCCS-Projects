@@ -31,8 +31,8 @@ if ($method === 'PUT') {
         $sets[] = 'phone = ?'; $params[] = $body['phone'] !== '' ? sanitizeString($body['phone']) : null;
     }
     if (array_key_exists('role', $body)) {
-        if (!in_array($body['role'], ['admin', 'pm'], true)) {
-            http_response_code(422); exit(json_encode(['error' => 'Role must be admin or pm']));
+        if (!in_array($body['role'], ['admin', 'pm', 'field'], true)) {
+            http_response_code(422); exit(json_encode(['error' => 'Role must be admin, pm or field']));
         }
         if ($id === $auth['user_id'] && $body['role'] !== 'admin') {
             http_response_code(422); exit(json_encode(['error' => "You can't demote your own account"]));

@@ -8,7 +8,7 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/jwt.php';
 require_once __DIR__ . '/../middleware/auth.php';
 
-$auth = requireAuth();
+$auth = requireAuth(ALL_STAFF_ROLES);
 if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') { http_response_code(405); exit; }
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;

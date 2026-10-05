@@ -13,6 +13,10 @@ import ProjectsHome from './pages/ProjectsHome'
 import ProjectDetail from './pages/ProjectDetail'
 import DailyLogDetail from './pages/DailyLogDetail'
 import Users from './pages/Users'
+import QuotesHome from './pages/quotes/QuotesHome'
+import QuoteDetail from './pages/quotes/QuoteDetail'
+import Customers from './pages/Customers'
+import MaterialsLibrary from './pages/MaterialsLibrary'
 
 import PortalHome from './pages/portal/PortalHome'
 import PortalProjectDetail from './pages/portal/PortalProjectDetail'
@@ -22,7 +26,8 @@ import ClientSetup from './pages/portal/ClientSetup'
 function RoleRedirect() {
   const isStaffAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isClientAuthenticated = useClientAuthStore((s) => s.isAuthenticated)
-  if (isStaffAuthenticated) return <Navigate to="/" replace />
+  const staffRole = useAuthStore((s) => s.user?.role)
+  if (isStaffAuthenticated) return <Navigate to={staffRole === 'field' ? '/quotes' : '/'} replace />
   if (isClientAuthenticated) return <Navigate to="/portal" replace />
   return <Navigate to="/login" replace />
 }
@@ -38,16 +43,27 @@ export default function App() {
       {/* Client account-setup from the invite email — unauthenticated. */}
       <Route path="/portal/setup/:token" element={<ClientSetup />} />
 
-      {/* Staff (Admin / PM-Lead) */}
+      {/* Staff (Admin / PM-Lead / Field Manager) */}
       <Route element={<ProtectedRoute />}>
         <Route element={<StaffLayout />}>
-          <Route path="/" element={<ProjectsHome />} />
-          <Route path="/projects/:projectNumber" element={<ProjectDetail />} />
-          <Route path="/projects/:projectNumber/daily-logs/:id" element={<DailyLogDetail />} />
+          {/* Projects — field managers are site-walk only and never see these */}
+          <Route element={<RoleRoute allowedRoles={['admin', 'pm']} />}>
+            <Route path="/" element={<ProjectsHome />} />
+            <Route path="/projects/:projectNumber" element={<ProjectDetail />} />
+            <Route path="/projects/:projectNumber/daily-logs/:id" element={<DailyLogDetail />} />
+          </Route>
+
+          {/* Quote requests / site walks — admins + field managers, not PMs */}
+          <Route element={<RoleRoute allowedRoles={['admin', 'field']} />}>
+            <Route path="/quotes" element={<QuotesHome />} />
+            <Route path="/quotes/:id" element={<QuoteDetail />} />
+          </Route>
 
           {/* Admin only */}
           <Route element={<RoleRoute allowedRoles={['admin']} />}>
             <Route path="/users" element={<Users />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/library" element={<MaterialsLibrary />} />
           </Route>
         </Route>
       </Route>

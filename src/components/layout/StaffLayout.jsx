@@ -12,6 +12,9 @@ import { listNotifications, resolveNotification } from '../../api/notifications'
 // ── Icons ─────────────────────────────────────────────────────────
 const ProjectsIcon = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5A2.5 2.5 0 015.5 5h4l2 2h7A2.5 2.5 0 0121 9.5v7A2.5 2.5 0 0118.5 19h-13A2.5 2.5 0 013 16.5v-9z"/></svg>
 const UsersIcon    = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+const QuotesIcon   = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+const CustomersIcon = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01"/></svg>
+const LibraryIcon  = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
 const LogoutIcon   = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline strokeLinecap="round" strokeLinejoin="round" points="16 17 21 12 16 7"/><line strokeLinecap="round" x1="21" y1="12" x2="9" y2="12"/></svg>
 
 function SidebarItem({ to, icon, label, end }) {
@@ -27,11 +30,11 @@ function SidebarItem({ to, icon, label, end }) {
   )
 }
 
-// Deliberately just two destinations — "Projects" is the app's home (the
-// outermost layer of the company → project → tabs drill-down), and admins
-// get "Users" alongside it. Everything else (Daily Logs, Documents, RFIs,
-// Submittals, Punch List) lives one level deeper, inside a selected
-// project, so there's no "More" sheet to speak of anymore.
+// "Projects" is the app's home (the outermost layer of the company → project
+// → tabs drill-down). Admins also get Quotes + Users, and on desktop the
+// quote-related Customers / Materials pages (on phones those are reached
+// from the Quotes page header to keep the bottom bar short). Field managers
+// get a single destination: their Site Walks.
 export default function StaffLayout() {
   const { t } = useTranslation()
   const [profileOpen, setProfileOpen] = useState(false)
@@ -40,12 +43,20 @@ export default function StaffLayout() {
   const { refreshToken, logout, user } = useAuthStore()
   const role = user?.role
   const isAdmin = role === 'admin'
-  const ROLE_LABELS = { admin: t('role.admin'), pm: t('role.pm') }
+  const ROLE_LABELS = { admin: t('role.admin'), pm: t('role.pm'), field: t('role.field') }
 
-  const NAV = [
+  const NAV = role === 'field' ? [
+    { to: '/quotes', icon: <QuotesIcon />, label: t('nav.siteWalks') },
+  ] : [
     { to: '/', icon: <ProjectsIcon />, label: t('nav.projects'), end: true },
-    ...(isAdmin ? [{ to: '/users', icon: <UsersIcon />, label: t('nav.users') }] : []),
+    ...(isAdmin ? [
+      { to: '/quotes', icon: <QuotesIcon />, label: t('nav.quotes') },
+      { to: '/customers', icon: <CustomersIcon />, label: t('nav.customers'), desktopOnly: true },
+      { to: '/library', icon: <LibraryIcon />, label: t('nav.library'), desktopOnly: true },
+      { to: '/users', icon: <UsersIcon />, label: t('nav.users') },
+    ] : []),
   ]
+  const MOBILE_NAV = NAV.filter((item) => !item.desktopOnly)
 
   const handleLogout = async () => {
     try { await fieldclockLogout(refreshToken) } catch {}
@@ -68,7 +79,7 @@ export default function StaffLayout() {
           <p className="text-brand-400/60 text-xs">{ROLE_LABELS[role] ?? role}</p>
         </div>
         <nav className="flex-1 py-3 overflow-y-auto">
-          {NAV.map(item => <SidebarItem key={item.to} {...item} />)}
+          {NAV.map((item) => <SidebarItem key={item.to} to={item.to} icon={item.icon} label={item.label} end={item.end} />)}
         </nav>
         <div className="border-t border-brand-700/60">
           <div className="px-5 py-3">
@@ -122,7 +133,7 @@ export default function StaffLayout() {
         {/* ── Mobile bottom nav ────────────────────────────── */}
         <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 flex z-40"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)', boxShadow: '0 -1px 6px rgba(0,0,0,0.06)' }}>
-          {NAV.map(item => (
+          {MOBILE_NAV.map(item => (
             <NavLink key={item.to} to={item.to} end={item.end}
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center justify-center py-3 gap-0.5 text-[10px] font-semibold transition-colors ${

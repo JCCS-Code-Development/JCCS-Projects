@@ -10,7 +10,13 @@
 //                         secret, separate table) and returns which
 //                         project_numbers that client may see.
 
-function requireAuth(): array {
+// $roles is deny-by-default: the 'field' role (site-walk only) is NOT in the
+// default list, so every existing project/log/document endpoint rejects field
+// managers without needing its own check. Endpoints a field manager may use
+// (verify, notifications, quote requests) opt in explicitly.
+const ALL_STAFF_ROLES = ['admin', 'pm', 'field'];
+
+function requireAuth(array $roles = ['admin', 'pm']): array {
     $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
     if (!str_starts_with($auth, 'Bearer ')) {
         http_response_code(401);
@@ -30,6 +36,10 @@ function requireAuth(): array {
     if (!$access) {
         http_response_code(403);
         exit(json_encode(['error' => 'Not provisioned for Projects']));
+    }
+    if (!in_array($access['role'], $roles, true)) {
+        http_response_code(403);
+        exit(json_encode(['error' => 'Forbidden']));
     }
 
     return [

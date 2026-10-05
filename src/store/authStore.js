@@ -7,7 +7,7 @@ import { persist } from 'zustand/middleware'
 export const useAuthStore = create(
   persist(
     (set) => ({
-      user: null,          // { id, name, role: 'admin' | 'pm' }
+      user: null,          // { id, name, role: 'admin' | 'pm' | 'field' }
       token: null,          // FieldClock-issued JWT, validated locally by the Projects API
       refreshToken: null,   // FieldClock refresh token
       isAuthenticated: false,

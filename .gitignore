@@ -25,3 +25,5 @@ api/uploads/submittals/*
 api/uploads/punch-items/*
 !api/uploads/punch-items/.gitkeep
 api/mail_outbox.log
+api/uploads/quote-requests/*
+!api/uploads/quote-requests/.gitkeep

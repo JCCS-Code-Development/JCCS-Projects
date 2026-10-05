@@ -164,7 +164,7 @@ function StaffSection({ projects }) {
                       </td>
                       <td className="px-4 py-3"><Badge variant={u.role === 'admin' ? 'active' : 'inactive'}>{t(`role.${u.role}`)}</Badge></td>
                       <td className="px-4 py-3 text-xs text-gray-500">
-                        {u.role === 'admin' ? t('users.allProjects') : (u.project_numbers.length ? u.project_numbers.join(', ') : '—')}
+                        {u.role === 'admin' ? t('users.allProjects') : u.role === 'field' ? t('nav.siteWalks') : (u.project_numbers.length ? u.project_numbers.join(', ') : '—')}
                       </td>
                       <td className="px-4 py-3"><Badge variant={u.is_active ? 'active' : 'inactive'}>{u.is_active ? t('users.active') : t('users.inactive')}</Badge></td>
                       <td className="px-4 py-3 text-right">
@@ -248,6 +248,7 @@ function StaffSection({ projects }) {
             <select value={form.role} onChange={set('role')} disabled={modal !== 'create' && modal?.fieldclock_user_id === myId}
               className="rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-gray-50 disabled:text-gray-400">
               <option value="pm">{t('role.pm')}</option>
+              <option value="field">{t('role.field')}</option>
               <option value="admin">{t('role.admin')}</option>
             </select>
           </div>

@@ -10,7 +10,7 @@ require_once __DIR__ . '/../middleware/auth.php';
 
 // No POST here — notifications are only ever created server-side by other
 // endpoints (via services/notify.php), never directly by a user.
-$auth = requireAuth();
+$auth = requireAuth(ALL_STAFF_ROLES);
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') { http_response_code(405); exit; }
 
 $pdo    = getPDO();

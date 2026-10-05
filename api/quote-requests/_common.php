@@ -1,0 +1,297 @@
+<?php
+// Shared helpers for the quote-request (site walk) endpoints.
+//
+// Visibility: admins see every request; field managers see only requests
+// they created or were assigned to walk (field_manager_id). PMs have no
+// access at all — every quote endpoint calls requireAuth(QR_ROLES), which
+// leaves 'pm' out.
+//
+// Field managers may only edit while a request is still in their hands
+// (draft / needs_info). Once approved, the scope is locked until an admin
+// reopens it.
+
+require_once __DIR__ . '/../services/notify.php';
+
+const QR_ROLES = ['admin', 'field'];
+
+const QR_STATUSES = ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating', 'sent', 'accepted', 'declined', 'cancelled'];
+const QR_FIELD_EDITABLE_STATUSES = ['draft', 'needs_info'];
+const QR_ESTIMATE_TYPES = ['standard', 'addon', 'emergency', 'alternative', 'option1', 'option2', 'option3', 'line_item'];
+const QR_SOURCES = ['email', 'text', 'phone', 'site_meeting', 'work_order', 'other'];
+const QR_PRIORITIES = ['low', 'normal', 'high', 'urgent'];
+
+const QR_UPLOAD_DIR = __DIR__ . '/../uploads/quote-requests';
+
+function qrRequestNo(int $id): string {
+    return 'Q-' . str_pad((string)$id, 4, '0', STR_PAD_LEFT);
+}
+
+function qrIsAdmin(array $auth): bool {
+    return $auth['role'] === 'admin';
+}
+
+// Loads a request and enforces visibility, exiting 404 for anything the
+// caller may not see (404 rather than 403 so ids can't be probed).
+function qrLoadVisible(PDO $pdo, array $auth, int $id): array {
+    $stmt = $pdo->prepare('SELECT * FROM quote_requests WHERE id = ?');
+    $stmt->execute([$id]);
+    $row = $stmt->fetch();
+    if (!$row || !qrCanView($auth, $row)) {
+        http_response_code(404); exit(json_encode(['error' => 'Quote request not found']));
+    }
+    return $row;
+}
+
+function qrCanView(array $auth, array $row): bool {
+    if (qrIsAdmin($auth)) return true;
+    return (int)$row['created_by'] === $auth['user_id'] || (int)$row['field_manager_id'] === $auth['user_id'];
+}
+
+function qrFieldCanEdit(array $auth, array $row): bool {
+    return !qrIsAdmin($auth) && qrCanView($auth, $row) && in_array($row['status'], QR_FIELD_EDITABLE_STATUSES, true);
+}
+
+function qrLogActivity(PDO $pdo, int $requestId, array $auth, string $action, ?string $from = null, ?string $to = null, ?string $note = null): void {
+    $pdo->prepare(
+        'INSERT INTO quote_request_activity (quote_request_id, action, from_status, to_status, note, actor_id, actor_name) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    )->execute([$requestId, $action, $from, $to, $note !== null ? mb_substr($note, 0, 500) : null, $auth['user_id'], $auth['name']]);
+}
+
+function qrSnapshot(PDO $pdo, array $row, array $auth, string $kind, ?string $note = null): void {
+    $pdo->prepare(
+        'INSERT INTO quote_request_versions (quote_request_id, kind, form_json, scope_text, note, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    )->execute([$row['id'], $kind, $row['form_json'], $row['scope_text'], $note, $auth['user_id'], $auth['name']]);
+}
+
+// notifications.project_number is NOT NULL; requests for a new job have no
+// project yet, so they carry ''.
+function qrNotifyUser(PDO $pdo, ?int $userId, array $row, string $type, string $title, ?string $body, ?int $skipUserId = null): void {
+    if (!$userId || $userId === $skipUserId) return;
+    notifyStaff($pdo, $userId, (string)($row['project_number'] ?? ''), $type, $title, $body !== null ? mb_substr($body, 0, 255) : null, '/quotes/' . $row['id']);
+}
+
+// The assigned estimator if there is one, otherwise every active admin.
+function qrNotifyOffice(PDO $pdo, array $row, string $type, string $title, ?string $body, ?int $skipUserId = null): void {
+    if (!empty($row['assigned_to'])) {
+        qrNotifyUser($pdo, (int)$row['assigned_to'], $row, $type, $title, $body, $skipUserId);
+        return;
+    }
+    $ids = $pdo->query("SELECT fieldclock_user_id FROM projects_staff_roles WHERE role = 'admin' AND is_active = 1")->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($ids as $id) qrNotifyUser($pdo, (int)$id, $row, $type, $title, $body, $skipUserId);
+}
+
+// The field side of a request: whoever is walking it, else whoever created it
+// (when that was a field manager).
+function qrFieldUserId(array $row): ?int {
+    if (!empty($row['field_manager_id'])) return (int)$row['field_manager_id'];
+    return null;
+}
+
+function qrStaffName(PDO $pdo, int $userId, array $roles): ?string {
+    $placeholders = implode(',', array_fill(0, count($roles), '?'));
+    $stmt = $pdo->prepare("SELECT name FROM projects_staff_roles WHERE fieldclock_user_id = ? AND is_active = 1 AND role IN ($placeholders)");
+    $stmt->execute(array_merge([$userId], $roles));
+    $name = $stmt->fetchColumn();
+    return $name === false ? null : $name;
+}
+
+function qrValidDate(?string $v): ?string {
+    if ($v === null || $v === '') return null;
+    $d = DateTime::createFromFormat('Y-m-d', $v);
+    if (!$d || $d->format('Y-m-d') !== $v) {
+        http_response_code(422); exit(json_encode(['error' => 'Invalid date: ' . $v]));
+    }
+    return $v;
+}
+
+function qrValidDateTime(?string $v): ?string {
+    if ($v === null || $v === '') return null;
+    try { return (new DateTime($v))->format('Y-m-d H:i:s'); }
+    catch (Throwable $e) { http_response_code(422); exit(json_encode(['error' => 'Invalid date/time: ' . $v])); }
+}
+
+// Shapes a DB row for the API. Field managers don't get the office-only
+// follow-up settings, decline reason or filed-document link.
+function qrPresent(array $row, array $auth): array {
+    $out = $row;
+    $out['id'] = (int)$row['id'];
+    $out['request_no'] = qrRequestNo((int)$row['id']);
+    foreach (['customer_id', 'contact_id', 'calendar_event_id', 'field_manager_id', 'assigned_to', 'document_id', 'created_by', 'follow_up_days'] as $k) {
+        if (array_key_exists($k, $row)) $out[$k] = $row[$k] !== null ? (int)$row[$k] : null;
+    }
+    $out['form'] = !empty($row['form_json']) ? json_decode($row['form_json'], true) : null;
+    unset($out['form_json']);
+    if (!qrIsAdmin($auth)) {
+        unset($out['decline_reason'], $out['follow_up_days'], $out['last_reminded_at'], $out['document_id']);
+    }
+    return $out;
+}
+
+// Applies the editable request fields present in $body to $sets/$params.
+// Shared by create (index.php POST) and update (item.php PATCH).
+function qrCollectFields(PDO $pdo, array $body, array $auth, array &$sets, array &$params): void {
+    $str = function (string $key, int $max) use ($body, &$sets, &$params) {
+        if (!array_key_exists($key, $body)) return;
+        $v = $body[$key] === null ? '' : sanitizeString($body[$key]);
+        $sets[] = "$key = ?"; $params[] = $v === '' ? null : mb_substr($v, 0, $max);
+    };
+
+    if (array_key_exists('title', $body)) {
+        $title = sanitizeString($body['title']);
+        if ($title === '') { http_response_code(422); exit(json_encode(['error' => 'Title is required'])); }
+        $sets[] = 'title = ?'; $params[] = mb_substr($title, 0, 200);
+    }
+    if (array_key_exists('work_type', $body)) {
+        if (!in_array($body['work_type'], ['new', 'addon'], true)) { http_response_code(422); exit(json_encode(['error' => 'Invalid work type'])); }
+        $sets[] = 'work_type = ?'; $params[] = $body['work_type'];
+    }
+    if (array_key_exists('estimate_type', $body)) {
+        if (!in_array($body['estimate_type'], QR_ESTIMATE_TYPES, true)) { http_response_code(422); exit(json_encode(['error' => 'Invalid estimate type'])); }
+        $sets[] = 'estimate_type = ?'; $params[] = $body['estimate_type'];
+    }
+    if (array_key_exists('priority', $body)) {
+        if (!in_array($body['priority'], QR_PRIORITIES, true)) { http_response_code(422); exit(json_encode(['error' => 'Invalid priority'])); }
+        $sets[] = 'priority = ?'; $params[] = $body['priority'];
+    }
+    if (array_key_exists('request_source', $body)) {
+        $src = $body['request_source'] ?: null;
+        if ($src !== null && !in_array($src, QR_SOURCES, true)) { http_response_code(422); exit(json_encode(['error' => 'Invalid request source'])); }
+        $sets[] = 'request_source = ?'; $params[] = $src;
+    }
+    if (array_key_exists('project_number', $body)) {
+        $pn = trim((string)($body['project_number'] ?? ''));
+        if ($pn !== '' && !preg_match('/^\d{4}$/', $pn)) { http_response_code(422); exit(json_encode(['error' => 'Estimate # must be exactly 4 digits'])); }
+        $sets[] = 'project_number = ?'; $params[] = $pn === '' ? null : $pn;
+    }
+    if (array_key_exists('customer_id', $body)) {
+        $cid = $body['customer_id'] ? (int)$body['customer_id'] : null;
+        if ($cid) {
+            $chk = $pdo->prepare('SELECT id FROM customers WHERE id = ?'); $chk->execute([$cid]);
+            if (!$chk->fetch()) { http_response_code(422); exit(json_encode(['error' => 'Customer not found'])); }
+        }
+        $sets[] = 'customer_id = ?'; $params[] = $cid;
+    }
+    if (array_key_exists('contact_id', $body)) {
+        $kid = $body['contact_id'] ? (int)$body['contact_id'] : null;
+        if ($kid) {
+            $chk = $pdo->prepare('SELECT id FROM customer_contacts WHERE id = ?'); $chk->execute([$kid]);
+            if (!$chk->fetch()) { http_response_code(422); exit(json_encode(['error' => 'Contact not found'])); }
+        }
+        $sets[] = 'contact_id = ?'; $params[] = $kid;
+    }
+    $str('facility', 200);
+    $str('location_detail', 255);
+    $str('original_estimate_no', 20);
+    $str('related_ref', 60);
+    $str('description', 20000);
+    if (array_key_exists('needed_by', $body))       { $sets[] = 'needed_by = ?';       $params[] = qrValidDate($body['needed_by'] ?: null); }
+    if (array_key_exists('site_visit_date', $body)) { $sets[] = 'site_visit_date = ?'; $params[] = qrValidDate($body['site_visit_date'] ?: null); }
+    if (array_key_exists('form', $body)) {
+        if ($body['form'] !== null && !is_array($body['form'])) { http_response_code(422); exit(json_encode(['error' => 'form must be an object'])); }
+        $json = $body['form'] === null ? null : json_encode($body['form'], JSON_UNESCAPED_UNICODE);
+        if ($json !== null && strlen($json) > 4 * 1024 * 1024) { http_response_code(422); exit(json_encode(['error' => 'Site-walk form is too large'])); }
+        $sets[] = 'form_json = ?'; $params[] = $json;
+    }
+
+    // Office-only fields.
+    if (!qrIsAdmin($auth)) return;
+
+    if (array_key_exists('field_manager_id', $body)) {
+        $fid = $body['field_manager_id'] ? (int)$body['field_manager_id'] : null;
+        $name = null;
+        if ($fid) {
+            $name = qrStaffName($pdo, $fid, ['field', 'admin']);
+            if ($name === null) { http_response_code(422); exit(json_encode(['error' => 'Field manager not found'])); }
+        }
+        $sets[] = 'field_manager_id = ?'; $params[] = $fid;
+        $sets[] = 'field_manager_name = ?'; $params[] = $name;
+    }
+    if (array_key_exists('assigned_to', $body)) {
+        $aid = $body['assigned_to'] ? (int)$body['assigned_to'] : null;
+        $name = null;
+        if ($aid) {
+            $name = qrStaffName($pdo, $aid, ['admin']);
+            if ($name === null) { http_response_code(422); exit(json_encode(['error' => 'Estimator must be an active admin'])); }
+        }
+        $sets[] = 'assigned_to = ?'; $params[] = $aid;
+        $sets[] = 'assigned_to_name = ?'; $params[] = $name;
+    }
+    if (array_key_exists('follow_up_days', $body)) {
+        $days = (int)$body['follow_up_days'];
+        if ($days < 1 || $days > 90) { http_response_code(422); exit(json_encode(['error' => 'Follow-up must be 1–90 days'])); }
+        $sets[] = 'follow_up_days = ?'; $params[] = $days;
+    }
+    if (array_key_exists('site_visit_at', $body)) { $sets[] = 'site_visit_at = ?'; $params[] = qrValidDateTime($body['site_visit_at'] ?: null); }
+    if (array_key_exists('estimate_number', $body)) {
+        $en = trim((string)($body['estimate_number'] ?? ''));
+        if ($en !== '' && !preg_match('/^[A-Za-z0-9-]{1,20}$/', $en)) { http_response_code(422); exit(json_encode(['error' => 'Invalid estimate #'])); }
+        $sets[] = 'estimate_number = ?'; $params[] = $en === '' ? null : $en;
+    }
+}
+
+// Shared upload validation. Returns [tmpPath, ext, originalName].
+function qrAcceptUpload(array $allowedMime, int $maxBytes): array {
+    if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(422); exit(json_encode(['error' => 'No file uploaded']));
+    }
+    $file = $_FILES['file'];
+    if ($file['size'] > $maxBytes) {
+        http_response_code(422); exit(json_encode(['error' => 'File is too large (' . round($maxBytes / 1048576) . 'MB max)']));
+    }
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $file['tmp_name']);
+    if (!isset($allowedMime[$mime])) {
+        http_response_code(422); exit(json_encode(['error' => 'Unsupported file type']));
+    }
+    return [$file['tmp_name'], $allowedMime[$mime], mb_substr(basename((string)$file['name']), 0, 255)];
+}
+
+function qrStoreUpload(int $requestId, string $tmp, string $ext): string {
+    if (!is_dir(QR_UPLOAD_DIR)) { mkdir(QR_UPLOAD_DIR, 0755, true); }
+    $filename = "{$requestId}-" . bin2hex(random_bytes(8)) . ".{$ext}";
+    if (!move_uploaded_file($tmp, QR_UPLOAD_DIR . '/' . $filename)) {
+        http_response_code(500); exit(json_encode(['error' => 'Could not save the file']));
+    }
+    return "quote-requests/{$filename}";
+}
+
+function qrFileUrl(string $relativePath): string {
+    return APP_URL . '/uploads/' . $relativePath;
+}
+
+// ── Workflow ────────────────────────────────────────────────────────────────
+// action => [who, from-statuses, to-status]. The single source of truth for
+// both action.php (enforcement) and the detail payload's `actions` list
+// (which buttons the UI shows).
+const QR_ACTIONS = [
+    'submit'        => ['roles' => ['admin', 'field'], 'from' => ['draft', 'needs_info'],             'to' => 'submitted'],
+    'start_review'  => ['roles' => ['admin'],          'from' => ['draft', 'submitted'],              'to' => 'in_review'],
+    'request_info'  => ['roles' => ['admin'],          'from' => ['submitted', 'in_review'],          'to' => 'needs_info'],
+    'approve'       => ['roles' => ['admin'],          'from' => ['submitted', 'in_review'],          'to' => 'approved'],
+    'reopen'        => ['roles' => ['admin'],          'from' => ['approved', 'estimating'],          'to' => 'in_review'],
+    'set_estimate'  => ['roles' => ['admin'],          'from' => ['approved', 'estimating', 'sent'],  'to' => null], // approved→estimating, else unchanged
+    'mark_sent'     => ['roles' => ['admin'],          'from' => ['approved', 'estimating'],          'to' => 'sent'],
+    'accept'        => ['roles' => ['admin'],          'from' => ['sent'],                            'to' => 'accepted'],
+    'decline'       => ['roles' => ['admin'],          'from' => ['sent'],                            'to' => 'declined'],
+    'undo_decision' => ['roles' => ['admin'],          'from' => ['accepted', 'declined'],            'to' => 'sent'],
+    'cancel'        => ['roles' => ['admin', 'field'], 'from' => ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating', 'sent'], 'to' => 'cancelled'],
+    'restore'       => ['roles' => ['admin'],          'from' => ['cancelled'],                       'to' => 'draft'],
+];
+
+// Statuses in which the scope is frozen (approved and everything after it).
+const QR_SCOPE_LOCKED = ['approved', 'estimating', 'sent', 'accepted', 'declined', 'cancelled'];
+
+function qrActionAllowed(array $auth, array $row, string $action): bool {
+    $def = QR_ACTIONS[$action] ?? null;
+    if (!$def || !in_array($auth['role'], $def['roles'], true) || !in_array($row['status'], $def['from'], true)) return false;
+    if (!qrIsAdmin($auth)) {
+        if (!qrCanView($auth, $row)) return false;
+        // A field manager can only withdraw their own draft.
+        if ($action === 'cancel' && $row['status'] !== 'draft') return false;
+    }
+    return true;
+}
+
+function qrAvailableActions(array $auth, array $row): array {
+    return array_values(array_filter(array_keys(QR_ACTIONS), fn($a) => qrActionAllowed($auth, $row, $a)));
+}

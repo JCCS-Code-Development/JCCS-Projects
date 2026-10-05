@@ -10,5 +10,5 @@ require_once __DIR__ . '/../middleware/auth.php';
 
 // Resolves a FieldClock-issued JWT to this user's Projects-specific role.
 // Returns 403 (via requireAuth()) if the user hasn't been provisioned yet.
-$auth = requireAuth();
+$auth = requireAuth(ALL_STAFF_ROLES);
 echo json_encode(['user_id' => $auth['user_id'], 'name' => $auth['name'], 'role' => $auth['role']]);
