@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
-import { listQuoteProjects, listQuoteStaff } from '../../api/quoteRequests'
-import { listCustomers } from '../../api/customers'
+import { listQuoteProjects, listQuoteStaff, listQuoteClients } from '../../api/quoteRequests'
 
-// Loads the pickers the request form needs. Staff list is office-only.
+// Loads the pickers the request form needs: client users (estimate
+// recipients), active projects (add-ons) and — office only — staff.
 export function useQuotePickers(isAdmin) {
-  const [customers, setCustomers] = useState([])
+  const [clients, setClients] = useState([])
   const [projects, setProjects] = useState([])
   const [staff, setStaff] = useState([])
   useEffect(() => {
-    listCustomers().then((d) => setCustomers(d.customers ?? [])).catch(() => {})
+    listQuoteClients().then((d) => setClients(d.clients ?? [])).catch(() => {})
     listQuoteProjects().then((d) => setProjects(d.projects ?? [])).catch(() => {})
     if (isAdmin) listQuoteStaff().then((d) => setStaff(d.staff ?? [])).catch(() => {})
   }, [isAdmin])
-  return { customers, projects, staff }
+  return { clients, projects, staff }
 }

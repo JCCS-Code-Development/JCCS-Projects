@@ -20,7 +20,6 @@
     "signOut": "Sign Out",
     "quotes": "Quotes",
     "siteWalks": "Site Walks",
-    "customers": "Customers",
     "library": "Materials"
   },
   "notifications": {
@@ -279,7 +278,7 @@
     "searchInstead": "Search instead",
     "enterIdManually": "Enter ID manually instead",
     "loadingDirectory": "Loading FieldClock directory…",
-    "noMatches": "No matches — they may already be provisioned, or try a different search.",
+    "noMatches": "No one matches that search.",
     "projectAccess": "Project Access",
     "findClient": "Find Client",
     "searchClientPlaceholder": "Search by name or email…",
@@ -294,7 +293,22 @@
     "deleteClientPermanently": "Delete this client permanently",
     "deleteClientTitle": "Permanently delete client",
     "deleteClientConfirm": "Permanently delete {{name}}? This removes their portal access, sign-in, and any comments they posted. This cannot be undone.",
-    "deleteClientConfirmBtn": "Delete permanently"
+    "deleteClientConfirmBtn": "Delete permanently",
+    "staffGroup": "JCCS staff",
+    "clientsGroup": "Clients",
+    "clientBadge": "Client",
+    "company": "Company",
+    "addPerson": "Add user",
+    "searchPeople": "Search name, company, email",
+    "filter": {
+      "all": "All",
+      "staff": "JCCS",
+      "clients": "Clients"
+    },
+    "addStaffTitle": "JCCS staff member",
+    "addStaffHint": "Someone with a FieldClock login — Admin, Project Manager or Field Manager.",
+    "addClientTitle": "Client",
+    "addClientHint": "An outside customer contact. Can receive estimates and get read-only portal access to their projects."
   },
   "projectDetail": {
     "overview": "Overview",
@@ -378,7 +392,7 @@
     "fieldSubtitle": "Document the job — the office turns it into the estimate.",
     "newRequest": "New request",
     "newSiteWalk": "New site walk",
-    "search": "Search title, facility, customer, estimate #",
+    "search": "Search title, facility, client, estimate #",
     "showClosed": "Show closed",
     "empty": "No quote requests yet.",
     "emptyField": "No site walks yet. Tap \"New site walk\" to start one.",
@@ -427,10 +441,6 @@
     "fields": {
       "title": "Project / work title",
       "titlePlaceholder": "e.g. Exam Rooms 7–10 frosted window film",
-      "customer": "Customer",
-      "contact": "Contact",
-      "noCustomer": "— None / not in list —",
-      "noContact": "— None —",
       "facility": "Facility / practice",
       "facilityPlaceholder": "e.g. Prisma Health – Simpsonville Family Medical",
       "locationDetail": "Building / floor / department / suite",
@@ -450,7 +460,10 @@
       "estimateNumber": "InvoiceToGo Estimate #",
       "requestNo": "Request #",
       "createdBy": "Created by",
-      "customerFreeText": "Customer not listed? Put it in the description."
+      "recipients": "Estimate goes to",
+      "recipientsSearch": "Add a client — search name, company or email",
+      "recipientsNone": "No client matches. Add them under Users → Add user → Client.",
+      "recipientsHint": "Client users from the Users list. For an add-on, the project’s clients are added automatically."
     },
     "overdue": "Overdue",
     "dueSoon": "Due soon",
@@ -583,7 +596,8 @@
       "restore": "Restored",
       "assigned_estimator": "Estimator",
       "assigned_field": "Field manager",
-      "estimate_number": "Estimate #"
+      "estimate_number": "Estimate #",
+      "portal_access": "Portal access granted to recipients"
     },
     "versionKind": {
       "field_submission": "Field submission",
@@ -605,7 +619,6 @@
       "sent": "Sent",
       "closed": "Closed"
     },
-    "manageCustomers": "Customers",
     "manageLibrary": "Materials library",
     "addonShort": "Add-on",
     "titleRequired": "Add a title first.",
@@ -623,26 +636,6 @@
       "autoTitle": "Site walk – {{date}}"
     },
     "searchShort": "Search quotes"
-  },
-  "customers": {
-    "title": "Customers",
-    "subtitle": "Organizations you quote for, and their contacts.",
-    "add": "Add customer",
-    "edit": "Edit customer",
-    "name": "Customer / organization",
-    "phone": "Phone",
-    "email": "Email",
-    "address": "Address",
-    "notes": "Notes (internal)",
-    "contacts": "Contacts",
-    "addContact": "Add contact",
-    "contactName": "Name",
-    "contactTitle": "Title / role",
-    "remove": "Remove",
-    "removeConfirm": "Remove {{name}}? Existing quote requests keep their link.",
-    "empty": "No customers yet.",
-    "noContacts": "No contacts yet.",
-    "nameRequired": "Name is required"
   },
   "library": {
     "title": "Materials Library",

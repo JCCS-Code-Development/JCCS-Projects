@@ -40,7 +40,7 @@ export default function MaterialsLibrary() {
     setError(''); setModal(it)
   }
   const save = async () => {
-    if (!form.label.trim()) { setError(t('customers.nameRequired')); return }
+    if (!form.label.trim()) { setError(t('users.nameRequired')); return }
     setSaving(true); setError('')
     try {
       if (modal === 'create') await createLibraryItem(form)

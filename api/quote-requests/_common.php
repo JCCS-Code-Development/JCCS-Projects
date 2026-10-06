@@ -165,22 +165,6 @@ function qrCollectFields(PDO $pdo, array $body, array $auth, array &$sets, array
         if ($pn !== '' && !preg_match('/^\d{4}$/', $pn)) { http_response_code(422); exit(json_encode(['error' => 'Estimate # must be exactly 4 digits'])); }
         $sets[] = 'project_number = ?'; $params[] = $pn === '' ? null : $pn;
     }
-    if (array_key_exists('customer_id', $body)) {
-        $cid = $body['customer_id'] ? (int)$body['customer_id'] : null;
-        if ($cid) {
-            $chk = $pdo->prepare('SELECT id FROM customers WHERE id = ?'); $chk->execute([$cid]);
-            if (!$chk->fetch()) { http_response_code(422); exit(json_encode(['error' => 'Customer not found'])); }
-        }
-        $sets[] = 'customer_id = ?'; $params[] = $cid;
-    }
-    if (array_key_exists('contact_id', $body)) {
-        $kid = $body['contact_id'] ? (int)$body['contact_id'] : null;
-        if ($kid) {
-            $chk = $pdo->prepare('SELECT id FROM customer_contacts WHERE id = ?'); $chk->execute([$kid]);
-            if (!$chk->fetch()) { http_response_code(422); exit(json_encode(['error' => 'Contact not found'])); }
-        }
-        $sets[] = 'contact_id = ?'; $params[] = $kid;
-    }
     $str('facility', 200);
     $str('location_detail', 255);
     $str('original_estimate_no', 20);
@@ -296,4 +280,52 @@ function qrActionAllowed(array $auth, array $row, string $action): bool {
 
 function qrAvailableActions(array $auth, array $row): array {
     return array_values(array_filter(array_keys(QR_ACTIONS), fn($a) => qrActionAllowed($auth, $row, $a)));
+}
+
+// ── Estimate recipients (client users) ──────────────────────────────────────
+// Who the estimate is for. They're client-portal users (clients table), not a
+// separate customer list, so accepting the quote can hand them portal access
+// to the project directly.
+
+// Validates a recipient_ids payload; returns the cleaned id list.
+function qrCleanRecipientIds(PDO $pdo, $ids): array {
+    if ($ids === null) return [];
+    if (!is_array($ids)) { http_response_code(422); exit(json_encode(['error' => 'recipient_ids must be a list'])); }
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids), fn($v) => $v > 0)));
+    if (!$ids) return [];
+    if (count($ids) > 50) { http_response_code(422); exit(json_encode(['error' => 'Too many recipients'])); }
+    $ph = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("SELECT id FROM clients WHERE is_active = 1 AND id IN ($ph)");
+    $stmt->execute($ids);
+    $found = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    if (count($found) !== count($ids)) { http_response_code(422); exit(json_encode(['error' => 'One of the recipients is no longer an active client'])); }
+    return $ids;
+}
+
+function qrSetRecipients(PDO $pdo, int $requestId, array $ids): void {
+    $pdo->prepare('DELETE FROM quote_request_recipients WHERE quote_request_id = ?')->execute([$requestId]);
+    $ins = $pdo->prepare('INSERT INTO quote_request_recipients (quote_request_id, client_id) VALUES (?, ?)');
+    foreach ($ids as $cid) $ins->execute([$requestId, $cid]);
+}
+
+function qrRecipients(PDO $pdo, int $requestId): array {
+    $stmt = $pdo->prepare(
+        'SELECT c.id, c.name, c.email, c.phone, c.company FROM quote_request_recipients r
+         JOIN clients c ON c.id = r.client_id WHERE r.quote_request_id = ? ORDER BY c.name'
+    );
+    $stmt->execute([$requestId]);
+    return array_map(function ($r) { $r['id'] = (int)$r['id']; return $r; }, $stmt->fetchAll());
+}
+
+// Gives every recipient client-portal access to the request's project.
+// Returns how many access rows were newly added.
+function qrGrantRecipientsAccess(PDO $pdo, array $row): int {
+    if (empty($row['project_number'])) return 0;
+    $stmt = $pdo->prepare(
+        'INSERT IGNORE INTO client_project_access (client_id, project_number)
+         SELECT r.client_id, ? FROM quote_request_recipients r JOIN clients c ON c.id = r.client_id
+         WHERE r.quote_request_id = ? AND c.is_active = 1'
+    );
+    $stmt->execute([$row['project_number'], $row['id']]);
+    return $stmt->rowCount();
 }

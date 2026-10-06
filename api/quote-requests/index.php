@@ -20,14 +20,16 @@ if ($method === 'GET') {
     $sql = "SELECT q.id, q.status, q.work_type, q.estimate_type, q.title, q.facility, q.location_detail,
                    q.project_number, q.estimate_number, q.priority, q.needed_by, q.site_visit_date, q.site_visit_at,
                    q.field_manager_id, q.field_manager_name, q.assigned_to, q.assigned_to_name,
-                   q.customer_id, c.name AS customer_name, q.follow_up_days, q.decline_reason,
+                   q.follow_up_days, q.decline_reason,
+                   (SELECT GROUP_CONCAT(DISTINCT COALESCE(NULLIF(cl.company, ''), cl.name) ORDER BY cl.name SEPARATOR ', ')
+                      FROM quote_request_recipients rr JOIN clients cl ON cl.id = rr.client_id
+                     WHERE rr.quote_request_id = q.id) AS recipients_label,
                    q.created_by, q.created_by_name, q.submitted_at, q.approved_at, q.sent_at, q.decided_at,
                    q.created_at, q.updated_at,
                    (SELECT COUNT(*) FROM quote_request_photos p WHERE p.quote_request_id = q.id) AS photo_count,
                    (SELECT p2.file_path FROM quote_request_photos p2 WHERE p2.quote_request_id = q.id ORDER BY p2.id LIMIT 1) AS cover_path,
                    (SELECT c2.kind FROM quote_request_comments c2 WHERE c2.quote_request_id = q.id ORDER BY c2.id DESC LIMIT 1) AS last_comment_kind
-            FROM quote_requests q
-            LEFT JOIN customers c ON c.id = q.customer_id";
+            FROM quote_requests q";
     $where = []; $params = [];
 
     if (!qrIsAdmin($auth)) {
@@ -47,13 +49,16 @@ if ($method === 'GET') {
     if (!empty($_GET['assigned_to'])) {
         $where[] = 'q.assigned_to = ?'; $params[] = (int)$_GET['assigned_to'];
     }
-    if (!empty($_GET['customer_id'])) {
-        $where[] = 'q.customer_id = ?'; $params[] = (int)$_GET['customer_id'];
+    if (!empty($_GET['client_id'])) {
+        $where[] = 'EXISTS (SELECT 1 FROM quote_request_recipients rr WHERE rr.quote_request_id = q.id AND rr.client_id = ?)';
+        $params[] = (int)$_GET['client_id'];
     }
     if (isset($_GET['q']) && trim((string)$_GET['q']) !== '') {
         $q = '%' . trim((string)$_GET['q']) . '%';
-        $where[] = '(q.title LIKE ? OR q.facility LIKE ? OR c.name LIKE ? OR q.estimate_number LIKE ? OR q.project_number LIKE ?)';
-        array_push($params, $q, $q, $q, $q, $q);
+        $where[] = "(q.title LIKE ? OR q.facility LIKE ? OR q.estimate_number LIKE ? OR q.project_number LIKE ?
+                     OR EXISTS (SELECT 1 FROM quote_request_recipients rr JOIN clients cl ON cl.id = rr.client_id
+                                WHERE rr.quote_request_id = q.id AND (cl.name LIKE ? OR cl.company LIKE ? OR cl.email LIKE ?)))";
+        array_push($params, $q, $q, $q, $q, $q, $q, $q);
     }
     // Closed requests (accepted/declined/cancelled) only when asked for, so
     // the board stays focused on open work.
@@ -83,6 +88,7 @@ if ($method === 'GET') {
 
     $sets = []; $params = [];
     qrCollectFields($pdo, $body, $auth, $sets, $params);
+    $recipientIds = qrCleanRecipientIds($pdo, $body['recipient_ids'] ?? null);
 
     // A field manager's own walk is theirs by default; an admin logging a
     // phone/email request can hand it to a field manager (or keep it).
@@ -101,6 +107,7 @@ if ($method === 'GET') {
     $pdo->prepare('INSERT INTO quote_requests (' . implode(', ', $cols) . ') VALUES (' . implode(', ', array_fill(0, count($cols), '?')) . ')')
         ->execute($params);
     $id = (int)$pdo->lastInsertId();
+    if ($recipientIds) qrSetRecipients($pdo, $id, $recipientIds);
 
     $row = qrLoadVisible($pdo, $auth, $id);
     qrLogActivity($pdo, $id, $auth, 'created', null, 'draft');

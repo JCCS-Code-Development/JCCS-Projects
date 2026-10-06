@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { listProjectClientIds } from '../../api/quoteRequests'
 import Input from '../../components/ui/Input'
 import { STATUS_STYLES, FLAG_STYLES, quoteFlags, ESTIMATE_TYPES, SOURCES, PRIORITIES } from './quoteUtils'
 
@@ -63,19 +65,71 @@ export function Segmented({ value, onChange, options }) {
 
 // The request's header fields. Used by the "new request" modal and the
 // detail page's edit mode alike.
-export function QuoteDetailsForm({ form, set, isAdmin, customers = [], projects = [], staff = [], mode = 'create' }) {
+// Estimate recipients: client users (the same accounts as the client
+// portal) shown as removable chips, plus a search box to add more.
+export function RecipientsPicker({ clients, value, onChange }) {
   const { t } = useTranslation()
-  const customer = customers.find((c) => String(c.id) === String(form.customer_id))
-  const contacts = customer?.contacts ?? []
+  const [q, setQ] = useState('')
+  const selected = value.map((id) => clients.find((c) => c.id === id)).filter(Boolean)
+  const query = q.trim().toLowerCase()
+  const matches = !query ? [] : clients
+    .filter((c) => !value.includes(c.id))
+    .filter((c) => [c.name, c.company, c.email].some((v) => (v ?? '').toLowerCase().includes(query)))
+    .slice(0, 8)
 
-  const pickCustomer = (id) => {
-    set('customer_id', id)
-    set('contact_id', '')
-  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-gray-700">{t('quotes.fields.recipients')}</label>
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map((c) => (
+            <span key={c.id} className="inline-flex items-center gap-1 rounded-full bg-brand-100 text-brand-900 pl-3 pr-1 py-1 text-sm">
+              <span className="font-semibold">{c.name}</span>
+              {c.company && <span className="text-brand-700/70">· {c.company}</span>}
+              <button type="button" onClick={() => onChange(value.filter((id) => id !== c.id))} aria-label={t('common.delete')}
+                className="w-6 h-6 rounded-full flex items-center justify-center text-brand-700 hover:bg-brand-400/30">×</button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="relative">
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('quotes.fields.recipientsSearch')}
+          className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+        {matches.length > 0 && (
+          <div className="absolute z-20 mt-1 w-full rounded-xl border border-gray-100 bg-white shadow-lg overflow-hidden">
+            {matches.map((c) => (
+              <button key={c.id} type="button" onClick={() => { onChange([...value, c.id]); setQ('') }}
+                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 active:bg-gray-100">
+                <span className="block text-sm font-semibold text-gray-900">{c.name}{c.company ? <span className="font-normal text-gray-500"> · {c.company}</span> : null}</span>
+                <span className="block text-xs text-gray-400">{c.email}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {query && matches.length === 0 && (
+          <p className="text-xs text-gray-400 mt-1">{t('quotes.fields.recipientsNone')}</p>
+        )}
+      </div>
+      <p className="text-xs text-gray-500">{t('quotes.fields.recipientsHint')}</p>
+    </div>
+  )
+}
+
+export function QuoteDetailsForm({ form, set, isAdmin, clients = [], projects = [], staff = [], mode = 'create' }) {
+  const { t } = useTranslation()
+
+  // Picking the project of an add-on pre-selects everyone who already has
+  // portal access to it — they're who gets the add-on estimate.
   const pickProject = (pn) => {
     set('project_number', pn)
     const p = projects.find((x) => x.project_number === pn)
     if (p && !form.title) set('title', p.name)
+    if (pn) {
+      listProjectClientIds(pn).then((d) => {
+        const ids = (d.client_ids ?? []).filter((id) => clients.some((c) => c.id === id))
+        if (ids.length) set('recipient_ids', [...new Set([...(form.recipient_ids ?? []), ...ids])])
+      }).catch(() => {})
+    }
   }
   const setWorkType = (wt) => {
     set('work_type', wt)
@@ -107,16 +161,7 @@ export function QuoteDetailsForm({ form, set, isAdmin, customers = [], projects 
       <Input label={t('quotes.fields.title')} placeholder={t('quotes.fields.titlePlaceholder')} value={form.title}
         onChange={(e) => set('title', e.target.value)} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Select label={t('quotes.fields.customer')} value={form.customer_id} onChange={pickCustomer}>
-          <option value="">{t('quotes.fields.noCustomer')}</option>
-          {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </Select>
-        <Select label={t('quotes.fields.contact')} value={form.contact_id} onChange={(v) => set('contact_id', v)} disabled={!contacts.length}>
-          <option value="">{t('quotes.fields.noContact')}</option>
-          {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}{c.title ? ` — ${c.title}` : ''}</option>)}
-        </Select>
-      </div>
+      <RecipientsPicker clients={clients} value={form.recipient_ids ?? []} onChange={(ids) => set('recipient_ids', ids)} />
 
       <Input label={t('quotes.fields.facility')} placeholder={t('quotes.fields.facilityPlaceholder')} value={form.facility ?? ''}
         onChange={(e) => set('facility', e.target.value)} />
@@ -124,8 +169,7 @@ export function QuoteDetailsForm({ form, set, isAdmin, customers = [], projects 
         onChange={(e) => set('location_detail', e.target.value)} />
 
       <TextArea label={t('quotes.fields.description')} placeholder={t('quotes.fields.descriptionPlaceholder')} rows={5}
-        value={form.description} onChange={(v) => set('description', v)}
-        helperText={!customers.length || !form.customer_id ? t('quotes.fields.customerFreeText') : undefined} />
+        value={form.description} onChange={(v) => set('description', v)} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Select label={t('quotes.estimateType.label')} value={form.estimate_type} onChange={(v) => set('estimate_type', v)}>

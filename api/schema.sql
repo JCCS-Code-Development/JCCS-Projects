@@ -32,6 +32,7 @@ CREATE TABLE clients (
   phone VARCHAR(30) NULL,
   password_hash VARCHAR(255) NOT NULL,
   name VARCHAR(150) NOT NULL,
+  company VARCHAR(150) NULL,  -- organization, e.g. "Prisma Health"
   is_active TINYINT(1) DEFAULT 1,
   failed_attempts INT UNSIGNED DEFAULT 0,
   locked_until DATETIME NULL,
@@ -537,3 +538,13 @@ INSERT INTO quote_library (kind, label, manufacturer) VALUES
   ('laminate',      'Antique White',          NULL),
   ('laminate',      'Sail White',             NULL),
   ('flooring',      'Eternal Pebble Stucco',  'Forbo');
+
+-- Estimate recipients: the client users a quote request is for
+-- (migrations/2026-10-06_quote_recipients.sql). Replaced customers /
+-- customer_contacts above, which are kept but no longer used.
+CREATE TABLE quote_request_recipients (
+  quote_request_id INT UNSIGNED NOT NULL,
+  client_id INT UNSIGNED NOT NULL,
+  PRIMARY KEY (quote_request_id, client_id),
+  INDEX idx_qrr_client (client_id)
+);

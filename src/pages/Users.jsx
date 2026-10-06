@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Card from '../components/ui/Card'
 import PageHeader from '../components/ui/PageHeader'
@@ -18,7 +18,7 @@ import { listEmployees } from '../api/fieldclockAuth'
 import { listProjects } from '../api/projects'
 
 const EMPTY_STAFF  = { fieldclock_user_id: '', name: '', role: 'pm', email: '', phone: '' }
-const EMPTY_CLIENT = { email: '', name: '', phone: '', password: '' }
+const EMPTY_CLIENT = { email: '', name: '', company: '', phone: '', password: '' }
 
 // Shared by both sections — a checkbox list scoped to whatever projects
 // exist, used to edit pm_project_access / client_project_access. Admins
@@ -39,19 +39,12 @@ function ProjectAccessPicker({ projects, selected, onToggle }) {
   )
 }
 
-// Section header: stacked + centered with a full-width button on phones,
-// side by side from `md` up.
-function SectionHeader({ title, subtitle, action }) {
-  return (
-    <div className="flex flex-col items-center text-center gap-2 md:flex-row md:items-center md:justify-between md:text-left">
-      <div className="min-w-0">
-        <h2 className="text-base font-bold text-gray-900">{title}</h2>
-        <p className="text-sm text-gray-500">{subtitle}</p>
-      </div>
-      <div className="shrink-0">{action}</div>
-    </div>
-  )
+// Group label inside the single combined list ("JCCS staff · 6").
+function GroupLabel({ children }) {
+  return <p className="px-1 text-xs font-bold text-gray-400 uppercase tracking-wider">{children}</p>
 }
+
+const matchesQuery = (q, values) => !q || values.some((v) => (v ?? '').toString().toLowerCase().includes(q))
 
 // One person as a compact row-card (phones) — the table doesn't fit a 390px screen.
 function PersonCard({ name, you, lines, badges, onEdit, onRemove, editLabel, removeLabel }) {
@@ -78,7 +71,7 @@ function PersonCard({ name, you, lines, badges, onEdit, onRemove, editLabel, rem
 // jccs-inventory's Users page (src/api/fieldclockAuth.js's listEmployees()
 // hits FieldClock directly from the browser with the signed-in admin's own
 // token). ──────────────────────────────────────────────────────────────
-function StaffSection({ projects }) {
+function StaffSection({ projects, query, hidden, openRef }) {
   const { t } = useTranslation()
   const confirmDialog = useConfirm()
   const toast = useToast()
@@ -168,19 +161,23 @@ function StaffSection({ projects }) {
     catch (err) { toast.error(err?.response?.data?.error ?? t('common.couldNotSave')) }
   }
 
+  // The page's single "Add" button opens this section's create flow.
+  useEffect(() => { if (openRef) openRef.current = openCreate })
+  const q = (query ?? '').trim().toLowerCase()
+  const shown = users.filter((u) => matchesQuery(q, [u.name, u.email, u.phone, t(`role.${u.role}`)]))
+
   return (
-    <div className="flex flex-col gap-3">
-      <SectionHeader title={t('users.staffTitle')} subtitle={t('users.staffSubtitle')}
-        action={<Button size="md" onClick={openCreate} className="!rounded-full px-5">{t('users.addUser')}</Button>} />
+    <div className={hidden ? 'hidden' : 'flex flex-col gap-2'}>
+      <GroupLabel>{t('users.staffGroup')} · {shown.length}</GroupLabel>
 
       {loading ? <Card><Spinner /></Card> : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {users.length === 0 ? (
-            <p className="text-center text-gray-400 py-10 text-sm">{t('users.noUsersYet')}</p>
+          {shown.length === 0 ? (
+            <p className="text-center text-gray-400 py-8 text-sm">{users.length ? t('users.noMatches') : t('users.noUsersYet')}</p>
           ) : (
             <>
             <div className="md:hidden divide-y divide-gray-100">
-              {users.map((u) => (
+              {shown.map((u) => (
                 <PersonCard key={u.fieldclock_user_id} name={u.name} you={u.fieldclock_user_id === myId ? t('users.you') : null}
                   lines={[u.email || u.phone, u.role === 'pm' ? `${t('users.projects')}: ${u.project_numbers.length ? u.project_numbers.join(', ') : '—'}` : null]}
                   badges={<>
@@ -202,7 +199,7 @@ function StaffSection({ projects }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {users.map((u) => (
+                  {shown.map((u) => (
                     <tr key={u.fieldclock_user_id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 font-medium text-gray-900">
                         {u.name}{u.fieldclock_user_id === myId && <span className="text-xs text-gray-400 ml-1.5">{t('users.you')}</span>}
@@ -318,7 +315,7 @@ function StaffSection({ projects }) {
 // filtered client-side) instead of FieldClock's. No match → create a new
 // client right there instead of falling back to a raw ID field, since
 // there's no external ID to type in the first place. ───────────────────
-function ClientsSection({ projects }) {
+function ClientsSection({ projects, query, hidden, openRef }) {
   const { t } = useTranslation()
   const confirmDialog = useConfirm()
   const toast = useToast()
@@ -346,7 +343,7 @@ function ClientsSection({ projects }) {
     setSearch(''); setPicked(null); setCreatingNew(false)
   }
   const openEdit = (c) => {
-    setForm({ email: c.email, name: c.name, phone: c.phone ?? '', password: '' })
+    setForm({ email: c.email, name: c.name, company: c.company ?? '', phone: c.phone ?? '', password: '' })
     setAccessProjects(c.project_numbers ?? [])
     setError(''); setModal(c)
   }
@@ -382,7 +379,7 @@ function ClientsSection({ projects }) {
     if (form.password && form.password.length < 8) { setError(t('users.passwordTooShort')); return }
     setSaving(true); setError('')
     try {
-      const payload = { email: form.email.trim(), name: form.name.trim(), phone: form.phone.trim(), project_numbers: accessProjects }
+      const payload = { email: form.email.trim(), name: form.name.trim(), company: form.company.trim(), phone: form.phone.trim(), project_numbers: accessProjects }
       if (form.password) payload.password = form.password
       await createClientAccount(payload)
       setModal(null); load()
@@ -396,7 +393,7 @@ function ClientsSection({ projects }) {
     if (form.password && form.password.length < 8) { setError(t('users.passwordTooShort')); return }
     setSaving(true); setError('')
     try {
-      const payload = { name: form.name.trim(), phone: form.phone.trim(), project_numbers: accessProjects }
+      const payload = { name: form.name.trim(), company: form.company.trim(), phone: form.phone.trim(), project_numbers: accessProjects }
       if (form.password) payload.password = form.password
       await updateClientAccount(modal.id, payload)
       setModal(null); load()
@@ -423,22 +420,28 @@ function ClientsSection({ projects }) {
     }
   }
 
+  useEffect(() => { if (openRef) openRef.current = openCreate })
+  const q = (query ?? '').trim().toLowerCase()
+  const shown = clients.filter((c) => matchesQuery(q, [c.name, c.email, c.phone, c.company]))
+
   return (
-    <div className="flex flex-col gap-3">
-      <SectionHeader title={t('users.clientsTitle')} subtitle={t('users.clientsSubtitle')}
-        action={<Button size="md" onClick={openCreate} className="!rounded-full px-5">{t('users.addClient')}</Button>} />
+    <div className={hidden ? 'hidden' : 'flex flex-col gap-2'}>
+      <GroupLabel>{t('users.clientsGroup')} · {shown.length}</GroupLabel>
 
       {loading ? <Card><Spinner /></Card> : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {clients.length === 0 ? (
-            <p className="text-center text-gray-400 py-10 text-sm">{t('users.noClientsYet')}</p>
+          {shown.length === 0 ? (
+            <p className="text-center text-gray-400 py-8 text-sm">{clients.length ? t('users.noMatches') : t('users.noClientsYet')}</p>
           ) : (
             <>
             <div className="md:hidden divide-y divide-gray-100">
-              {clients.map((c) => (
+              {shown.map((c) => (
                 <PersonCard key={c.id} name={c.name}
-                  lines={[c.email, `${t('users.projects')}: ${c.project_numbers.length ? c.project_numbers.join(', ') : '—'}`]}
-                  badges={<Badge variant={c.is_active ? 'active' : 'inactive'}>{c.is_active ? t('users.active') : t('users.inactive')}</Badge>}
+                  lines={[c.company, c.email, `${t('users.projects')}: ${c.project_numbers.length ? c.project_numbers.join(', ') : '—'}`]}
+                  badges={<>
+                    <Badge variant="answered">{t('users.clientBadge')}</Badge>
+                    {!c.is_active && <Badge variant="inactive">{t('users.inactive')}</Badge>}
+                  </>}
                   editLabel={t('common.edit')} onEdit={() => openEdit(c)}
                   removeLabel={t('users.removeAccess')}
                   onRemove={c.is_active === 1 ? () => handleDeactivate(c) : null} />
@@ -448,16 +451,19 @@ function ClientsSection({ projects }) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    {[t('common.name'), t('users.email'), t('users.projects'), t('users.status'), ''].map((h) => (
+                    {[t('common.name'), t('users.company'), t('users.projects'), t('users.status'), ''].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {clients.map((c) => (
+                  {shown.map((c) => (
                     <tr key={c.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500">{c.email}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {c.name} <Badge variant="answered" className="ml-1">{t('users.clientBadge')}</Badge>
+                        <p className="text-xs text-gray-400 font-normal">{c.email}</p>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500">{c.company || '—'}</td>
                       <td className="px-4 py-3 text-xs text-gray-500">{c.project_numbers.length ? c.project_numbers.join(', ') : '—'}</td>
                       <td className="px-4 py-3"><Badge variant={c.is_active ? 'active' : 'inactive'}>{c.is_active ? t('users.active') : t('users.inactive')}</Badge></td>
                       <td className="px-4 py-3 text-right">
@@ -533,6 +539,7 @@ function ClientsSection({ projects }) {
                 {t('users.searchInstead')}
               </button>
               <Input label={t('common.name')} value={form.name} onChange={set('name')} />
+              <Input label={`${t('users.company')} (${t('common.optional')})`} placeholder="Prisma Health" value={form.company} onChange={set('company')} />
               <Input label={t('users.email')} value={form.email} onChange={set('email')} />
               <Input label={`${t('users.phone')} (${t('common.optional')})`} value={form.phone} onChange={set('phone')} />
               <Input label={`${t('users.initialPassword')} (${t('common.optional')})`} type="text" value={form.password} onChange={set('password')}
@@ -551,6 +558,7 @@ function ClientsSection({ projects }) {
           {modal && modal !== 'create' && (
             <>
               <Input label={t('common.name')} value={form.name} onChange={set('name')} />
+              <Input label={`${t('users.company')} (${t('common.optional')})`} value={form.company} onChange={set('company')} />
               <Input label={t('users.email')} value={form.email} disabled />
               <Input label={`${t('users.phone')} (${t('common.optional')})`} value={form.phone} onChange={set('phone')} />
               <Input label={`${t('users.resetPassword')} (${t('common.optional')})`} type="text" value={form.password} onChange={set('password')}
@@ -576,16 +584,60 @@ function ClientsSection({ projects }) {
 export default function Users() {
   const { t } = useTranslation()
   const [projects, setProjects] = useState([])
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState('all') // all | staff | clients
+  const [choosing, setChoosing] = useState(false)
+  const openStaff = useRef(null)
+  const openClient = useRef(null)
 
   useEffect(() => {
     listProjects().then((d) => setProjects(d.projects ?? [])).catch(() => {})
   }, [])
 
+  // One list for everyone: JCCS staff (FieldClock logins) and client-portal
+  // users. "Add" asks which kind first — they're created very differently.
+  const add = (kind) => {
+    setChoosing(false)
+    if (kind === 'staff') openStaff.current?.()
+    else openClient.current?.()
+  }
+  const chip = (on) => `shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+    on ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200'
+  }`
+
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader title={t('users.title')} subtitle={t('users.subtitle')} />
-      <StaffSection projects={projects} />
-      <ClientsSection projects={projects} />
+    <div className="flex flex-col gap-5">
+      <PageHeader title={t('users.title')} subtitle={t('users.subtitle')}
+        actionLabel={t('users.addPerson')} onAction={() => setChoosing(true)} />
+
+      <div className="flex flex-col gap-2.5 w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0 lg:flex-row lg:items-center lg:gap-3">
+        <div className="relative w-full lg:max-w-md">
+          <svg className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('users.searchPeople')}
+            className="w-full rounded-full border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-base lg:text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+        </div>
+        <div className="flex gap-1.5 justify-center lg:justify-start">
+          {['all', 'staff', 'clients'].map((f) => (
+            <button key={f} onClick={() => setFilter(f)} className={chip(filter === f)}>{t(`users.filter.${f}`)}</button>
+          ))}
+        </div>
+      </div>
+
+      <StaffSection projects={projects} query={query} hidden={filter === 'clients'} openRef={openStaff} />
+      <ClientsSection projects={projects} query={query} hidden={filter === 'staff'} openRef={openClient} />
+
+      <Modal isOpen={choosing} onClose={() => setChoosing(false)} title={t('users.addPerson')} size="sm">
+        <div className="flex flex-col gap-2">
+          <button onClick={() => add('staff')} className="text-left rounded-2xl border border-gray-200 px-4 py-3.5 hover:border-brand-400 active:bg-gray-50">
+            <p className="text-sm font-bold text-gray-900">{t('users.addStaffTitle')}</p>
+            <p className="text-xs text-gray-500">{t('users.addStaffHint')}</p>
+          </button>
+          <button onClick={() => add('client')} className="text-left rounded-2xl border border-gray-200 px-4 py-3.5 hover:border-brand-400 active:bg-gray-50">
+            <p className="text-sm font-bold text-gray-900">{t('users.addClientTitle')}</p>
+            <p className="text-xs text-gray-500">{t('users.addClientHint')}</p>
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -22,17 +22,7 @@ $isAdmin = qrIsAdmin($auth);
 if ($method === 'GET') {
     $out = qrPresent($row, $auth);
 
-    $customer = null; $contact = null;
-    if ($row['customer_id']) {
-        $s = $pdo->prepare('SELECT id, name, phone, email, address FROM customers WHERE id = ?');
-        $s->execute([$row['customer_id']]); $customer = $s->fetch() ?: null;
-    }
-    if ($row['contact_id']) {
-        $s = $pdo->prepare('SELECT id, customer_id, name, title, email, phone, address FROM customer_contacts WHERE id = ?');
-        $s->execute([$row['contact_id']]); $contact = $s->fetch() ?: null;
-    }
-    $out['customer'] = $customer;
-    $out['contact']  = $contact;
+    $out['recipients'] = qrRecipients($pdo, $id);
 
     $s = $pdo->prepare('SELECT * FROM quote_request_photos WHERE quote_request_id = ? ORDER BY id');
     $s->execute([$id]);
@@ -78,6 +68,7 @@ if ($method === 'GET') {
 
     $sets = []; $params = [];
     qrCollectFields($pdo, $body, $auth, $sets, $params);
+    $recipientIds = array_key_exists('recipient_ids', $body) ? qrCleanRecipientIds($pdo, $body['recipient_ids']) : null;
 
     $scopeChanged = false;
     if (array_key_exists('scope_text', $body)) {
@@ -95,12 +86,15 @@ if ($method === 'GET') {
         http_response_code(409); exit(json_encode(['error' => 'The site walk is locked — reopen the request to edit it']));
     }
 
-    if (!$sets) { echo json_encode(['message' => 'Nothing to update']); exit; }
+    if (!$sets && $recipientIds === null) { echo json_encode(['message' => 'Nothing to update']); exit; }
 
     $pdo->beginTransaction();
     try {
-        $params[] = $id;
-        $pdo->prepare('UPDATE quote_requests SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);
+        if ($sets) {
+            $params[] = $id;
+            $pdo->prepare('UPDATE quote_requests SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);
+        }
+        if ($recipientIds !== null) qrSetRecipients($pdo, $id, $recipientIds);
         $updated = qrLoadVisible($pdo, $auth, $id);
 
         if ($scopeChanged) {
@@ -147,7 +141,7 @@ if ($method === 'GET') {
     }
     $pdo->beginTransaction();
     try {
-        foreach (['quote_request_photos', 'quote_request_files', 'quote_request_comments', 'quote_request_activity', 'quote_request_versions'] as $t) {
+        foreach (['quote_request_photos', 'quote_request_files', 'quote_request_comments', 'quote_request_activity', 'quote_request_versions', 'quote_request_recipients'] as $t) {
             $pdo->prepare("DELETE FROM $t WHERE quote_request_id = ?")->execute([$id]);
         }
         $pdo->prepare('DELETE FROM notifications WHERE recipient_type = ? AND link_path = ?')->execute(['staff', '/quotes/' . $id]);

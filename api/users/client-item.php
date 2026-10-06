@@ -40,6 +40,9 @@ if ($method === 'PUT') {
     if (array_key_exists('phone', $body)) {
         $sets[] = 'phone = ?'; $params[] = $body['phone'] !== '' ? sanitizeString($body['phone']) : null;
     }
+    if (array_key_exists('company', $body)) {
+        $sets[] = 'company = ?'; $params[] = ($body['company'] ?? '') !== '' ? mb_substr(sanitizeString($body['company']), 0, 150) : null;
+    }
     if (array_key_exists('is_active', $body)) {
         $sets[] = 'is_active = ?'; $params[] = (int)$body['is_active'];
     }

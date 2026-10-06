@@ -20,7 +20,6 @@
     "signOut": "Cerrar sesión",
     "quotes": "Cotizaciones",
     "siteWalks": "Visitas",
-    "customers": "Clientes",
     "library": "Materiales"
   },
   "notifications": {
@@ -279,7 +278,7 @@
     "searchInstead": "Buscar en su lugar",
     "enterIdManually": "Ingresar ID manualmente",
     "loadingDirectory": "Cargando directorio de FieldClock…",
-    "noMatches": "Sin coincidencias — puede que ya esté provisionado, o intenta otra búsqueda.",
+    "noMatches": "Nadie coincide con la búsqueda.",
     "projectAccess": "Acceso a proyectos",
     "findClient": "Buscar cliente",
     "searchClientPlaceholder": "Buscar por nombre o correo…",
@@ -294,7 +293,22 @@
     "deleteClientPermanently": "Eliminar este cliente permanentemente",
     "deleteClientTitle": "Eliminar cliente permanentemente",
     "deleteClientConfirm": "¿Eliminar permanentemente a {{name}}? Esto quita su acceso al portal, su inicio de sesión y los comentarios que haya publicado. No se puede deshacer.",
-    "deleteClientConfirmBtn": "Eliminar permanentemente"
+    "deleteClientConfirmBtn": "Eliminar permanentemente",
+    "staffGroup": "Personal JCCS",
+    "clientsGroup": "Clientes",
+    "clientBadge": "Cliente",
+    "company": "Empresa",
+    "addPerson": "Agregar usuario",
+    "searchPeople": "Buscar nombre, empresa, correo",
+    "filter": {
+      "all": "Todos",
+      "staff": "JCCS",
+      "clients": "Clientes"
+    },
+    "addStaffTitle": "Personal de JCCS",
+    "addStaffHint": "Alguien con usuario de FieldClock — Administrador, Gerente de Proyecto o Supervisor de Campo.",
+    "addClientTitle": "Cliente",
+    "addClientHint": "Un contacto externo. Puede recibir estimados y tener acceso de solo lectura al portal de sus proyectos."
   },
   "projectDetail": {
     "overview": "Resumen",
@@ -427,10 +441,6 @@
     "fields": {
       "title": "Proyecto / título del trabajo",
       "titlePlaceholder": "ej. Película esmerilada en consultorios 7–10",
-      "customer": "Cliente",
-      "contact": "Contacto",
-      "noCustomer": "— Ninguno / no está en la lista —",
-      "noContact": "— Ninguno —",
       "facility": "Instalación / consultorio",
       "facilityPlaceholder": "ej. Prisma Health – Simpsonville Family Medical",
       "locationDetail": "Edificio / piso / departamento / suite",
@@ -450,7 +460,10 @@
       "estimateNumber": "Estimado # de InvoiceToGo",
       "requestNo": "Solicitud #",
       "createdBy": "Creada por",
-      "customerFreeText": "¿El cliente no está en la lista? Ponlo en la descripción."
+      "recipients": "El estimado va para",
+      "recipientsSearch": "Agrega un cliente — busca nombre, empresa o correo",
+      "recipientsNone": "Ningún cliente coincide. Agrégalo en Usuarios → Agregar usuario → Cliente.",
+      "recipientsHint": "Usuarios cliente de la lista de Usuarios. Para un adicional, los clientes del proyecto se agregan automáticamente."
     },
     "overdue": "Atrasada",
     "dueSoon": "Vence pronto",
@@ -583,7 +596,8 @@
       "restore": "Restaurada",
       "assigned_estimator": "Estimador",
       "assigned_field": "Supervisor de campo",
-      "estimate_number": "Estimado #"
+      "estimate_number": "Estimado #",
+      "portal_access": "Acceso al portal otorgado a los destinatarios"
     },
     "versionKind": {
       "field_submission": "Envío de campo",
@@ -605,7 +619,6 @@
       "sent": "Enviadas",
       "closed": "Cerradas"
     },
-    "manageCustomers": "Clientes",
     "manageLibrary": "Biblioteca de materiales",
     "addonShort": "Adicional",
     "titleRequired": "Primero agrega un título.",
@@ -623,26 +636,6 @@
       "autoTitle": "Visita – {{date}}"
     },
     "searchShort": "Buscar cotizaciones"
-  },
-  "customers": {
-    "title": "Clientes",
-    "subtitle": "Organizaciones a las que cotizas y sus contactos.",
-    "add": "Agregar cliente",
-    "edit": "Editar cliente",
-    "name": "Cliente / organización",
-    "phone": "Teléfono",
-    "email": "Correo",
-    "address": "Dirección",
-    "notes": "Notas (internas)",
-    "contacts": "Contactos",
-    "addContact": "Agregar contacto",
-    "contactName": "Nombre",
-    "contactTitle": "Cargo",
-    "remove": "Quitar",
-    "removeConfirm": "¿Quitar a {{name}}? Las solicitudes existentes conservan el vínculo.",
-    "empty": "Aún no hay clientes.",
-    "noContacts": "Aún no hay contactos.",
-    "nameRequired": "El nombre es obligatorio"
   },
   "library": {
     "title": "Biblioteca de Materiales",

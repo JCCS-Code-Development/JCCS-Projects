@@ -70,8 +70,8 @@ function QuoteCard({ q, showAssignees, cover = false }) {
         <StatusPill status={q.status} />
       </div>
       <p className="text-sm font-semibold text-gray-900 mt-1 line-clamp-2">{q.title}</p>
-      {(q.customer_name || q.facility) && (
-        <p className="text-xs text-gray-500 truncate">{[q.customer_name, q.facility].filter(Boolean).join(' · ')}</p>
+      {(q.recipients_label || q.facility) && (
+        <p className="text-xs text-gray-500 truncate">{[q.recipients_label, q.facility].filter(Boolean).join(' · ')}</p>
       )}
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
         <FlagPills quote={q} />
@@ -158,7 +158,7 @@ export default function QuotesHome() {
       if (filter === 'mine' && r.assigned_to !== user?.id) return false
       if (filter === 'unassigned' && r.assigned_to) return false
       if (!q) return true
-      return [r.title, r.facility, r.customer_name, r.estimate_number, r.project_number, r.request_no, r.field_manager_name]
+      return [r.title, r.facility, r.recipients_label, r.estimate_number, r.project_number, r.request_no, r.field_manager_name]
         .some((v) => (v ?? '').toString().toLowerCase().includes(q))
     })
   }, [quotes, query, filter, user?.id])
@@ -186,15 +186,10 @@ export default function QuotesHome() {
         onAction={isAdmin ? () => setShowNew(true) : startSiteWalk}
         actionLoading={starting}
         actionIcon={isAdmin ? undefined : CameraIcon}>
-        {/* Customers / Materials live in the desktop sidebar; on phones and
-            iPads they're quiet links here instead of extra tabs. */}
+        {/* Materials lives in the desktop sidebar; on phones and iPads it's
+            reached from here instead of an extra tab. */}
         {isAdmin && (
           <div className="flex items-center justify-center gap-2 lg:hidden">
-            <Link to="/customers"
-              className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm active:bg-brand-100">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>
-              {t('quotes.manageCustomers')}
-            </Link>
             <Link to="/library"
               className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm active:bg-brand-100">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7a3 3 0 013-3h10v13H7a3 3 0 00-3 3V7zM4 20a3 3 0 013-3h10v3H7"/></svg>

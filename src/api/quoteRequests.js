@@ -56,3 +56,9 @@ export const listQuoteProjects = () =>
 
 export const listQuoteStaff = () =>
   client.get('/quote-requests/pickers.php', { params: { kind: 'staff' } }).then((r) => r.data)
+
+export const listQuoteClients = () =>
+  client.get('/quote-requests/pickers.php', { params: { kind: 'clients' } }).then((r) => r.data)
+
+export const listProjectClientIds = (projectNumber) =>
+  client.get('/quote-requests/pickers.php', { params: { kind: 'project_clients', project_number: projectNumber } }).then((r) => r.data)

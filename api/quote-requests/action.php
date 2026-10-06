@@ -9,6 +9,7 @@ require_once __DIR__ . '/../config/jwt.php';
 require_once __DIR__ . '/../middleware/auth.php';
 require_once __DIR__ . '/../middleware/validate.php';
 require_once __DIR__ . '/_common.php';
+require_once __DIR__ . '/../services/inventory_client.php';
 
 // Every status change goes through here (POST {id, action, note?, ...}) so
 // the transition rules in QR_ACTIONS are enforced in exactly one place and
@@ -23,6 +24,7 @@ $action = (string)($body['action'] ?? '');
 $note   = isset($body['note']) ? trim((string)$body['note']) : '';
 if (!$id || $action === '') { http_response_code(422); exit(json_encode(['error' => 'Missing id or action'])); }
 
+$acceptedProject = null;
 $pdo->beginTransaction();
 try {
     // Row lock so two people clicking at once can't both transition it.
@@ -83,6 +85,11 @@ try {
         case 'accept':
             $sets[] = 'decided_at = NOW()';
             $sets[] = 'decline_reason = NULL';
+            // A won new job becomes a project under its InvoiceToGo Estimate #
+            // (the shared 4-digit job number every JCCS app keys on).
+            if (empty($row['project_number']) && preg_match('/^\d{4}$/', (string)$row['estimate_number'])) {
+                $sets[] = 'project_number = ?'; $params[] = $row['estimate_number'];
+            }
             break;
 
         case 'decline':
@@ -133,7 +140,13 @@ try {
             break;
 
         case 'accept':
+            $granted = qrGrantRecipientsAccess($pdo, $updated);
+            if ($granted) qrLogActivity($pdo, $id, $auth, 'portal_access', null, null, (string)$granted);
             qrNotifyUser($pdo, qrFieldUserId($updated), $updated, 'quote_accepted', 'Quote accepted: ' . $title, $updated['facility'], $auth['user_id']);
+            if (!empty($updated['project_number'])) {
+                notifyProjectStaff($pdo, $updated['project_number'], 'quote_accepted',
+                    'Quote accepted: ' . $title, 'Estimate #' . ($updated['estimate_number'] ?? ''), '/projects/' . $updated['project_number']);
+            }
             break;
 
         case 'decline':
@@ -142,9 +155,32 @@ try {
     }
 
     $pdo->commit();
+    if ($action === 'accept' && !empty($updated['project_number'])) $acceptedProject = $updated['project_number'];
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     throw $e;
+}
+
+// Outside the transaction (it's a network call): make sure the project exists
+// in Inventory — creating it there if the Estimate # is new — and mirror it
+// into project_cache so it shows up for staff and in the client portal right
+// away. Best-effort: a failure here doesn't undo the acceptance; the project
+// still resolves the next time anyone opens it.
+if ($acceptedProject !== null) {
+    try {
+        $result = inventoryResolveProject($auth['raw_token'], $acceptedProject);
+        if ($result['status'] === 200 && !empty($result['data']['project_number'])) {
+            $pdo->prepare(
+                'INSERT INTO project_cache (project_number, name, client_name, client_address, updated_at)
+                 VALUES (?, ?, ?, ?, NOW())
+                 ON DUPLICATE KEY UPDATE name = VALUES(name), client_name = VALUES(client_name),
+                     client_address = VALUES(client_address), updated_at = NOW()'
+            )->execute([
+                $result['data']['project_number'], $result['data']['name'],
+                $result['data']['client_name'] ?? null, $result['data']['client_address'] ?? null,
+            ]);
+        }
+    } catch (Throwable $e) { /* best-effort, see above */ }
 }
 
 echo json_encode(['message' => 'Done', 'status' => $updated['status']]);

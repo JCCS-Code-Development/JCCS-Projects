@@ -95,7 +95,7 @@ export const FILE_KINDS = ['plan', 'sketch', 'product_data', 'finish_selection',
 
 // ── Request form state ⇄ API payload ──
 export const EMPTY_QUOTE_FORM = {
-  work_type: 'new', estimate_type: 'standard', title: '', customer_id: '', contact_id: '',
+  work_type: 'new', estimate_type: 'standard', title: '', recipient_ids: [],
   facility: '', location_detail: '', project_number: '', original_estimate_no: '', related_ref: '',
   description: '', needed_by: '', site_visit_date: '', priority: 'normal', request_source: '',
   field_manager_id: '', assigned_to: '', follow_up_days: 7, site_visit_at: '',
@@ -107,6 +107,7 @@ export function formFromQuote(q) {
     if (q[k] !== undefined && q[k] !== null) f[k] = q[k]
   }
   if (f.site_visit_at) f.site_visit_at = String(f.site_visit_at).replace(' ', 'T').slice(0, 16)
+  f.recipient_ids = (q.recipients ?? []).map((r) => r.id)
   return f
 }
 

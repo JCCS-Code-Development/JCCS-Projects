@@ -19,6 +19,9 @@ import { StatusPill, FlagPills, QuoteDetailsForm, TextArea, Select } from './Quo
 import { useQuotePickers } from './useQuotePickers'
 import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm } from './quoteUtils'
 
+// "Prisma Health" (or the person's name when there's no company), de-duplicated.
+const recipientsLabel = (list = []) => [...new Set(list.map((r) => r.company || r.name))].join(', ')
+
 const errMsg = (err, t) => err?.response?.data?.error ?? t('common.couldNotSave')
 
 // ── Actions ──────────────────────────────────────────────────────────────
@@ -172,7 +175,6 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
     finally { setSaving(false) }
   }
 
-  const contact = quote.contact
   return (
     <Card title={startEditing && editing ? t('quotes.capture.detailsTitle') : t('quotes.sections.details')}
       action={quote.can_edit && !editing && <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>{t('quotes.actions.edit')}</Button>}>
@@ -190,9 +192,14 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
             {t(`quotes.workType.${quote.work_type}`)}{quote.project_number ? ` — #${quote.project_number}` : ''}
           </DetailRow>
           <DetailRow label={t('quotes.estimateType.label')}>{t(`quotes.estimateType.${quote.estimate_type}`)}</DetailRow>
-          <DetailRow label={t('quotes.fields.customer')}>{quote.customer?.name}</DetailRow>
-          <DetailRow label={t('quotes.fields.contact')}>
-            {contact && [contact.name, contact.title, contact.email, contact.phone].filter(Boolean).join(' · ')}
+          <DetailRow label={t('quotes.fields.recipients')}>
+            {quote.recipients?.length ? (
+              <span className="flex flex-col gap-0.5">
+                {quote.recipients.map((r) => (
+                  <span key={r.id}><span className="font-medium">{r.name}</span>{r.company ? ` · ${r.company}` : ''} <span className="text-gray-400">{r.email}</span></span>
+                ))}
+              </span>
+            ) : null}
           </DetailRow>
           <DetailRow label={t('quotes.fields.facility')}>{quote.facility}</DetailRow>
           <DetailRow label={t('quotes.fields.locationDetail')}>{quote.location_detail}</DetailRow>
@@ -504,8 +511,8 @@ export default function QuoteDetail() {
           <FlagPills quote={quote} />
         </div>
         <h1 className="text-xl font-bold text-gray-900">{quote.title}</h1>
-        {(quote.customer?.name || quote.facility) && (
-          <p className="text-sm text-gray-500">{[quote.customer?.name, quote.facility].filter(Boolean).join(' · ')}</p>
+        {(quote.recipients?.length > 0 || quote.facility) && (
+          <p className="text-sm text-gray-500">{[recipientsLabel(quote.recipients), quote.facility].filter(Boolean).join(' · ')}</p>
         )}
       </div>
 

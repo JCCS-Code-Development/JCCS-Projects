@@ -16,7 +16,6 @@ import Users from './pages/Users'
 import QuotesHome from './pages/quotes/QuotesHome'
 import QuoteDetail from './pages/quotes/QuoteDetail'
 import QuoteCapture from './pages/quotes/QuoteCapture'
-import Customers from './pages/Customers'
 import MaterialsLibrary from './pages/MaterialsLibrary'
 
 import PortalHome from './pages/portal/PortalHome'
@@ -64,7 +63,6 @@ export default function App() {
           {/* Admin only */}
           <Route element={<RoleRoute allowedRoles={['admin']} />}>
             <Route path="/users" element={<Users />} />
-            <Route path="/customers" element={<Customers />} />
             <Route path="/library" element={<MaterialsLibrary />} />
           </Route>
         </Route>

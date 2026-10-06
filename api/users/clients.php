@@ -75,8 +75,9 @@ if ($method === 'GET') {
 
     $pdo->beginTransaction();
     try {
-        $pdo->prepare('INSERT INTO clients (email, phone, password_hash, name) VALUES (?, ?, ?, ?)')
-            ->execute([$email, $phone, $passwordHash, sanitizeString($body['name'])]);
+        $company = !empty($body['company']) ? mb_substr(sanitizeString($body['company']), 0, 150) : null;
+        $pdo->prepare('INSERT INTO clients (email, phone, password_hash, name, company) VALUES (?, ?, ?, ?, ?)')
+            ->execute([$email, $phone, $passwordHash, sanitizeString($body['name']), $company]);
         $clientId = (int)$pdo->lastInsertId();
 
         if ($projectNumbers) {
