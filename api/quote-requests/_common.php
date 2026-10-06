@@ -16,7 +16,7 @@ const QR_ROLES = ['admin', 'field'];
 
 const QR_STATUSES = ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating', 'sent', 'accepted', 'declined', 'cancelled'];
 const QR_FIELD_EDITABLE_STATUSES = ['draft', 'needs_info'];
-const QR_ESTIMATE_TYPES = ['standard', 'addon', 'emergency', 'alternative', 'option1', 'option2', 'option3', 'line_item'];
+const QR_ESTIMATE_TYPES = ['standard', 'addon', 'emergency', 'alternative', 'line_item'];
 const QR_SOURCES = ['email', 'text', 'phone', 'site_meeting', 'work_order', 'other'];
 const QR_PRIORITIES = ['low', 'normal', 'high', 'urgent'];
 

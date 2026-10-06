@@ -405,9 +405,6 @@
       "addon": "Estimado adicional",
       "emergency": "Estimado de emergencia",
       "alternative": "Estimado alternativo",
-      "option1": "Opción 1",
-      "option2": "Opción 2",
-      "option3": "Opción 3",
       "line_item": "Estimado por partidas"
     },
     "priority": {

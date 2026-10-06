@@ -88,7 +88,7 @@ export async function copyText(text) {
   }
 }
 
-export const ESTIMATE_TYPES = ['standard', 'addon', 'emergency', 'alternative', 'option1', 'option2', 'option3', 'line_item']
+export const ESTIMATE_TYPES = ['standard', 'addon', 'emergency', 'alternative', 'line_item']
 export const SOURCES = ['email', 'text', 'phone', 'site_meeting', 'work_order', 'other']
 export const PRIORITIES = ['low', 'normal', 'high', 'urgent']
 export const FILE_KINDS = ['plan', 'sketch', 'product_data', 'finish_selection', 'client_email', 'engineering', 'icra', 'existing_estimate', 'manufacturer_instructions', 'other']

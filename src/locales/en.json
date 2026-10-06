@@ -405,9 +405,6 @@
       "addon": "Add-On Estimate",
       "emergency": "Emergency Estimate",
       "alternative": "Alternative Estimate",
-      "option1": "Option 1",
-      "option2": "Option 2",
-      "option3": "Option 3",
       "line_item": "Line-Item Estimate"
     },
     "priority": {

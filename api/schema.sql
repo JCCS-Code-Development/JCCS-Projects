@@ -389,7 +389,7 @@ CREATE TABLE quote_requests (
   status ENUM('draft','submitted','needs_info','in_review','approved','estimating','sent','accepted','declined','cancelled')
          NOT NULL DEFAULT 'draft',
   work_type ENUM('new','addon') NOT NULL DEFAULT 'new',
-  estimate_type VARCHAR(20) NOT NULL DEFAULT 'standard', -- standard|addon|emergency|alternative|option1|option2|option3|line_item
+  estimate_type VARCHAR(20) NOT NULL DEFAULT 'standard', -- standard|addon|emergency|alternative|line_item
   title VARCHAR(200) NOT NULL,
   customer_id INT UNSIGNED NULL,
   contact_id INT UNSIGNED NULL,
