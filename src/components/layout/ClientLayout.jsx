@@ -73,7 +73,9 @@ export default function ClientLayout() {
       <div className="flex-1 flex flex-col min-w-0 lg:ml-60 overflow-hidden">
         <OfflineBanner />
 
-        <header className="lg:hidden bg-brand-900 text-white flex items-center justify-between px-4 py-3 fixed top-0 inset-x-0 z-30">
+        {/* Notched iPhones: pad the bar (and the spacer) by the safe-area inset. */}
+        <header className="lg:hidden bg-brand-900 text-white flex items-center justify-between px-4 pb-3 fixed top-0 inset-x-0 z-30"
+          style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
           <Link to="/portal">
             <img src="/jccs-logo.jpg" alt="JCCS" className="h-7 w-auto"
               style={{ filter: 'invert(1)', mixBlendMode: 'screen' }} />
@@ -88,9 +90,9 @@ export default function ClientLayout() {
           </div>
         </header>
 
-        <div className="lg:hidden h-[52px] shrink-0" />
+        <div className="lg:hidden shrink-0" style={{ height: 'calc(52px + env(safe-area-inset-top))' }} />
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 lg:p-6 w-full">
+        <div className="flex-1 overflow-y-auto px-4 pt-7 pb-4 lg:p-6 w-full">
           <div className="max-w-6xl mx-auto w-full">
             <Outlet />
           </div>

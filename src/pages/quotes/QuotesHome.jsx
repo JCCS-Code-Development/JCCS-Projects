@@ -189,10 +189,17 @@ export default function QuotesHome() {
         {/* Customers / Materials live in the desktop sidebar; on phones and
             iPads they're quiet links here instead of extra tabs. */}
         {isAdmin && (
-          <div className="flex items-center gap-1 text-sm lg:hidden">
-            <Link to="/customers" className="px-2 py-1 font-semibold text-brand-700 active:opacity-60">{t('quotes.manageCustomers')}</Link>
-            <span className="text-gray-300">·</span>
-            <Link to="/library" className="px-2 py-1 font-semibold text-brand-700 active:opacity-60">{t('quotes.manageLibrary')}</Link>
+          <div className="flex items-center justify-center gap-2 lg:hidden">
+            <Link to="/customers"
+              className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm active:bg-brand-100">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>
+              {t('quotes.manageCustomers')}
+            </Link>
+            <Link to="/library"
+              className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm active:bg-brand-100">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7a3 3 0 013-3h10v13H7a3 3 0 00-3 3V7zM4 20a3 3 0 013-3h10v3H7"/></svg>
+              {t('quotes.manageLibrary')}
+            </Link>
           </div>
         )}
       </PageHeader>

@@ -106,7 +106,11 @@ export default function StaffLayout() {
         <OfflineBanner />
 
         {/* Mobile top bar */}
-        <header className="lg:hidden bg-brand-900 text-white flex items-center justify-between px-4 py-3 fixed top-0 inset-x-0 z-30">
+        {/* Notched iPhones: the bar extends under the status bar
+            (viewport-fit=cover), so pad it — and the spacer below — by the
+            safe-area inset. */}
+        <header className="lg:hidden bg-brand-900 text-white flex items-center justify-between px-4 pb-3 fixed top-0 inset-x-0 z-30"
+          style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
           <img src="/jccs-logo.jpg" alt="JCCS" className="h-7 w-auto"
             style={{ filter: 'invert(1)', mixBlendMode: 'screen' }} />
           <div className="flex items-center gap-1">
@@ -119,11 +123,11 @@ export default function StaffLayout() {
           </div>
         </header>
 
-        <div className="lg:hidden h-[52px] shrink-0" />
+        <div className="lg:hidden shrink-0" style={{ height: 'calc(52px + env(safe-area-inset-top))' }} />
 
         {/* lg:pr-24 keeps page content (e.g. a header's top-right action
             button) out from under the fixed desktop notification bell. */}
-        <PullToRefresh className="flex-1 px-4 pt-4 lg:p-6 lg:pr-24 w-full"
+        <PullToRefresh className="flex-1 px-4 pt-7 lg:p-6 lg:pr-24 w-full"
           style={{ paddingBottom: 'max(96px, calc(64px + env(safe-area-inset-bottom)))' }}
           onRefresh={() => setRefreshKey(k => k + 1)}>
           <div key={refreshKey} className="max-w-6xl mx-auto w-full">
