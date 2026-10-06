@@ -635,7 +635,8 @@
       "detailsTitle": "Step 2 of 2 — Details",
       "autoTitle": "Site walk – {{date}}"
     },
-    "searchShort": "Search quotes"
+    "searchShort": "Search quotes",
+    "loadFailed": "Couldn't load quote requests."
   },
   "library": {
     "title": "Materials Library",

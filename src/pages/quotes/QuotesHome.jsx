@@ -148,7 +148,8 @@ export default function QuotesHome() {
     setLoading(true)
     listQuoteRequests(showClosed ? { include_closed: 1 } : {})
       .then((d) => setQuotes(d.quoteRequests ?? []))
-      .catch(() => toast.error(t('common.couldNotSave')))
+      // Show the server's reason — a missing migration, say — not a generic "save" error.
+      .catch((err) => toast.error(`${t('quotes.loadFailed')}${err?.response?.data?.error ? ` (${err.response.data.error})` : ''}`))
       .finally(() => setLoading(false))
   }, [showClosed, toast, t])
 

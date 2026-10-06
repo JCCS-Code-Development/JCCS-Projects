@@ -635,7 +635,8 @@
       "detailsTitle": "Paso 2 de 2 — Detalles",
       "autoTitle": "Visita – {{date}}"
     },
-    "searchShort": "Buscar cotizaciones"
+    "searchShort": "Buscar cotizaciones",
+    "loadFailed": "No se pudieron cargar las solicitudes."
   },
   "library": {
     "title": "Biblioteca de Materiales",
