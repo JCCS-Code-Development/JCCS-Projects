@@ -88,7 +88,8 @@ function StaffSection({ projects }) {
   const employeeMatches = !employeeSearch.trim() ? [] : (employees ?? []).filter((emp) => {
     if (provisionedIds.has(String(emp.id))) return false
     const q = employeeSearch.trim().toLowerCase()
-    return emp.name.toLowerCase().includes(q) || emp.email.toLowerCase().includes(q)
+    // FieldClock crew can be phone-only (no email), so every field may be null.
+    return [emp.name, emp.email, emp.phone].some((v) => (v ?? '').toString().toLowerCase().includes(q))
   })
 
   const pickEmployee = (emp) => {
@@ -96,7 +97,7 @@ function StaffSection({ projects }) {
     setForm((f) => ({
       ...f,
       fieldclock_user_id: String(emp.id),
-      name: emp.name,
+      name: emp.name ?? '',
       email: f.email || emp.email || '',
       phone: f.phone || emp.phone || '',
     }))
@@ -226,7 +227,7 @@ function StaffSection({ projects }) {
                             <button key={emp.id} type="button" onClick={() => pickEmployee(emp)}
                               className="text-left rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors">
                               <p className="text-sm font-medium text-gray-900">{emp.name}</p>
-                              <p className="text-xs text-gray-400">{emp.email}</p>
+                              <p className="text-xs text-gray-400">{emp.email || emp.phone || '—'}</p>
                             </button>
                           ))}
                         </div>
@@ -308,7 +309,7 @@ function ClientsSection({ projects }) {
 
   const matches = !search.trim() ? [] : clients.filter((c) => {
     const q = search.trim().toLowerCase()
-    return c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
+    return [c.name, c.email, c.phone].some((v) => (v ?? '').toString().toLowerCase().includes(q))
   })
 
   const pickExisting = (c) => {
