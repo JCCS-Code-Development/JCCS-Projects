@@ -180,7 +180,7 @@ export default function ProjectsHome() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('projects.title')} subtitle={t('projects.subtitle')}
-        action={isAdmin && <Button size="lg" onClick={() => setShowNewProject(true)}>{t('projects.newProject')}</Button>} />
+        actionLabel={isAdmin ? t('projects.newProjectShort') : null} onAction={() => setShowNewProject(true)} />
 
       <div className="relative w-full max-w-md mx-auto lg:mx-0 lg:max-w-xl">
         <svg className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -192,7 +192,7 @@ export default function ProjectsHome() {
           placeholder={t('projects.searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full rounded-full border border-gray-200 bg-white pl-10 pr-4 py-3 text-base lg:py-2.5 lg:text-sm shadow-sm outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+          className="w-full rounded-full border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-base lg:text-sm outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
         />
       </div>
 

@@ -79,7 +79,7 @@
     "newProjectTitle": "New Project",
     "createProject": "Create Project",
     "searchLabel": "Search",
-    "searchPlaceholder": "Search by name, estimate #, or company…",
+    "searchPlaceholder": "Search name, estimate #, company",
     "lookup": "Look up",
     "notFound": "No project found with that estimate #.",
     "noCompany": "No Company",
@@ -91,7 +91,8 @@
     "activeTab": "Active",
     "inactiveTab": "Inactive",
     "noActiveProjects": "No active projects.",
-    "noInactiveProjects": "No inactive projects — nothing has been marked completed yet."
+    "noInactiveProjects": "No inactive projects — nothing has been marked completed yet.",
+    "newProjectShort": "New project"
   },
   "dailyLogs": {
     "title": "Daily Logs",
@@ -620,7 +621,8 @@
       "skipHint": "No photos to take? You can skip and add them later.",
       "detailsTitle": "Step 2 of 2 — Details",
       "autoTitle": "Site walk – {{date}}"
-    }
+    },
+    "searchShort": "Search quotes"
   },
   "customers": {
     "title": "Customers",

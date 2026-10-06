@@ -43,30 +43,32 @@ function ProjectAccessPicker({ projects, selected, onToggle }) {
 // side by side from `md` up.
 function SectionHeader({ title, subtitle, action }) {
   return (
-    <div className="flex flex-col items-center text-center gap-3 md:flex-row md:items-center md:justify-between md:text-left">
+    <div className="flex flex-col items-center text-center gap-2 md:flex-row md:items-center md:justify-between md:text-left">
       <div className="min-w-0">
         <h2 className="text-base font-bold text-gray-900">{title}</h2>
         <p className="text-sm text-gray-500">{subtitle}</p>
       </div>
-      <div className="w-full max-w-md md:w-auto [&>button]:w-full md:[&>button]:w-auto shrink-0">{action}</div>
+      <div className="shrink-0">{action}</div>
     </div>
   )
 }
 
-// One person as a card (phones) — the table doesn't fit a 390px screen.
+// One person as a compact row-card (phones) — the table doesn't fit a 390px screen.
 function PersonCard({ name, you, lines, badges, onEdit, onRemove, editLabel, removeLabel }) {
   return (
-    <div className="px-4 py-4 flex flex-col gap-3">
-      <div className="min-w-0">
-        <p className="text-base font-semibold text-gray-900 break-words">
-          {name}{you && <span className="text-xs font-normal text-gray-400 ml-1.5">{you}</span>}
-        </p>
-        {lines.filter(Boolean).map((l, i) => <p key={i} className="text-sm text-gray-500 break-all">{l}</p>)}
+    <div className="px-4 py-3.5 flex flex-col gap-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold text-gray-900 break-words">
+            {name}{you && <span className="text-xs font-normal text-gray-400 ml-1.5">{you}</span>}
+          </p>
+          {lines.filter(Boolean).map((l, i) => <p key={i} className="text-[13px] text-gray-500 break-all">{l}</p>)}
+        </div>
+        <div className="flex flex-wrap justify-end gap-1 shrink-0">{badges}</div>
       </div>
-      <div className="flex flex-wrap gap-1.5">{badges}</div>
-      <div className={`grid gap-2 ${onRemove ? 'grid-cols-2' : 'grid-cols-1'}`}>
-        <button onClick={onEdit} className="rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-800 active:bg-gray-50">{editLabel}</button>
-        {onRemove && <button onClick={onRemove} className="rounded-xl border border-red-100 bg-red-50 py-2.5 text-sm font-semibold text-red-600 active:bg-red-100">{removeLabel}</button>}
+      <div className="flex justify-end gap-2">
+        <button onClick={onEdit} className="rounded-full border border-gray-200 px-4 py-1.5 text-[13px] font-semibold text-gray-700 active:bg-gray-50">{editLabel}</button>
+        {onRemove && <button onClick={onRemove} className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-red-500 active:bg-red-50">{removeLabel}</button>}
       </div>
     </div>
   )
@@ -169,7 +171,7 @@ function StaffSection({ projects }) {
   return (
     <div className="flex flex-col gap-3">
       <SectionHeader title={t('users.staffTitle')} subtitle={t('users.staffSubtitle')}
-        action={<Button size="lg" onClick={openCreate}>{t('users.addUser')}</Button>} />
+        action={<Button size="md" onClick={openCreate} className="!rounded-full px-5">{t('users.addUser')}</Button>} />
 
       {loading ? <Card><Spinner /></Card> : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -424,7 +426,7 @@ function ClientsSection({ projects }) {
   return (
     <div className="flex flex-col gap-3">
       <SectionHeader title={t('users.clientsTitle')} subtitle={t('users.clientsSubtitle')}
-        action={<Button size="lg" onClick={openCreate}>{t('users.addClient')}</Button>} />
+        action={<Button size="md" onClick={openCreate} className="!rounded-full px-5">{t('users.addClient')}</Button>} />
 
       {loading ? <Card><Spinner /></Card> : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

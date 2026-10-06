@@ -58,7 +58,7 @@ export default function MaterialsLibrary() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('library.title')} subtitle={t('library.subtitle')}
-        action={<Button size="lg" onClick={() => openCreate()}>{t('library.add')}</Button>} />
+        actionLabel={t('library.add')} onAction={() => openCreate()} />
 
       {loading ? <Card><Spinner /></Card> : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">

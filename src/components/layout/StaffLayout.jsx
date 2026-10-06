@@ -128,7 +128,8 @@ export default function StaffLayout() {
           onRefresh={() => setRefreshKey(k => k + 1)}>
           <div key={refreshKey} className="max-w-6xl mx-auto w-full">
             <Outlet />
-            <div className="lg:hidden h-24 shrink-0" />
+            {/* Room for the floating + button above the tab bar. */}
+            <div className="lg:hidden h-28 shrink-0" />
           </div>
         </PullToRefresh>
 

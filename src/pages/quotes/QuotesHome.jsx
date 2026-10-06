@@ -46,6 +46,10 @@ function NewRequestModal({ isOpen, onClose, isAdmin, pickers }) {
   )
 }
 
+const CameraIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+)
+
 const NoPhoto = ({ className = '' }) => (
   <div className={`flex items-center justify-center bg-gray-100 text-gray-300 ${className}`}>
     <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
@@ -178,40 +182,44 @@ export default function QuotesHome() {
       <PageHeader
         title={isAdmin ? t('quotes.title') : t('quotes.fieldTitle')}
         subtitle={isAdmin ? t('quotes.subtitle') : t('quotes.fieldSubtitle')}
-        action={
-          <Button size="lg" onClick={isAdmin ? () => setShowNew(true) : startSiteWalk} loading={starting} className="shadow-md shadow-brand-500/30">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" d="M12 5v14M5 12h14"/></svg>
-            {isAdmin ? t('quotes.newRequest') : t('quotes.newSiteWalk')}
-          </Button>
-        }>
+        actionLabel={isAdmin ? t('quotes.newRequest') : t('quotes.newSiteWalk')}
+        onAction={isAdmin ? () => setShowNew(true) : startSiteWalk}
+        actionLoading={starting}
+        actionIcon={isAdmin ? undefined : CameraIcon}>
         {/* Customers / Materials live in the desktop sidebar; on phones and
-            iPads they're reached from here instead of the bottom bar. */}
+            iPads they're quiet links here instead of extra tabs. */}
         {isAdmin && (
-          <div className="grid grid-cols-2 gap-2 w-full max-w-md lg:hidden">
-            <Link to="/customers" className="rounded-xl border border-gray-200 bg-white py-2.5 text-sm font-semibold text-brand-700 text-center active:bg-gray-50">{t('quotes.manageCustomers')}</Link>
-            <Link to="/library" className="rounded-xl border border-gray-200 bg-white py-2.5 text-sm font-semibold text-brand-700 text-center active:bg-gray-50">{t('quotes.manageLibrary')}</Link>
+          <div className="flex items-center gap-1 text-sm lg:hidden">
+            <Link to="/customers" className="px-2 py-1 font-semibold text-brand-700 active:opacity-60">{t('quotes.manageCustomers')}</Link>
+            <span className="text-gray-300">·</span>
+            <Link to="/library" className="px-2 py-1 font-semibold text-brand-700 active:opacity-60">{t('quotes.manageLibrary')}</Link>
           </div>
         )}
       </PageHeader>
 
-      <div className="flex flex-col items-stretch w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0 lg:flex-row lg:items-center gap-3">
-        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('quotes.search')}
-          className="w-full lg:max-w-md rounded-full border border-gray-200 bg-white px-4 py-3 text-base lg:text-sm shadow-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
-        {isAdmin && (
-          <div className="grid grid-cols-3 lg:inline-flex bg-gray-100 rounded-xl p-1 gap-1 w-full lg:w-fit">
-            {['all', 'mine', 'unassigned'].map((f) => (
-              <button key={f} onClick={() => setFilter(f)}
-                className={`px-2 py-2 rounded-lg text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-colors ${filter === f ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                {t(`quotes.filters.${f}`)}
-              </button>
-            ))}
-          </div>
-        )}
-        <label className="flex items-center justify-center lg:justify-start gap-2 py-1 text-sm text-gray-600 cursor-pointer">
-          <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)}
-            className="w-5 h-5 rounded border-gray-300 text-brand-500 focus:ring-brand-400" />
-          {t('quotes.showClosed')}
-        </label>
+      <div className="flex flex-col gap-2.5 w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0 lg:flex-row lg:items-center lg:gap-3">
+        <div className="relative w-full lg:max-w-md">
+          <svg className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('quotes.searchShort')}
+            className="w-full rounded-full border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-base lg:text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+        </div>
+        {/* Slim chips — filters plus the closed toggle — in one scrollable row. */}
+        <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {isAdmin && ['all', 'mine', 'unassigned'].map((f) => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+                filter === f ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200'
+              }`}>
+              {t(`quotes.filters.${f}`)}
+            </button>
+          ))}
+          <button onClick={() => setShowClosed((v) => !v)}
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+              showClosed ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200'
+            }`}>
+            {t('quotes.showClosed')}
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -224,13 +232,14 @@ export default function QuotesHome() {
         <>
           {/* Phones / iPads / small laptops: one status at a time via tabs. */}
           <div className="xl:hidden flex flex-col gap-3">
-            <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 sm:mx-0 sm:px-0 sm:justify-center [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex gap-5 overflow-x-auto -mx-4 px-4 border-b border-gray-200 sm:mx-0 sm:px-0 sm:justify-center [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {columns.map((col) => (
                 <button key={col.key} onClick={() => setTab(col.key)}
-                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors border ${
-                    activeTab === col.key ? 'bg-brand-500 border-brand-500 text-white' : 'bg-white border-gray-200 text-gray-600'
+                  className={`shrink-0 -mb-px border-b-2 pb-2 pt-1 text-sm font-semibold transition-colors ${
+                    activeTab === col.key ? 'border-brand-500 text-gray-900' : 'border-transparent text-gray-400'
                   }`}>
-                  {t(`quotes.board.${col.key}`)} <span className={activeTab === col.key ? 'text-white/80' : 'text-gray-400'}>{col.items.length}</span>
+                  {t(`quotes.board.${col.key}`)}
+                  <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] ${activeTab === col.key ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-400'}`}>{col.items.length}</span>
                 </button>
               ))}
             </div>

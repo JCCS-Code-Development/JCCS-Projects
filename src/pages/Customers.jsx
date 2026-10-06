@@ -86,7 +86,7 @@ export default function Customers() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t('customers.title')} subtitle={t('customers.subtitle')}
-        action={<Button size="lg" onClick={openCreate}>{t('customers.add')}</Button>} />
+        actionLabel={t('customers.add')} onAction={openCreate} />
 
       {loading ? <Card><Spinner /></Card> : customers.length === 0 ? (
         <Card><p className="text-sm text-gray-400">{t('customers.empty')}</p></Card>
