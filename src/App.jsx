@@ -15,6 +15,7 @@ import DailyLogDetail from './pages/DailyLogDetail'
 import Users from './pages/Users'
 import QuotesHome from './pages/quotes/QuotesHome'
 import QuoteDetail from './pages/quotes/QuoteDetail'
+import QuoteCapture from './pages/quotes/QuoteCapture'
 import Customers from './pages/Customers'
 import MaterialsLibrary from './pages/MaterialsLibrary'
 
@@ -57,6 +58,7 @@ export default function App() {
           <Route element={<RoleRoute allowedRoles={['admin', 'field']} />}>
             <Route path="/quotes" element={<QuotesHome />} />
             <Route path="/quotes/:id" element={<QuoteDetail />} />
+            <Route path="/quotes/:id/capture" element={<QuoteCapture />} />
           </Route>
 
           {/* Admin only */}

@@ -106,7 +106,9 @@ function qrValidDate(?string $v): ?string {
 
 function qrValidDateTime(?string $v): ?string {
     if ($v === null || $v === '') return null;
-    try { return (new DateTime($v))->format('Y-m-d H:i:s'); }
+    // Phones send ISO-8601 in UTC ("...Z"); store it in the app's own timezone
+    // like every other DATETIME column.
+    try { return (new DateTime($v))->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s'); }
     catch (Throwable $e) { http_response_code(422); exit(json_encode(['error' => 'Invalid date/time: ' . $v])); }
 }
 

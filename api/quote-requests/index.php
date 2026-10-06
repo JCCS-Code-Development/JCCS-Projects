@@ -24,6 +24,7 @@ if ($method === 'GET') {
                    q.created_by, q.created_by_name, q.submitted_at, q.approved_at, q.sent_at, q.decided_at,
                    q.created_at, q.updated_at,
                    (SELECT COUNT(*) FROM quote_request_photos p WHERE p.quote_request_id = q.id) AS photo_count,
+                   (SELECT p2.file_path FROM quote_request_photos p2 WHERE p2.quote_request_id = q.id ORDER BY p2.id LIMIT 1) AS cover_path,
                    (SELECT c2.kind FROM quote_request_comments c2 WHERE c2.quote_request_id = q.id ORDER BY c2.id DESC LIMIT 1) AS last_comment_kind
             FROM quote_requests q
             LEFT JOIN customers c ON c.id = q.customer_id";
@@ -68,6 +69,8 @@ if ($method === 'GET') {
         $r['form_json'] = null;
         $out = qrPresent($r, $auth);
         $out['photo_count'] = (int)$r['photo_count'];
+        $out['cover_url'] = $r['cover_path'] ? qrFileUrl($r['cover_path']) : null;
+        unset($out['cover_path']);
         unset($out['form']);
         return $out;
     }, $stmt->fetchAll());

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
@@ -11,9 +11,10 @@ import { useConfirm } from '../../components/ConfirmProvider'
 import { useAuthStore } from '../../store/authStore'
 import {
   getQuoteRequest, updateQuoteRequest, deleteQuoteRequest, quoteAction, addQuoteComment,
-  uploadQuotePhoto, updateQuotePhoto, deleteQuotePhoto, uploadQuoteFile, deleteQuoteFile, getQuoteVersion,
+  uploadQuoteFile, deleteQuoteFile, getQuoteVersion,
 } from '../../api/quoteRequests'
-import { resizeImage } from '../../utils/imageResize'
+import { usePhotoUploader } from './photos/usePhotoUploader'
+import PhotoGallery, { PhotoPickerButtons } from './photos/PhotoGallery'
 import { StatusPill, FlagPills, QuoteDetailsForm, TextArea, Select } from './QuoteParts'
 import { useQuotePickers } from './useQuotePickers'
 import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm } from './quoteUtils'
@@ -63,6 +64,8 @@ function ActionBar({ quote, onDone, onDelete, canDelete }) {
     if (action === 'submit' && quote.status === 'needs_info') {
       setText(''); setDialog({ action, kind: 'prompt', promptKey: 'resubmit', optional: true }); return
     }
+    if (action === 'submit' && !quote.photos.length
+      && !await confirmDialog(t('quotes.prompts.noPhotos'), { confirmLabel: t('quotes.actions.submit') })) return
     if (ui.prompt) { setText(''); setDialog({ action, kind: 'prompt', promptKey: ui.prompt }); return }
     if (ui.number === true || (ui.number === 'ifMissing' && !quote.estimate_number)) {
       setText(quote.estimate_number ?? ''); setDialog({ action, kind: 'number' }); return
@@ -146,10 +149,10 @@ function DetailRow({ label, children }) {
   )
 }
 
-function DetailsCard({ quote, isAdmin, pickers, onSaved }) {
+function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDone }) {
   const { t, i18n } = useTranslation()
   const toast = useToast()
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(!!startEditing)
   const [form, setForm] = useState(() => formFromQuote(quote))
   const [saving, setSaving] = useState(false)
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -163,6 +166,7 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved }) {
     try {
       await updateQuoteRequest(quote.id, payloadFromForm(form, isAdmin))
       setEditing(false)
+      onEditDone?.()
       onSaved()
     } catch (err) { toast.error(errMsg(err, t)) }
     finally { setSaving(false) }
@@ -170,14 +174,14 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved }) {
 
   const contact = quote.contact
   return (
-    <Card title={t('quotes.sections.details')}
+    <Card title={startEditing && editing ? t('quotes.capture.detailsTitle') : t('quotes.sections.details')}
       action={quote.can_edit && !editing && <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>{t('quotes.actions.edit')}</Button>}>
       {editing ? (
         <div className="flex flex-col gap-4">
           <QuoteDetailsForm form={form} set={set} isAdmin={isAdmin} mode="edit" {...pickers} />
           <div className="grid grid-cols-2 sm:flex gap-2">
             <Button size="lg" onClick={save} loading={saving}>{t('quotes.actions.save')}</Button>
-            <Button size="lg" variant="secondary" onClick={() => setEditing(false)}>{t('quotes.actions.discard')}</Button>
+            <Button size="lg" variant="secondary" onClick={() => { setEditing(false); onEditDone?.() }}>{t('quotes.actions.discard')}</Button>
           </div>
         </div>
       ) : (
@@ -279,96 +283,21 @@ function ScopeCard({ quote, onSaved, loadIntoEditor }) {
   )
 }
 
-// ── Photos ───────────────────────────────────────────────────────────────
-function PhotoTile({ photo, canEdit, onChanged }) {
+// ── Photos (the lead section, CompanyCam style) ──────────────────────────
+function PhotosSection({ quote, canEdit, onChanged }) {
   const { t } = useTranslation()
-  const toast = useToast()
-  const confirmDialog = useConfirm()
-  const [caption, setCaption] = useState(photo.caption ?? '')
-
-  const patch = async (payload) => {
-    try { await updateQuotePhoto(photo.id, payload); onChanged() }
-    catch (err) { toast.error(errMsg(err, t)) }
-  }
-  const remove = async () => {
-    if (!await confirmDialog(t('quotes.photos.deleteConfirm'), { danger: true, confirmLabel: t('quotes.photos.delete') })) return
-    try { await deleteQuotePhoto(photo.id); onChanged() }
-    catch (err) { toast.error(errMsg(err, t)) }
-  }
-
+  const uploader = usePhotoUploader(quote.id, { onUploaded: onChanged })
+  const count = quote.photos.length
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-gray-100 p-2 bg-white">
-      <a href={photo.url} target="_blank" rel="noreferrer" className="block aspect-square overflow-hidden rounded-lg bg-gray-100">
-        <img src={photo.url} alt={photo.caption ?? ''} loading="lazy" className="w-full h-full object-cover" />
-      </a>
-      {canEdit ? (
-        <>
-          {/* text-base on touch screens so iOS doesn't zoom into the field. */}
-          <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder={t('quotes.photos.caption')}
-            onBlur={() => caption !== (photo.caption ?? '') && patch({ caption })}
-            className="w-full rounded-lg border border-gray-200 px-2.5 py-2 text-base lg:text-sm outline-none focus:border-brand-500" />
-          <div className="flex flex-col gap-0.5 text-xs text-gray-600">
-            <label className="flex items-center gap-2 py-1.5 cursor-pointer"><input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-brand-500" checked={!!photo.is_before} onChange={(e) => patch({ is_before: e.target.checked })} />{t('quotes.photos.before')}</label>
-            <label className="flex items-center gap-2 py-1.5 cursor-pointer"><input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-brand-500" checked={!!photo.is_reference} onChange={(e) => patch({ is_reference: e.target.checked })} />{t('quotes.photos.reference')}</label>
-          </div>
-          <button onClick={remove} className="text-xs font-semibold text-red-500 py-2 rounded-lg active:bg-red-50 hover:underline">{t('quotes.photos.delete')}</button>
-        </>
-      ) : (
-        <>
-          {photo.caption && <p className="text-xs text-gray-700">{photo.caption}</p>}
-          <p className="text-[11px] text-gray-400">
-            {[photo.is_before ? t('quotes.photos.before') : null, photo.is_reference ? t('quotes.photos.reference') : null].filter(Boolean).join(' · ')}
-          </p>
-        </>
-      )}
-    </div>
-  )
-}
-
-function PhotosCard({ quote, canEdit, onChanged }) {
-  const { t } = useTranslation()
-  const toast = useToast()
-  const inputRef = useRef(null)
-  const [pending, setPending] = useState(0)
-
-  const onFiles = async (e) => {
-    // Capture the FileList before clearing the input (clearing empties it).
-    const files = Array.from(e.target.files ?? [])
-    e.target.value = ''
-    if (!files.length) return
-    setPending(files.length)
-    for (const f of files) {
-      try {
-        const small = await resizeImage(f)
-        await uploadQuotePhoto(quote.id, small, {
-          client_uid: `${f.name}-${f.size}-${f.lastModified}`,
-          taken_at: f.lastModified ? new Date(f.lastModified).toISOString() : undefined,
-        })
-      } catch (err) { toast.error(errMsg(err, t)) }
-      setPending((n) => n - 1)
-    }
-    onChanged()
-  }
-
-  return (
-    <Card title={`${t('quotes.sections.photos')} (${quote.photos.length})`}>
-      {canEdit && (
-        <>
-          <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
-          <Button size="lg" fullWidth onClick={() => inputRef.current?.click()} loading={pending > 0} className="mb-4 lg:w-auto">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
-            {pending > 0 ? t('quotes.photos.uploading', { count: pending }) : t('quotes.photos.add')}
-          </Button>
-        </>
-      )}
-      {quote.photos.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center lg:text-left">{t('quotes.photos.empty')}</p>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {quote.photos.map((p) => <PhotoTile key={p.id} photo={p} canEdit={canEdit} onChanged={onChanged} />)}
-        </div>
-      )}
-    </Card>
+    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-semibold text-gray-900">{t('quotes.sections.photos')} <span className="text-gray-400 font-normal">({count})</span></h2>
+      </div>
+      {canEdit && <PhotoPickerButtons onFiles={uploader.addFiles} size="compact" />}
+      {count === 0 && uploader.items.length === 0
+        ? <p className="text-sm text-gray-400 text-center py-4">{t('quotes.photos.empty')}</p>
+        : <PhotoGallery photos={quote.photos} uploader={uploader} canEdit={canEdit} onChanged={onChanged} />}
+    </section>
   )
 }
 
@@ -540,6 +469,9 @@ export default function QuoteDetail() {
   const [quote, setQuote] = useState(null)
   const [error, setError] = useState(false)
   const [loadIntoEditor, setLoadIntoEditor] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  // ?edit=1 — arriving from the photo step of a new site walk.
+  const startEditing = searchParams.get('edit') === '1' && !!quote?.can_edit
 
   const load = useCallback(() => {
     getQuoteRequest(id).then((d) => setQuote(d.quoteRequest)).catch(() => setError(true))
@@ -583,17 +515,24 @@ export default function QuoteDetail() {
       {fieldReadOnly && quote.status !== 'cancelled' && (
         <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">{t('quotes.readOnlyField')}</div>
       )}
-      {!isAdmin && quote.status === 'draft' && (
-        <p className="text-xs text-gray-500">{t('quotes.submitHint')}</p>
+      {/* While filling in step 2 of a new site walk, the details form is the
+          only thing to do — submit/delete come back once it's saved. */}
+      {!startEditing && (
+        <>
+          {!isAdmin && quote.status === 'draft' && (
+            <p className="text-xs text-gray-500 text-center lg:text-left">{t('quotes.submitHint')}</p>
+          )}
+          <ActionBar quote={quote} onDone={load} onDelete={handleDelete} canDelete={canDelete} />
+        </>
       )}
 
-      <ActionBar quote={quote} onDone={load} onDelete={handleDelete} canDelete={canDelete} />
+      {!startEditing && <PhotosSection quote={quote} canEdit={canEditMedia} onChanged={load} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
         <div className="lg:col-span-3 flex flex-col gap-4 min-w-0">
-          <DetailsCard quote={quote} isAdmin={isAdmin} pickers={pickers} onSaved={load} />
+          <DetailsCard quote={quote} isAdmin={isAdmin} pickers={pickers} onSaved={load}
+            startEditing={startEditing} onEditDone={() => setSearchParams({}, { replace: true })} />
           {isAdmin && <ScopeCard quote={quote} onSaved={load} loadIntoEditor={loadIntoEditor} />}
-          <PhotosCard quote={quote} canEdit={canEditMedia} onChanged={load} />
           <FilesCard quote={quote} canEdit={canEditMedia} onChanged={load} />
         </div>
         <div className="lg:col-span-2 flex flex-col gap-4 min-w-0">

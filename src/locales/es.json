@@ -508,7 +508,8 @@
       "delete": "¿Eliminar permanentemente esta solicitud, sus fotos e historial? No se puede deshacer.",
       "approve": "¿Aprobar y bloquear este alcance? Puedes reabrirlo después.",
       "estimateNumber": "Estimado # de InvoiceToGo",
-      "reopen": "¿Reabrir para editar? La versión aprobada queda en el historial."
+      "reopen": "¿Reabrir para editar? La versión aprobada queda en el historial.",
+      "noPhotos": "Esta visita no tiene fotos. ¿Enviarla de todos modos?"
     },
     "photos": {
       "add": "Agregar fotos",
@@ -518,7 +519,29 @@
       "reference": "Solo referencia",
       "uploading": "Subiendo {{count}}…",
       "delete": "Eliminar foto",
-      "deleteConfirm": "¿Eliminar esta foto?"
+      "deleteConfirm": "¿Eliminar esta foto?",
+      "takePhoto": "Tomar foto",
+      "fromLibrary": "De la galería",
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "retry": "Reintentar",
+      "discard": "Quitar",
+      "markup": "Marcar",
+      "textPlaceholder": "Texto",
+      "addText": "Agregar",
+      "undo": "Deshacer",
+      "clear": "Borrar todo",
+      "saveMarkup": "Guardar",
+      "captionPlaceholder": "Agrega una descripción…",
+      "failedWarning_one": "{{count}} foto no se subió — toca Reintentar o Quitar primero.",
+      "failedWarning_other": "{{count}} fotos no se subieron — toca Reintentar o Quitar primero.",
+      "tools": {
+        "arrow": "Flecha",
+        "circle": "Círculo",
+        "line": "Línea",
+        "pen": "Dibujar",
+        "text": "Texto"
+      }
     },
     "files": {
       "add": "Agregar documento",
@@ -585,7 +608,19 @@
     "manageLibrary": "Biblioteca de materiales",
     "addonShort": "Adicional",
     "titleRequired": "Primero agrega un título.",
-    "projectRequired": "Elige el proyecto al que pertenece este adicional."
+    "projectRequired": "Elige el proyecto al que pertenece este adicional.",
+    "capture": {
+      "step": "Paso 1 de 2",
+      "title": "Fotos",
+      "subtitle": "Primero fotografía el trabajo — cada foto se sube al momento.",
+      "empty": "Aún no hay fotos. Toma algunas del área de trabajo, daños y cualquier cosa fuera de lo normal.",
+      "next_one": "Siguiente: detalles ({{count}} foto)",
+      "next_other": "Siguiente: detalles ({{count}} fotos)",
+      "nextNoPhotos": "Omitir — sin fotos",
+      "skipHint": "¿No hay nada que fotografiar? Puedes omitirlo y agregarlas después.",
+      "detailsTitle": "Paso 2 de 2 — Detalles",
+      "autoTitle": "Visita – {{date}}"
+    }
   },
   "customers": {
     "title": "Clientes",

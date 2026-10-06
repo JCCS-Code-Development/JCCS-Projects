@@ -46,14 +46,21 @@ function NewRequestModal({ isOpen, onClose, isAdmin, pickers }) {
   )
 }
 
-function QuoteCard({ q, showAssignees }) {
+const NoPhoto = ({ className = '' }) => (
+  <div className={`flex items-center justify-center bg-gray-100 text-gray-300 ${className}`}>
+    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+  </div>
+)
+
+// `cover` = CompanyCam-style card with the first photo as a big cover image
+// (field managers' list); otherwise a compact card with a square thumbnail.
+function QuoteCard({ q, showAssignees, cover = false }) {
   const { t, i18n } = useTranslation()
   const flagged = quoteFlags(q).some((f) => f === 'overdue' || f === 'followUpDue')
-  return (
-    <Link to={`/quotes/${q.id}`}
-      className={`block bg-white rounded-2xl shadow-sm border px-4 py-3 transition-all hover:shadow-md ${flagged ? 'border-red-200' : 'border-gray-100 hover:border-brand-400'}`}>
+  const body = (
+    <div className="min-w-0 flex-1">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-bold text-gray-400 tracking-wide">
+        <span className="text-[11px] font-bold text-gray-400 tracking-wide truncate">
           {q.request_no}{q.estimate_number ? ` · #${q.estimate_number}` : ''}{q.work_type === 'addon' && q.project_number ? ` · ${t('quotes.addonShort')} #${q.project_number}` : ''}
         </span>
         <StatusPill status={q.status} />
@@ -65,19 +72,45 @@ function QuoteCard({ q, showAssignees }) {
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
         <FlagPills quote={q} />
         {q.needed_by && <span className="text-[11px] text-gray-400">{t('quotes.fields.neededBy')}: {fmtDate(q.needed_by, i18n.language)}</span>}
-        {q.photo_count > 0 && <span className="text-[11px] text-gray-400">{q.needed_by ? '· ' : ''}{t('quotes.photos', { count: q.photo_count })}</span>}
       </div>
       {showAssignees && (q.field_manager_name || q.assigned_to_name) && (
         <p className="text-[11px] text-gray-400 mt-1 truncate">
           {[q.field_manager_name && `${t('quotes.fields.fieldManager')}: ${q.field_manager_name}`, q.assigned_to_name && `${t('quotes.fields.estimator')}: ${q.assigned_to_name}`].filter(Boolean).join(' · ')}
         </p>
       )}
+    </div>
+  )
+  const photoCount = q.photo_count > 0 && (
+    <span className="absolute bottom-1.5 right-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white">
+      {t('quotes.photos', { count: q.photo_count })}
+    </span>
+  )
+  const frame = `block bg-white rounded-2xl shadow-sm border overflow-hidden transition-all hover:shadow-md active:scale-[0.99] ${flagged ? 'border-red-200' : 'border-gray-100 hover:border-brand-400'}`
+
+  if (cover) {
+    return (
+      <Link to={`/quotes/${q.id}`} className={frame}>
+        <div className="relative aspect-[16/9]">
+          {q.cover_url ? <img src={q.cover_url} alt="" loading="lazy" className="w-full h-full object-cover" /> : <NoPhoto className="w-full h-full" />}
+          {photoCount}
+        </div>
+        <div className="px-4 py-3">{body}</div>
+      </Link>
+    )
+  }
+  return (
+    <Link to={`/quotes/${q.id}`} className={`${frame} flex gap-3 p-3`}>
+      <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden">
+        {q.cover_url ? <img src={q.cover_url} alt="" loading="lazy" className="w-full h-full object-cover" /> : <NoPhoto className="w-full h-full" />}
+        {q.photo_count > 1 && <span className="absolute bottom-1 right-1 rounded-full bg-black/60 px-1.5 text-[10px] font-bold text-white">{q.photo_count}</span>}
+      </div>
+      {body}
     </Link>
   )
 }
 
 export default function QuotesHome() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const toast = useToast()
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role === 'admin'
@@ -90,6 +123,22 @@ export default function QuotesHome() {
   const [showClosed, setShowClosed] = useState(false)
   const [showNew, setShowNew] = useState(false)
   const [tab, setTab] = useState(null)
+  const [starting, setStarting] = useState(false)
+  const navigate = useNavigate()
+
+  // Photos first: a site walk starts as a draft with a dated placeholder
+  // title, straight into the camera screen. Details come after the photos.
+  const startSiteWalk = async () => {
+    setStarting(true)
+    try {
+      const today = new Date().toLocaleDateString(i18n.language === 'es' ? 'es-US' : 'en-US', { month: 'short', day: 'numeric' })
+      const res = await createQuoteRequest({ title: t('quotes.capture.autoTitle', { date: today }), work_type: 'new' })
+      navigate(`/quotes/${res.id}/capture`)
+    } catch (err) {
+      toast.error(err?.response?.data?.error ?? t('common.couldNotSave'))
+      setStarting(false)
+    }
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -130,7 +179,7 @@ export default function QuotesHome() {
         title={isAdmin ? t('quotes.title') : t('quotes.fieldTitle')}
         subtitle={isAdmin ? t('quotes.subtitle') : t('quotes.fieldSubtitle')}
         action={
-          <Button size="lg" onClick={() => setShowNew(true)} className="shadow-md shadow-brand-500/30">
+          <Button size="lg" onClick={isAdmin ? () => setShowNew(true) : startSiteWalk} loading={starting} className="shadow-md shadow-brand-500/30">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" d="M12 5v14M5 12h14"/></svg>
             {isAdmin ? t('quotes.newRequest') : t('quotes.newSiteWalk')}
           </Button>
@@ -210,7 +259,7 @@ export default function QuotesHome() {
         </>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {fieldList.map((q) => <QuoteCard key={q.id} q={q} />)}
+          {fieldList.map((q) => <QuoteCard key={q.id} q={q} cover />)}
         </div>
       )}
 

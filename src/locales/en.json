@@ -508,7 +508,8 @@
       "delete": "Permanently delete this request, its photos and history? This cannot be undone.",
       "approve": "Approve and lock this scope? You can reopen it later.",
       "estimateNumber": "InvoiceToGo Estimate #",
-      "reopen": "Reopen for editing? The approved version stays in history."
+      "reopen": "Reopen for editing? The approved version stays in history.",
+      "noPhotos": "This site walk has no photos. Submit it anyway?"
     },
     "photos": {
       "add": "Add photos",
@@ -518,7 +519,29 @@
       "reference": "Reference only",
       "uploading": "Uploading {{count}}…",
       "delete": "Delete photo",
-      "deleteConfirm": "Delete this photo?"
+      "deleteConfirm": "Delete this photo?",
+      "takePhoto": "Take photo",
+      "fromLibrary": "From library",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "retry": "Retry",
+      "discard": "Remove",
+      "markup": "Mark up",
+      "textPlaceholder": "Label text",
+      "addText": "Add",
+      "undo": "Undo",
+      "clear": "Clear",
+      "saveMarkup": "Save",
+      "captionPlaceholder": "Add a caption…",
+      "failedWarning_one": "{{count}} photo didn’t upload — tap Retry or Remove first.",
+      "failedWarning_other": "{{count}} photos didn’t upload — tap Retry or Remove first.",
+      "tools": {
+        "arrow": "Arrow",
+        "circle": "Circle",
+        "line": "Line",
+        "pen": "Draw",
+        "text": "Text"
+      }
     },
     "files": {
       "add": "Add document",
@@ -585,7 +608,19 @@
     "manageLibrary": "Materials library",
     "addonShort": "Add-on",
     "titleRequired": "Add a title first.",
-    "projectRequired": "Pick the project this add-on belongs to."
+    "projectRequired": "Pick the project this add-on belongs to.",
+    "capture": {
+      "step": "Step 1 of 2",
+      "title": "Photos",
+      "subtitle": "Shoot the job first — every photo uploads as you go.",
+      "empty": "No photos yet. Take a few of the work area, damage, and anything unusual.",
+      "next_one": "Next: details ({{count}} photo)",
+      "next_other": "Next: details ({{count}} photos)",
+      "nextNoPhotos": "Skip — no photos",
+      "skipHint": "No photos to take? You can skip and add them later.",
+      "detailsTitle": "Step 2 of 2 — Details",
+      "autoTitle": "Site walk – {{date}}"
+    }
   },
   "customers": {
     "title": "Customers",
