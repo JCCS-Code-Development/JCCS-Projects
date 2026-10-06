@@ -73,7 +73,7 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
             <p className="text-sm font-semibold text-gray-900">{format(viewMonth, 'MMMM yyyy')}</p>
             {!isSameMonth(viewMonth, new Date()) && (
               <button onClick={() => setViewMonth(startOfMonth(new Date()))}
-                className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+                className="text-xs font-semibold text-brand-700 hover:text-brand-700">
                 {t('dailyLogs.today')}
               </button>
             )}

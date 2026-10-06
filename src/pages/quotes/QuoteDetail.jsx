@@ -85,22 +85,34 @@ function ActionBar({ quote, onDone, onDelete, canDelete }) {
   const actions = (quote.actions ?? []).filter((a) => !(a === 'cancel' && canDelete && quote.status === 'draft'))
   if (!actions.length && !canDelete) return null
   const label = (a) => (a === 'submit' && quote.status === 'needs_info' ? t('quotes.actions.resubmit') : t(`quotes.actions.${a}`))
+  const main = [...actions.filter((a) => ACTION_UI[a]?.primary), ...actions.filter((a) => !ACTION_UI[a]?.primary && !ACTION_UI[a]?.ghost)]
+  const quiet = actions.filter((a) => ACTION_UI[a]?.ghost)
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        {actions.map((a) => {
-          const ui = ACTION_UI[a] ?? {}
-          const variant = ui.ghost ? 'ghost' : ui.primary ? 'primary' : 'secondary'
-          return (
-            <Button key={a} variant={variant} size="lg" loading={busy === a} onClick={() => start(a)}
-              className={ui.danger ? '!text-red-600' : ''}>
-              {label(a)}
-            </Button>
-          )
-        })}
-        {canDelete && (
-          <Button variant="ghost" size="lg" className="!text-red-600" onClick={onDelete}>{t('quotes.actions.delete')}</Button>
+      <div className="flex flex-col gap-2 w-full max-w-xl mx-auto lg:mx-0 lg:max-w-none lg:flex-row lg:flex-wrap lg:items-center">
+        {main.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:flex lg:flex-wrap">
+            {main.map((a) => {
+              const ui = ACTION_UI[a] ?? {}
+              return (
+                <Button key={a} variant={ui.primary ? 'primary' : 'secondary'} size="lg" loading={busy === a} onClick={() => start(a)}
+                  className={`${ui.danger ? '!text-red-600' : ''} ${main.length % 2 === 1 && a === main[0] ? 'sm:col-span-2' : ''}`}>
+                  {label(a)}
+                </Button>
+              )
+            })}
+          </div>
+        )}
+        {(quiet.length > 0 || canDelete) && (
+          <div className="flex flex-wrap justify-center lg:justify-start gap-1">
+            {quiet.map((a) => (
+              <Button key={a} variant="ghost" size="lg" loading={busy === a} onClick={() => start(a)} className="!text-red-600">{label(a)}</Button>
+            ))}
+            {canDelete && (
+              <Button variant="ghost" size="lg" className="!text-red-600" onClick={onDelete}>{t('quotes.actions.delete')}</Button>
+            )}
+          </div>
         )}
       </div>
 
@@ -163,7 +175,7 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved }) {
       {editing ? (
         <div className="flex flex-col gap-4">
           <QuoteDetailsForm form={form} set={set} isAdmin={isAdmin} mode="edit" {...pickers} />
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 sm:flex gap-2">
             <Button size="lg" onClick={save} loading={saving}>{t('quotes.actions.save')}</Button>
             <Button size="lg" variant="secondary" onClick={() => setEditing(false)}>{t('quotes.actions.discard')}</Button>
           </div>
@@ -247,12 +259,12 @@ function ScopeCard({ quote, onSaved, loadIntoEditor }) {
         <div className="flex flex-col gap-3">
           <textarea ref={ref} value={text} onChange={(e) => setText(e.target.value)} rows={18}
             placeholder={t('quotes.scope.placeholder')} spellCheck
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm leading-relaxed font-mono outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base lg:text-sm leading-relaxed font-mono outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
           <p className="text-xs text-gray-500">{t('quotes.scope.hint')}</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={save} loading={saving} disabled={!dirty}>{t('quotes.scope.save')}</Button>
-            <Button variant="secondary" onClick={insertBullet}>{t('quotes.scope.insertBullet')}</Button>
-            {dirty && <span className="text-xs font-semibold text-amber-600">{t('quotes.scope.unsaved')}</span>}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+            <Button size="lg" onClick={save} loading={saving} disabled={!dirty}>{t('quotes.scope.save')}</Button>
+            <Button size="lg" variant="secondary" onClick={insertBullet}>{t('quotes.scope.insertBullet')}</Button>
+            {dirty && <span className="col-span-2 text-center sm:text-left text-xs font-semibold text-amber-600">{t('quotes.scope.unsaved')}</span>}
           </div>
         </div>
       ) : (
@@ -291,14 +303,15 @@ function PhotoTile({ photo, canEdit, onChanged }) {
       </a>
       {canEdit ? (
         <>
+          {/* text-base on touch screens so iOS doesn't zoom into the field. */}
           <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder={t('quotes.photos.caption')}
             onBlur={() => caption !== (photo.caption ?? '') && patch({ caption })}
-            className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs outline-none focus:border-brand-500" />
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-600">
-            <label className="flex items-center gap-1"><input type="checkbox" checked={!!photo.is_before} onChange={(e) => patch({ is_before: e.target.checked })} />{t('quotes.photos.before')}</label>
-            <label className="flex items-center gap-1"><input type="checkbox" checked={!!photo.is_reference} onChange={(e) => patch({ is_reference: e.target.checked })} />{t('quotes.photos.reference')}</label>
+            className="w-full rounded-lg border border-gray-200 px-2.5 py-2 text-base lg:text-sm outline-none focus:border-brand-500" />
+          <div className="flex flex-col gap-0.5 text-xs text-gray-600">
+            <label className="flex items-center gap-2 py-1.5 cursor-pointer"><input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-brand-500" checked={!!photo.is_before} onChange={(e) => patch({ is_before: e.target.checked })} />{t('quotes.photos.before')}</label>
+            <label className="flex items-center gap-2 py-1.5 cursor-pointer"><input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-brand-500" checked={!!photo.is_reference} onChange={(e) => patch({ is_reference: e.target.checked })} />{t('quotes.photos.reference')}</label>
           </div>
-          <button onClick={remove} className="text-[11px] font-semibold text-red-500 hover:underline text-left">{t('quotes.photos.delete')}</button>
+          <button onClick={remove} className="text-xs font-semibold text-red-500 py-2 rounded-lg active:bg-red-50 hover:underline">{t('quotes.photos.delete')}</button>
         </>
       ) : (
         <>
@@ -338,17 +351,18 @@ function PhotosCard({ quote, canEdit, onChanged }) {
   }
 
   return (
-    <Card title={`${t('quotes.sections.photos')} (${quote.photos.length})`}
-      action={canEdit && (
+    <Card title={`${t('quotes.sections.photos')} (${quote.photos.length})`}>
+      {canEdit && (
         <>
           <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
-          <Button size="sm" onClick={() => inputRef.current?.click()} loading={pending > 0}>
+          <Button size="lg" fullWidth onClick={() => inputRef.current?.click()} loading={pending > 0} className="mb-4 lg:w-auto">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
             {pending > 0 ? t('quotes.photos.uploading', { count: pending }) : t('quotes.photos.add')}
           </Button>
         </>
-      )}>
+      )}
       {quote.photos.length === 0 ? (
-        <p className="text-sm text-gray-400">{t('quotes.photos.empty')}</p>
+        <p className="text-sm text-gray-400 text-center lg:text-left">{t('quotes.photos.empty')}</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {quote.photos.map((p) => <PhotoTile key={p.id} photo={p} canEdit={canEdit} onChanged={onChanged} />)}
@@ -394,21 +408,21 @@ function FilesCard({ quote, canEdit, onChanged }) {
             {quote.files.map((f) => (
               <li key={f.id} className="flex items-center justify-between gap-3 py-2">
                 <a href={f.url} target="_blank" rel="noreferrer" className="min-w-0">
-                  <span className="block text-sm font-medium text-brand-600 hover:underline truncate">{f.original_filename}</span>
+                  <span className="block text-sm font-medium text-brand-700 hover:underline truncate">{f.original_filename}</span>
                   <span className="block text-xs text-gray-400">{t(`quotes.files.kind.${f.kind}`)} · {f.uploaded_by_name}</span>
                 </a>
-                {canEdit && <button onClick={() => remove(f)} className="text-xs font-semibold text-red-500 hover:underline shrink-0">{t('common.delete')}</button>}
+                {canEdit && <button onClick={() => remove(f)} className="text-sm font-semibold text-red-500 px-2 py-2 rounded-lg active:bg-red-50 hover:underline shrink-0">{t('common.delete')}</button>}
               </li>
             ))}
           </ul>
         )}
         {canEdit && (
-          <div className="flex flex-wrap items-end gap-2">
-            <Select value={kind} onChange={setKind} className="w-56">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-2">
+            <Select value={kind} onChange={setKind} className="sm:w-56">
               {FILE_KINDS.map((k) => <option key={k} value={k}>{t(`quotes.files.kind.${k}`)}</option>)}
             </Select>
             <input ref={inputRef} type="file" multiple className="hidden" onChange={onFile} />
-            <Button variant="secondary" size="lg" loading={uploading} onClick={() => inputRef.current?.click()}>{t('quotes.files.add')}</Button>
+            <Button variant="secondary" size="lg" loading={uploading} onClick={() => inputRef.current?.click()} className="w-full sm:w-auto">{t('quotes.files.add')}</Button>
           </div>
         )}
       </div>
@@ -447,7 +461,7 @@ function ThreadCard({ quote, onChanged }) {
         {quote.status !== 'cancelled' && (
           <div className="flex flex-col gap-2">
             <TextArea value={text} onChange={setText} rows={2} placeholder={t('quotes.thread.placeholder')} />
-            <Button className="self-end" onClick={send} loading={sending} disabled={!text.trim()}>{t('quotes.thread.send')}</Button>
+            <Button size="lg" className="w-full lg:w-auto lg:self-end" onClick={send} loading={sending} disabled={!text.trim()}>{t('quotes.thread.send')}</Button>
           </div>
         )}
       </div>
@@ -488,7 +502,7 @@ function HistoryCard({ quote, isAdmin, onLoadVersion }) {
                   <span className="font-medium text-gray-800">{t(`quotes.versionKind.${v.kind}`)}</span>
                   <span className="text-gray-400 text-xs"> · {v.created_by_name} · {fmtDateTime(v.created_at, i18n.language)}</span>
                 </span>
-                <button onClick={() => view(v)} className="text-xs font-semibold text-brand-600 hover:underline shrink-0">{t('quotes.scope.viewVersion')}</button>
+                <button onClick={() => view(v)} className="text-sm font-semibold text-brand-700 px-2 py-1.5 rounded-lg active:bg-brand-100 hover:underline shrink-0">{t('quotes.scope.viewVersion')}</button>
               </li>
             ))}
           </ul>
@@ -549,10 +563,10 @@ export default function QuoteDetail() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit">← {isAdmin ? t('nav.quotes') : t('nav.siteWalks')}</Link>
+      <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {isAdmin ? t('nav.quotes') : t('nav.siteWalks')}</Link>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col items-center text-center gap-2 lg:items-start lg:text-left">
+        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
           <span className="text-xs font-bold text-gray-400 tracking-wide">{quote.request_no}{quote.estimate_number ? ` · #${quote.estimate_number}` : ''}</span>
           <StatusPill status={quote.status} />
           <FlagPills quote={quote} />

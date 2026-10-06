@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Card from '../components/ui/Card'
+import PageHeader from '../components/ui/PageHeader'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
@@ -84,13 +85,8 @@ export default function Customers() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{t('customers.title')}</h1>
-          <p className="text-sm text-gray-500">{t('customers.subtitle')}</p>
-        </div>
-        <Button size="sm" onClick={openCreate} className="shrink-0">{t('customers.add')}</Button>
-      </div>
+      <PageHeader title={t('customers.title')} subtitle={t('customers.subtitle')}
+        action={<Button size="lg" onClick={openCreate}>{t('customers.add')}</Button>} />
 
       {loading ? <Card><Spinner /></Card> : customers.length === 0 ? (
         <Card><p className="text-sm text-gray-400">{t('customers.empty')}</p></Card>
@@ -104,15 +100,15 @@ export default function Customers() {
                   <p className="text-xs text-gray-500">{[c.phone, c.email, c.address].filter(Boolean).join(' · ') || '—'}</p>
                   {c.notes && <p className="text-xs text-gray-400 mt-1 whitespace-pre-wrap">{c.notes}</p>}
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => openEdit(c)} className="text-xs font-semibold text-brand-600 hover:underline">{t('common.edit')}</button>
-                  <button onClick={() => remove(c)} className="text-xs font-semibold text-red-500 hover:underline">{t('customers.remove')}</button>
+                <div className="flex gap-1 shrink-0 -mr-2 -mt-1.5">
+                  <button onClick={() => openEdit(c)} className="text-sm font-semibold text-brand-700 px-2 py-1.5 rounded-lg active:bg-brand-100 hover:underline">{t('common.edit')}</button>
+                  <button onClick={() => remove(c)} className="text-sm font-semibold text-red-500 px-2 py-1.5 rounded-lg active:bg-red-50 hover:underline">{t('customers.remove')}</button>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-gray-100">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('customers.contacts')}</p>
-                  <button onClick={() => openContact(c)} className="text-xs font-semibold text-brand-600 hover:underline">+ {t('customers.addContact')}</button>
+                  <button onClick={() => openContact(c)} className="text-sm font-semibold text-brand-700 px-2 py-1.5 rounded-lg active:bg-brand-100 hover:underline">+ {t('customers.addContact')}</button>
                 </div>
                 {c.contacts.length === 0 ? <p className="text-xs text-gray-400">{t('customers.noContacts')}</p> : (
                   <ul className="divide-y divide-gray-50">
@@ -122,9 +118,9 @@ export default function Customers() {
                           {k.name}{k.title ? <span className="text-gray-400"> — {k.title}</span> : null}
                           <span className="block text-xs text-gray-400 truncate">{[k.email, k.phone].filter(Boolean).join(' · ')}</span>
                         </span>
-                        <span className="flex gap-2 shrink-0">
-                          <button onClick={() => openContact(c, k)} className="text-xs font-semibold text-brand-600 hover:underline">{t('common.edit')}</button>
-                          <button onClick={() => dropContact(c, k)} className="text-xs font-semibold text-red-500 hover:underline">{t('customers.remove')}</button>
+                        <span className="flex gap-1 shrink-0 -mr-2">
+                          <button onClick={() => openContact(c, k)} className="text-sm font-semibold text-brand-700 px-2 py-1.5 rounded-lg active:bg-brand-100 hover:underline">{t('common.edit')}</button>
+                          <button onClick={() => dropContact(c, k)} className="text-sm font-semibold text-red-500 px-2 py-1.5 rounded-lg active:bg-red-50 hover:underline">{t('customers.remove')}</button>
                         </span>
                       </li>
                     ))}

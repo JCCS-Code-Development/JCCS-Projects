@@ -149,7 +149,7 @@ export default function PunchListBoard({ projectNumber, fetchItems, createItem, 
           {items.map((item) => (
             <div key={item.id} ref={(el) => { itemRefs.current[item.id] = el }}
               className={`bg-white rounded-2xl border shadow-sm px-5 py-4 flex flex-col gap-3 transition-shadow ${
-                String(item.id) === String(targetItemId) ? 'border-brand-300 ring-2 ring-brand-100' : 'border-gray-100'
+                String(item.id) === String(targetItemId) ? 'border-brand-400 ring-2 ring-brand-100' : 'border-gray-100'
               }`}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -177,7 +177,7 @@ export default function PunchListBoard({ projectNumber, fetchItems, createItem, 
               {isStaff && (
                 <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-50">
                   <button type="button" onClick={() => { setAddPhotoTarget(item.id); fileRef.current?.click() }}
-                    className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-brand-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-brand-700 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
                     <UploadIcon /> {t('punchList.addAfterPhoto')}
                   </button>
                   <select value={item.status} onChange={(e) => handleStatusChange(item.id, e.target.value)}

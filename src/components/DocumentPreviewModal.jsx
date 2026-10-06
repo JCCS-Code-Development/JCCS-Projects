@@ -39,7 +39,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, version, title }
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <a href={version.url} download={version.original_filename}
-              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 px-3 py-2 rounded-xl transition-colors">
+              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-700 px-3 py-2 rounded-xl transition-colors">
               <DownloadIcon /> {t('documents.download')}
             </a>
             <button type="button" onClick={onClose} aria-label="Close"
@@ -64,7 +64,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, version, title }
               <FileIcon />
               <p className="text-sm">{t('documents.noPreview')}</p>
               <a href={version.url} download={version.original_filename}
-                className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+                className="text-xs font-semibold text-brand-700 hover:text-brand-700">
                 {t('documents.downloadToView')}
               </a>
             </div>

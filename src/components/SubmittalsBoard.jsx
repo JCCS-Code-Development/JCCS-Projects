@@ -139,7 +139,7 @@ export default function SubmittalsBoard({ projectNumber, fetchSubmittals, fetchV
           {rows.map((row) => (
             <div key={row.id} ref={(el) => { rowRefs.current[row.id] = el }}
               className={`bg-white rounded-2xl border shadow-sm px-5 py-4 flex flex-col gap-3 transition-shadow ${
-                String(row.id) === String(targetSubmittalId) ? 'border-brand-300 ring-2 ring-brand-100' : 'border-gray-100'
+                String(row.id) === String(targetSubmittalId) ? 'border-brand-400 ring-2 ring-brand-100' : 'border-gray-100'
               }`}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -164,13 +164,13 @@ export default function SubmittalsBoard({ projectNumber, fetchSubmittals, fetchV
 
               <div className="flex flex-wrap items-center gap-2">
                 <button type="button" onClick={() => openHistory(row)}
-                  className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-brand-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+                  className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-brand-700 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
                   <HistoryIcon /> {t('documents.versionHistory')} ({row.version_count})
                 </button>
                 {canManage && (
                   <>
                     <button type="button" onClick={() => { setResubmitTarget(row.id); fileRef.current?.click() }}
-                      className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-brand-600 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+                      className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-brand-700 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
                       <UploadIcon /> {t('submittals.resubmit')}
                     </button>
                     <select value={row.status} onChange={(e) => handleStatusChange(row.id, e.target.value)}

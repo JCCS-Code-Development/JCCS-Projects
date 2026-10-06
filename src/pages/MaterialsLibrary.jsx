@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Card from '../components/ui/Card'
+import PageHeader from '../components/ui/PageHeader'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
@@ -56,13 +57,8 @@ export default function MaterialsLibrary() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{t('library.title')}</h1>
-          <p className="text-sm text-gray-500">{t('library.subtitle')}</p>
-        </div>
-        <Button size="sm" onClick={() => openCreate()} className="shrink-0">{t('library.add')}</Button>
-      </div>
+      <PageHeader title={t('library.title')} subtitle={t('library.subtitle')}
+        action={<Button size="lg" onClick={() => openCreate()}>{t('library.add')}</Button>} />
 
       {loading ? <Card><Spinner /></Card> : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -70,7 +66,7 @@ export default function MaterialsLibrary() {
             const list = items.filter((i) => i.kind === kind)
             return (
               <Card key={kind} title={t(`library.kinds.${kind}`)}
-                action={<button onClick={() => openCreate(kind)} className="text-xs font-semibold text-brand-600 hover:underline">+ {t('library.add')}</button>}>
+                action={<button onClick={() => openCreate(kind)} className="text-sm font-semibold text-brand-700 px-2 py-1.5 rounded-lg active:bg-brand-100 hover:underline">+ {t('library.add')}</button>}>
                 {list.length === 0 ? <p className="text-sm text-gray-400">{t('library.empty')}</p> : (
                   <ul className="divide-y divide-gray-50">
                     {list.map((it) => (
@@ -81,9 +77,9 @@ export default function MaterialsLibrary() {
                             {[it.manufacturer, it.product_code, it.use_count ? t('library.used', { count: it.use_count }) : null].filter(Boolean).join(' · ')}
                           </span>
                         </span>
-                        <span className="flex gap-2 shrink-0">
-                          <button onClick={() => openEdit(it)} className="text-xs font-semibold text-brand-600 hover:underline">{t('common.edit')}</button>
-                          <button onClick={() => remove(it)} className="text-xs font-semibold text-red-500 hover:underline">{t('library.remove')}</button>
+                        <span className="flex gap-1 shrink-0 -mr-2">
+                          <button onClick={() => openEdit(it)} className="text-sm font-semibold text-brand-700 px-2 py-1.5 rounded-lg active:bg-brand-100 hover:underline">{t('common.edit')}</button>
+                          <button onClick={() => remove(it)} className="text-sm font-semibold text-red-500 px-2 py-1.5 rounded-lg active:bg-red-50 hover:underline">{t('library.remove')}</button>
                         </span>
                       </li>
                     ))}

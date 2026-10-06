@@ -17,7 +17,7 @@ export default function PhaseStepperPill({ phases, onClick }) {
   const current = currentIndex >= 0 ? sorted[currentIndex] : null
   const clickable = typeof onClick === 'function'
   const Tag = clickable ? 'button' : 'div'
-  const interactiveClass = clickable ? 'hover:border-brand-300 hover:bg-brand-100/30 transition-colors' : ''
+  const interactiveClass = clickable ? 'hover:border-brand-400 hover:bg-brand-100/30 transition-colors' : ''
 
   if (sorted.length === 0) {
     return (
@@ -47,7 +47,7 @@ export default function PhaseStepperPill({ phases, onClick }) {
               <span
                 title={phase.name}
                 className={`shrink-0 rounded-full transition-colors ${
-                  isCurrent ? 'w-2.5 h-2.5 bg-brand-500 ring-2 ring-brand-200'
+                  isCurrent ? 'w-2.5 h-2.5 bg-brand-500 ring-2 ring-brand-100'
                   : isDone   ? 'w-2 h-2 bg-brand-500'
                   :            'w-2 h-2 bg-gray-200 border border-gray-300'
                 }`}

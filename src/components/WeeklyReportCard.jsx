@@ -32,7 +32,7 @@ export default function WeeklyReportCard({ report, highlighted = false, innerRef
   return (
     <div ref={innerRef}
       className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-shadow ${
-        highlighted ? 'border-brand-300 ring-2 ring-brand-100' : 'border-gray-100'
+        highlighted ? 'border-brand-400 ring-2 ring-brand-100' : 'border-gray-100'
       }`}>
       <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex flex-wrap items-start justify-between gap-2">
         <div>

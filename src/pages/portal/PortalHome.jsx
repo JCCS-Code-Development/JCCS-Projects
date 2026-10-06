@@ -36,7 +36,7 @@ function ProjectGroups({ groups, inactiveLabel }) {
             className={`flex items-center justify-between gap-3 rounded-2xl shadow-sm border px-5 py-4 lg:px-6 lg:py-5 transition-all ${
               inactiveLabel
                 ? 'bg-gray-50 border-gray-100 opacity-70 hover:opacity-100 hover:border-gray-300'
-                : 'bg-white border-gray-100 hover:border-brand-300 hover:shadow-md'
+                : 'bg-white border-gray-100 hover:border-brand-400 hover:shadow-md'
             }`}>
             <span className="min-w-0">
               <span className="flex items-center gap-2 min-w-0">

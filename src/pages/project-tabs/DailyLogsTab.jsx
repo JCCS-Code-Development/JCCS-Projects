@@ -176,7 +176,7 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
             <p className="text-sm font-semibold text-gray-900">{format(viewMonth, 'MMMM yyyy')}</p>
             {!isSameMonth(viewMonth, new Date()) && (
               <button onClick={() => setViewMonth(startOfMonth(new Date()))}
-                className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+                className="text-xs font-semibold text-brand-700 hover:text-brand-700">
                 {t('dailyLogs.today')}
               </button>
             )}
@@ -225,7 +225,7 @@ export default function DailyLogsTab({ projectNumber, location, targetLogId }) {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-gray-900">{format(parseISO(selectedDate), 'EEEE, MMMM d, yyyy')}</p>
-          <button onClick={() => openModal(selectedDate)} className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+          <button onClick={() => openModal(selectedDate)} className="text-xs font-semibold text-brand-700 hover:text-brand-700">
             {t('dailyLogs.addForDay')}
           </button>
         </div>

@@ -1,6 +1,6 @@
 const variants = {
   // Daily log / general "active" state — brand-colored, categorical only.
-  active:   'bg-brand-100 text-brand-800',
+  active:   'bg-brand-100 text-brand-900',
   inactive: 'bg-gray-100 text-gray-500',
 
   // RFI status

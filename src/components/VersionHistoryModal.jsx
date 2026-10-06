@@ -51,7 +51,7 @@ export default function VersionHistoryModal({ isOpen, onClose, title, versions, 
               </div>
               <div className="flex flex-col items-stretch gap-1 shrink-0">
                 <button type="button" onClick={() => setPreviewVersion(v)}
-                  className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 px-2.5 py-1.5 rounded-lg hover:bg-brand-100/50 transition-colors">
+                  className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-700 px-2.5 py-1.5 rounded-lg hover:bg-brand-100/50 transition-colors">
                   <EyeIcon s="w-3.5 h-3.5" /> {t('documents.preview')}
                 </button>
                 <a href={v.url} download={v.original_filename}

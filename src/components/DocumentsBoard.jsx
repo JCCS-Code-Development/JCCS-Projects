@@ -52,19 +52,19 @@ function DocumentRow({ doc, canUpload, onPreview, onViewHistory, onAddVersion })
       </button>
       <div className="min-w-0 flex-1">
         <button type="button" onClick={() => v && onPreview(v, doc.title)}
-          className="text-sm font-semibold text-gray-800 hover:text-brand-600 truncate block text-left w-full">
+          className="text-sm font-semibold text-gray-800 hover:text-brand-700 truncate block text-left w-full">
           {doc.title}
         </button>
         {v && <p className="text-xs text-gray-400 truncate">{v.original_filename} · {fmtDate(v.uploaded_at)}</p>}
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <button type="button" onClick={onViewHistory} title={t('documents.versionHistory')}
-          className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-brand-600 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors">
+          className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-brand-700 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors">
           <HistoryIcon /> {doc.version_count}
         </button>
         {canUpload && (
           <button type="button" onClick={onAddVersion} title={t('documents.addVersion')}
-            className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-brand-600 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors">
+            className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-brand-700 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors">
             <UploadIcon />
           </button>
         )}
@@ -83,7 +83,7 @@ function CategoryCard({ category, items, loading, canUpload, onUpload, onPreview
         <p className={`text-sm font-bold ${headerClass ?? 'text-gray-900'}`}>{t(`documents.categories.${key}`)}</p>
         {!placeholder && canUpload && (
           <button type="button" onClick={() => onUpload(key)}
-            className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 px-2 py-1 rounded-lg hover:bg-white/60 transition-colors">
+            className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-brand-700 hover:text-brand-700 px-2 py-1 rounded-lg hover:bg-white/60 transition-colors">
             <UploadIcon /> {t('documents.upload')}
           </button>
         )}

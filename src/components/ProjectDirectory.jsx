@@ -23,12 +23,12 @@ function ContactColumn({ icon, title, contacts, emptyLabel }) {
             <div key={i} className="flex flex-col gap-0.5">
               <p className="text-sm font-semibold text-gray-800">{c.name}</p>
               {c.email && (
-                <a href={`mailto:${c.email}`} className="text-xs text-gray-500 hover:text-brand-600 flex items-center gap-1.5 truncate">
+                <a href={`mailto:${c.email}`} className="text-xs text-gray-500 hover:text-brand-700 flex items-center gap-1.5 truncate">
                   <MailIcon s="w-3 h-3 shrink-0" /> <span className="truncate">{c.email}</span>
                 </a>
               )}
               {c.phone && (
-                <a href={`tel:${c.phone}`} className="text-xs text-gray-500 hover:text-brand-600 flex items-center gap-1.5">
+                <a href={`tel:${c.phone}`} className="text-xs text-gray-500 hover:text-brand-700 flex items-center gap-1.5">
                   <PhoneIcon s="w-3 h-3 shrink-0" /> {c.phone}
                 </a>
               )}

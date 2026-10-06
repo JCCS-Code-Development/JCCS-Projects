@@ -170,7 +170,7 @@ function StaffSection({ projects }) {
                       <td className="px-4 py-3"><Badge variant={u.is_active ? 'active' : 'inactive'}>{u.is_active ? t('users.active') : t('users.inactive')}</Badge></td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => openEdit(u)} className="text-xs font-semibold text-brand-600 hover:underline">{t('common.edit')}</button>
+                          <button onClick={() => openEdit(u)} className="text-xs font-semibold text-brand-700 hover:underline">{t('common.edit')}</button>
                           {u.fieldclock_user_id !== myId && u.is_active === 1 && (
                             <button onClick={() => handleDeactivate(u)} className="text-xs font-semibold text-red-500 hover:underline">{t('users.removeAccess')}</button>
                           )}
@@ -202,7 +202,7 @@ function StaffSection({ projects }) {
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-gray-700">{t('users.findPerson')}</label>
                 {pickedEmployee ? (
-                  <div className="flex items-center justify-between gap-2 rounded-xl border border-brand-300 bg-brand-100/40 px-4 py-3">
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-brand-400 bg-brand-100/40 px-4 py-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{pickedEmployee.name}</p>
                       <p className="text-xs text-gray-500 truncate">{pickedEmployee.email}{pickedEmployee.phone ? ` · ${pickedEmployee.phone}` : ''}</p>
@@ -410,7 +410,7 @@ function ClientsSection({ projects }) {
                       <td className="px-4 py-3"><Badge variant={c.is_active ? 'active' : 'inactive'}>{c.is_active ? t('users.active') : t('users.inactive')}</Badge></td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => openEdit(c)} className="text-xs font-semibold text-brand-600 hover:underline">{t('common.edit')}</button>
+                          <button onClick={() => openEdit(c)} className="text-xs font-semibold text-brand-700 hover:underline">{t('common.edit')}</button>
                           {c.is_active === 1 && (
                             <button onClick={() => handleDeactivate(c)} className="text-xs font-semibold text-red-500 hover:underline">{t('users.removeAccess')}</button>
                           )}
@@ -456,7 +456,7 @@ function ClientsSection({ projects }) {
 
           {modal === 'create' && picked && (
             <>
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-brand-300 bg-brand-100/40 px-4 py-3">
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-brand-400 bg-brand-100/40 px-4 py-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{picked.name}</p>
                   <p className="text-xs text-gray-500 truncate">{picked.email}</p>
