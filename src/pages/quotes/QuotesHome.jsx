@@ -123,7 +123,8 @@ export default function QuotesHome() {
           <h1 className="text-xl font-bold text-gray-900">{isAdmin ? t('quotes.title') : t('quotes.fieldTitle')}</h1>
           <p className="text-sm text-gray-500">{isAdmin ? t('quotes.subtitle') : t('quotes.fieldSubtitle')}</p>
         </div>
-        <Button size={isAdmin ? 'sm' : 'lg'} onClick={() => setShowNew(true)} className="shrink-0">
+        <Button size="lg" onClick={() => setShowNew(true)} className="shrink-0 shadow-md shadow-brand-500/30">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" d="M12 5v14M5 12h14"/></svg>
           {isAdmin ? t('quotes.newRequest') : t('quotes.newSiteWalk')}
         </Button>
       </div>
