@@ -99,6 +99,8 @@ export function QuoteDetailsForm({ form, set, isAdmin, customers = [], projects 
           </Select>
           <Input label={t('quotes.fields.originalEstimate')} value={form.original_estimate_no ?? ''} inputMode="numeric"
             onChange={(e) => set('original_estimate_no', e.target.value)} />
+          <Input label={t('quotes.fields.relatedRef')} value={form.related_ref ?? ''} className="sm:col-span-2"
+            onChange={(e) => set('related_ref', e.target.value)} />
         </div>
       )}
 
@@ -138,7 +140,6 @@ export function QuoteDetailsForm({ form, set, isAdmin, customers = [], projects 
           <option value="">—</option>
           {SOURCES.map((s) => <option key={s} value={s}>{t(`quotes.source.${s}`)}</option>)}
         </Select>
-        <Input label={t('quotes.fields.relatedRef')} value={form.related_ref ?? ''} onChange={(e) => set('related_ref', e.target.value)} />
       </div>
 
       {isAdmin && (

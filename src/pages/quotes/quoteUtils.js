@@ -119,6 +119,7 @@ export function payloadFromForm(f, isAdmin) {
     if (!isAdmin && OFFICE_KEYS.includes(k)) continue
     p[k] = v === '' ? null : v
   }
-  if (p.work_type !== 'addon') { p.project_number = null; p.original_estimate_no = null }
+  // Project / original estimate / PO # only apply to add-ons.
+  if (p.work_type !== 'addon') { p.project_number = null; p.original_estimate_no = null; p.related_ref = null }
   return p
 }
