@@ -121,7 +121,9 @@ export default function StaffLayout() {
 
         <div className="lg:hidden h-[52px] shrink-0" />
 
-        <PullToRefresh className="flex-1 px-4 pt-4 lg:p-6 w-full"
+        {/* lg:pr-24 keeps page content (e.g. a header's top-right action
+            button) out from under the fixed desktop notification bell. */}
+        <PullToRefresh className="flex-1 px-4 pt-4 lg:p-6 lg:pr-24 w-full"
           style={{ paddingBottom: 'max(96px, calc(64px + env(safe-area-inset-bottom)))' }}
           onRefresh={() => setRefreshKey(k => k + 1)}>
           <div key={refreshKey} className="max-w-6xl mx-auto w-full">
