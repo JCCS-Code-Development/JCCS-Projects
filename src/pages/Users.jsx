@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Card from '../components/ui/Card'
+import PageHeader from '../components/ui/PageHeader'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
@@ -34,6 +35,39 @@ function ProjectAccessPicker({ projects, selected, onToggle }) {
           <span className="text-sm text-gray-700 truncate">{p.name} <span className="text-gray-400">#{p.project_number}</span></span>
         </label>
       ))}
+    </div>
+  )
+}
+
+// Section header: stacked + centered with a full-width button on phones,
+// side by side from `md` up.
+function SectionHeader({ title, subtitle, action }) {
+  return (
+    <div className="flex flex-col items-center text-center gap-3 md:flex-row md:items-center md:justify-between md:text-left">
+      <div className="min-w-0">
+        <h2 className="text-base font-bold text-gray-900">{title}</h2>
+        <p className="text-sm text-gray-500">{subtitle}</p>
+      </div>
+      <div className="w-full max-w-md md:w-auto [&>button]:w-full md:[&>button]:w-auto shrink-0">{action}</div>
+    </div>
+  )
+}
+
+// One person as a card (phones) — the table doesn't fit a 390px screen.
+function PersonCard({ name, you, lines, badges, onEdit, onRemove, editLabel, removeLabel }) {
+  return (
+    <div className="px-4 py-4 flex flex-col gap-3">
+      <div className="min-w-0">
+        <p className="text-base font-semibold text-gray-900 break-words">
+          {name}{you && <span className="text-xs font-normal text-gray-400 ml-1.5">{you}</span>}
+        </p>
+        {lines.filter(Boolean).map((l, i) => <p key={i} className="text-sm text-gray-500 break-all">{l}</p>)}
+      </div>
+      <div className="flex flex-wrap gap-1.5">{badges}</div>
+      <div className={`grid gap-2 ${onRemove ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <button onClick={onEdit} className="rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-800 active:bg-gray-50">{editLabel}</button>
+        {onRemove && <button onClick={onRemove} className="rounded-xl border border-red-100 bg-red-50 py-2.5 text-sm font-semibold text-red-600 active:bg-red-100">{removeLabel}</button>}
+      </div>
     </div>
   )
 }
@@ -134,20 +168,29 @@ function StaffSection({ projects }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-bold text-gray-900">{t('users.staffTitle')}</h2>
-          <p className="text-sm text-gray-500">{t('users.staffSubtitle')}</p>
-        </div>
-        <Button size="sm" onClick={openCreate}>{t('users.addUser')}</Button>
-      </div>
+      <SectionHeader title={t('users.staffTitle')} subtitle={t('users.staffSubtitle')}
+        action={<Button size="lg" onClick={openCreate}>{t('users.addUser')}</Button>} />
 
       {loading ? <Card><Spinner /></Card> : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {users.length === 0 ? (
             <p className="text-center text-gray-400 py-10 text-sm">{t('users.noUsersYet')}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="md:hidden divide-y divide-gray-100">
+              {users.map((u) => (
+                <PersonCard key={u.fieldclock_user_id} name={u.name} you={u.fieldclock_user_id === myId ? t('users.you') : null}
+                  lines={[u.email || u.phone, u.role === 'pm' ? `${t('users.projects')}: ${u.project_numbers.length ? u.project_numbers.join(', ') : '—'}` : null]}
+                  badges={<>
+                    <Badge variant={u.role === 'admin' ? 'active' : u.role === 'field' ? 'pending' : 'inactive'}>{t(`role.${u.role}`)}</Badge>
+                    {!u.is_active && <Badge variant="inactive">{t('users.inactive')}</Badge>}
+                  </>}
+                  editLabel={t('common.edit')} onEdit={() => openEdit(u)}
+                  removeLabel={t('users.removeAccess')}
+                  onRemove={u.fieldclock_user_id !== myId && u.is_active === 1 ? () => handleDeactivate(u) : null} />
+              ))}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
@@ -163,7 +206,7 @@ function StaffSection({ projects }) {
                         {u.name}{u.fieldclock_user_id === myId && <span className="text-xs text-gray-400 ml-1.5">{t('users.you')}</span>}
                         <p className="text-xs text-gray-400 font-normal">{u.email || '—'}</p>
                       </td>
-                      <td className="px-4 py-3"><Badge variant={u.role === 'admin' ? 'active' : 'inactive'}>{t(`role.${u.role}`)}</Badge></td>
+                      <td className="px-4 py-3"><Badge variant={u.role === 'admin' ? 'active' : u.role === 'field' ? 'pending' : 'inactive'}>{t(`role.${u.role}`)}</Badge></td>
                       <td className="px-4 py-3 text-xs text-gray-500">
                         {u.role === 'admin' ? t('users.allProjects') : u.role === 'field' ? t('nav.siteWalks') : (u.project_numbers.length ? u.project_numbers.join(', ') : '—')}
                       </td>
@@ -181,6 +224,7 @@ function StaffSection({ projects }) {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       )}
@@ -379,20 +423,26 @@ function ClientsSection({ projects }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-bold text-gray-900">{t('users.clientsTitle')}</h2>
-          <p className="text-sm text-gray-500">{t('users.clientsSubtitle')}</p>
-        </div>
-        <Button size="sm" onClick={openCreate}>{t('users.addClient')}</Button>
-      </div>
+      <SectionHeader title={t('users.clientsTitle')} subtitle={t('users.clientsSubtitle')}
+        action={<Button size="lg" onClick={openCreate}>{t('users.addClient')}</Button>} />
 
       {loading ? <Card><Spinner /></Card> : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {clients.length === 0 ? (
             <p className="text-center text-gray-400 py-10 text-sm">{t('users.noClientsYet')}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="md:hidden divide-y divide-gray-100">
+              {clients.map((c) => (
+                <PersonCard key={c.id} name={c.name}
+                  lines={[c.email, `${t('users.projects')}: ${c.project_numbers.length ? c.project_numbers.join(', ') : '—'}`]}
+                  badges={<Badge variant={c.is_active ? 'active' : 'inactive'}>{c.is_active ? t('users.active') : t('users.inactive')}</Badge>}
+                  editLabel={t('common.edit')} onEdit={() => openEdit(c)}
+                  removeLabel={t('users.removeAccess')}
+                  onRemove={c.is_active === 1 ? () => handleDeactivate(c) : null} />
+              ))}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
@@ -421,6 +471,7 @@ function ClientsSection({ projects }) {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       )}
@@ -530,10 +581,7 @@ export default function Users() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">{t('users.title')}</h1>
-        <p className="text-sm text-gray-500">{t('users.subtitle')}</p>
-      </div>
+      <PageHeader title={t('users.title')} subtitle={t('users.subtitle')} />
       <StaffSection projects={projects} />
       <ClientsSection projects={projects} />
     </div>
