@@ -13,7 +13,6 @@ import { listNotifications, resolveNotification } from '../../api/notifications'
 const ProjectsIcon = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5A2.5 2.5 0 015.5 5h4l2 2h7A2.5 2.5 0 0121 9.5v7A2.5 2.5 0 0118.5 19h-13A2.5 2.5 0 013 16.5v-9z"/></svg>
 const UsersIcon    = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
 const QuotesIcon   = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-const LibraryIcon  = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
 const LogoutIcon   = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline strokeLinecap="round" strokeLinejoin="round" points="16 17 21 12 16 7"/><line strokeLinecap="round" x1="21" y1="12" x2="9" y2="12"/></svg>
 
 function SidebarItem({ to, icon, label, end }) {
@@ -31,8 +30,8 @@ function SidebarItem({ to, icon, label, end }) {
 
 // "Projects" is the app's home (the outermost layer of the company → project
 // → tabs drill-down). Admins also get Quotes + Users, and on desktop the
-// quote-related Materials page (on phones that is reached
-// from the Quotes page header to keep the bottom bar short). Field managers
+// Materials page lives inside Quotes (a button in its header) on every
+// screen size. Field managers
 // get a single destination: their Site Walks.
 export default function StaffLayout() {
   const { t } = useTranslation()
@@ -50,7 +49,6 @@ export default function StaffLayout() {
     { to: '/', icon: <ProjectsIcon />, label: t('nav.projects'), end: true },
     ...(isAdmin ? [
       { to: '/quotes', icon: <QuotesIcon />, label: t('nav.quotes') },
-      { to: '/library', icon: <LibraryIcon />, label: t('nav.library'), desktopOnly: true },
       { to: '/users', icon: <UsersIcon />, label: t('nav.users') },
     ] : []),
   ]

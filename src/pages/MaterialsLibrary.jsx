@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Card from '../components/ui/Card'
 import PageHeader from '../components/ui/PageHeader'
@@ -57,6 +58,7 @@ export default function MaterialsLibrary() {
 
   return (
     <div className="flex flex-col gap-5">
+      <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {t('nav.quotes')}</Link>
       <PageHeader title={t('library.title')} subtitle={t('library.subtitle')}
         actionLabel={t('library.add')} onAction={() => openCreate()} />
 

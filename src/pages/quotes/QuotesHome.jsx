@@ -187,11 +187,10 @@ export default function QuotesHome() {
         onAction={isAdmin ? () => setShowNew(true) : startSiteWalk}
         actionLoading={starting}
         actionIcon={isAdmin ? undefined : CameraIcon}>
-        {/* Materials lives in the desktop sidebar; on phones and iPads it's
-            reached from here instead of an extra tab. */}
+        {/* The Materials library lives inside Quotes on every screen size. */}
         {isAdmin && (
-          <div className="flex items-center justify-center gap-2 lg:hidden">
-            <Link to="/library"
+          <div className="flex items-center justify-center gap-2 lg:justify-start lg:w-full lg:order-last">
+            <Link to="/quotes/materials"
               className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm active:bg-brand-100">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7a3 3 0 013-3h10v13H7a3 3 0 00-3 3V7zM4 20a3 3 0 013-3h10v3H7"/></svg>
               {t('quotes.manageLibrary')}

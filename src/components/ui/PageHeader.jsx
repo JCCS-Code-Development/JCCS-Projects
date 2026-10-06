@@ -16,7 +16,7 @@ export default function PageHeader({ title, subtitle, actionLabel, onAction, act
   const hasAction = !!(actionLabel && onAction)
   return (
     <>
-      <div className="flex flex-col items-center text-center gap-2 lg:flex-row lg:items-start lg:justify-between lg:text-left lg:gap-3">
+      <div className="flex flex-col items-center text-center gap-2 lg:flex-row lg:flex-wrap lg:items-start lg:justify-between lg:text-left lg:gap-3">
         <div className="min-w-0">
           <h1 className="text-lg lg:text-xl font-bold text-gray-900">{title}</h1>
           {subtitle && <p className="hidden lg:block text-sm text-gray-500 mt-0.5">{subtitle}</p>}

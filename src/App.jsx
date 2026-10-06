@@ -63,7 +63,9 @@ export default function App() {
           {/* Admin only */}
           <Route element={<RoleRoute allowedRoles={['admin']} />}>
             <Route path="/users" element={<Users />} />
-            <Route path="/library" element={<MaterialsLibrary />} />
+            {/* Materials lives under Quotes (old /library links still work). */}
+            <Route path="/quotes/materials" element={<MaterialsLibrary />} />
+            <Route path="/library" element={<Navigate to="/quotes/materials" replace />} />
           </Route>
         </Route>
       </Route>
