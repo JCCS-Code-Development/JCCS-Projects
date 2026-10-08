@@ -847,7 +847,27 @@
       "formHint": "Escúchalos mientras llenas esto — o mantén el micrófono para agregar uno.",
       "empty": "Aún no hay audios."
     },
-    "openFailed": "No se pudo abrir esta solicitud."
+    "openFailed": "No se pudo abrir esta solicitud.",
+    "export": {
+      "title": "Fotos para el estimado",
+      "hint": "Toca una foto para verla, o Seleccionar para descargar las de InvoiceToGo.",
+      "hintCollage": "Selecciona las mejores para descargarlas para InvoiceToGo — o elige 4 para un collage.",
+      "select": "Seleccionar",
+      "selected_one": "{{count}} seleccionada",
+      "selected_other": "{{count}} seleccionadas",
+      "withMarkup": "Incluir marcas",
+      "download": "Descargar",
+      "makeCollage": "Hacer collage",
+      "pickFour": "Collage: elige 4 ({{count}}/4)",
+      "collageTitle": "Collage de fotos",
+      "collageOrder": "Las fotos van de izquierda a derecha y de arriba abajo, en el orden en que las elegiste.",
+      "downloadPng": "Descargar PNG",
+      "failed": "No se pudo crear la imagen.",
+      "fit": {
+        "cover": "Llenar recuadros",
+        "contain": "Fotos completas"
+      }
+    }
   },
   "library": {
     "title": "Biblioteca de Materiales",

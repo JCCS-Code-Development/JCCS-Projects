@@ -847,7 +847,27 @@
       "formHint": "Listen while you fill this out — or hold the mic to add one.",
       "empty": "No voice memos yet."
     },
-    "openFailed": "Couldn’t open this request."
+    "openFailed": "Couldn’t open this request.",
+    "export": {
+      "title": "Photos for the estimate",
+      "hint": "Tap a photo to view it, or Select to download the ones for InvoiceToGo.",
+      "hintCollage": "Select the best ones to download for InvoiceToGo — or pick 4 for a collage.",
+      "select": "Select",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "withMarkup": "Include markup",
+      "download": "Download",
+      "makeCollage": "Make collage",
+      "pickFour": "Collage: pick 4 ({{count}}/4)",
+      "collageTitle": "Photo collage",
+      "collageOrder": "Photos go left to right, top to bottom, in the order you picked them.",
+      "downloadPng": "Download PNG",
+      "failed": "Couldn’t create the image.",
+      "fit": {
+        "cover": "Fill tiles",
+        "contain": "Whole photos"
+      }
+    }
   },
   "library": {
     "title": "Materials Library",

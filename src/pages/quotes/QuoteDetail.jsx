@@ -17,6 +17,7 @@ import { usePhotoUploader } from './photos/usePhotoUploader'
 import PhotoGallery from './photos/PhotoGallery'
 import WalkNotesSheet from './photos/WalkNotesSheet'
 import VoiceMemoStack from './voice/VoiceMemoStack'
+import EstimatePhotos from './photos/EstimatePhotos'
 import PhotoViewer from './photos/PhotoViewer'
 import { StatusPill, FlagPills, QuoteDetailsForm, TextArea, Select } from './QuoteParts'
 import { useQuotePickers } from './useQuotePickers'
@@ -574,6 +575,8 @@ export default function QuoteDetail() {
       )}
 
       {!startEditing && <PhotosSection quote={quote} canEdit={canEditMedia} onChanged={load} />}
+      {/* The office picks / downloads photos (and collages) for InvoiceToGo. */}
+      {!startEditing && isAdmin && <EstimatePhotos quote={quote} onChanged={load} />}
 
       {!startEditing && (
         <Link to={`/quotes/${quote.id}/estimate`}

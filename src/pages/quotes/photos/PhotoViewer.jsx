@@ -5,6 +5,7 @@ import { useToast } from '../../../components/ToastProvider'
 import { useConfirm } from '../../../components/ConfirmProvider'
 import { updateQuotePhoto, deleteQuotePhoto } from '../../../api/quoteRequests'
 import AnnotationLayer from './AnnotationLayer'
+import { photoFile, saveFiles } from './photoExport'
 import { fmtDateTime } from '../quoteUtils'
 
 const TOOLS = ['arrow', 'circle', 'line', 'pen', 'text']
@@ -26,7 +27,8 @@ const ToolIcon = ({ tool }) => {
 // Full-screen, CompanyCam-style photo viewer: swipe / arrow keys between
 // photos, caption + Before/Reference tags, delete, and a markup mode for
 // drawing arrows, circles, lines, freehand and text labels on the photo.
-export default function PhotoViewer({ photos, startId, canEdit, onClose, onChanged, notes = [] }) {
+// downloadName(photo) → file name (no extension) for the Download button.
+export default function PhotoViewer({ photos, startId, canEdit, onClose, onChanged, notes = [], downloadName }) {
   const { t, i18n } = useTranslation()
   const toast = useToast()
   const confirmDialog = useConfirm()
@@ -44,6 +46,7 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
   const [textAt, setTextAt] = useState(null)
   const [textValue, setTextValue] = useState('')
   const [saving, setSaving] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const svgWrap = useRef(null)
   const touchStart = useRef(null)
   // Zoom: scale + offset of the photo (origin top-left), pinch / double-tap /
@@ -119,6 +122,14 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
       if (fallback) setId(fallback.id)
       onChanged()
     } catch (err) { toast.error(err?.response?.data?.error ?? t('common.couldNotSave')) }
+  }
+
+  // Downloads the photo with its markup drawn on (iPad: share sheet → Save Image).
+  const download = async () => {
+    setDownloading(true)
+    try { await saveFiles([await photoFile(photo, downloadName ? downloadName(photo) : `photo-${photo.id}`)]) }
+    catch (err) { toast.error(err?.message ?? t('quotes.export.failed')) }
+    finally { setDownloading(false) }
   }
 
   // ── Markup drawing ──
@@ -246,10 +257,19 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
         <span className="text-sm font-semibold text-white/80">{markup ? t('quotes.photos.markup') : `${index + 1} / ${photos.length}`}</span>
-        {canEdit && !markup ? (
-          <button className={iconBtn} onClick={remove} aria-label={t('quotes.photos.delete')}>
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3" /></svg>
-          </button>
+        {!markup ? (
+          <div className="flex items-center">
+            <button className={iconBtn} onClick={download} disabled={downloading} aria-label={t('quotes.export.download')} title={t('quotes.export.download')}>
+              {downloading
+                ? <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14" /></svg>}
+            </button>
+            {canEdit && (
+              <button className={iconBtn} onClick={remove} aria-label={t('quotes.photos.delete')}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3" /></svg>
+              </button>
+            )}
+          </div>
         ) : <span className="w-11" />}
       </div>
 
