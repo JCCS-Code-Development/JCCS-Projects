@@ -89,15 +89,21 @@ export default function CameraView({ active = true, onCapture, onFiles, header, 
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-between px-6 py-4 bg-black">
+      <div className="flex items-center justify-between px-6 pt-4 pb-3 bg-black">
         <button onClick={() => libraryRef.current?.click()} aria-label={t('quotes.photos.fromLibrary')}
           className="w-12 h-12 rounded-xl bg-white/10 text-white flex items-center justify-center active:bg-white/20">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path strokeLinecap="round" strokeLinejoin="round" d="M21 15l-5-5L5 21"/></svg>
         </button>
-        <button onClick={status === 'live' ? shoot : () => nativeRef.current?.click()} aria-label={t('quotes.photos.takePhoto')}
-          className="w-[72px] h-[72px] rounded-full border-4 border-white flex items-center justify-center active:scale-95 transition-transform">
-          <span className="w-[56px] h-[56px] rounded-full bg-white" />
-        </button>
+        {/* Big red shutter with a label — easy to find and hit at a glance. */}
+        <div className="flex flex-col items-center gap-1.5">
+          <button onClick={status === 'live' ? shoot : () => nativeRef.current?.click()} aria-label={t('quotes.photos.takePhoto')}
+            className="w-[84px] h-[84px] rounded-full border-[5px] border-white flex items-center justify-center shadow-[0_0_0_4px_rgba(239,68,68,0.35)] active:scale-95 transition-transform">
+            <span className="w-[64px] h-[64px] rounded-full bg-brand-500 flex items-center justify-center text-white">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+            </span>
+          </button>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-white/80">{t('quotes.photos.takePhoto')}</span>
+        </div>
         <span className="w-12 text-center text-xs font-bold text-white/70 tabular-nums">{shots > 0 ? `${shots}` : ''}</span>
       </div>
     </div>

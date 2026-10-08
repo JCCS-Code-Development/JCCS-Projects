@@ -161,8 +161,9 @@ export default function QuoteCapture() {
           <p className="text-[11px] font-bold text-gray-400 tracking-wide">{quote.request_no ?? t('quotes.unsaved')}</p>
           <p className="text-sm font-bold text-gray-900 truncate">{quote.title}</p>
         </div>
-        <button onClick={next} className="rounded-full bg-gray-900 text-white px-4 py-2 text-sm font-bold active:bg-gray-700">
-          {t('quotes.walk.next')}
+        <button onClick={next} className="shrink-0 rounded-full bg-gray-900 text-white px-4 py-2 text-sm font-bold active:bg-gray-700">
+          <span className="sm:hidden">{t('quotes.walk.nextShort')}</span>
+          <span className="hidden sm:inline">{t('quotes.walk.next')}</span> →
         </button>
       </div>
 

@@ -654,13 +654,14 @@
       "deleteNote": "¿Eliminar esta nota?",
       "deleteNoteWithPhotos_one": "¿Eliminar esta nota? Su foto se queda, sin nota.",
       "deleteNoteWithPhotos_other": "¿Eliminar esta nota? Sus {{count}} fotos se quedan, sin nota.",
-      "next": "Siguiente",
+      "next": "Llenar detalles del estimado",
       "failed_one": "{{count}} no se subió — toca ↻ para reintentar",
       "failed_other": "{{count}} no se subieron — toca ↻ para reintentar",
       "discard": "Descartar",
       "discardConfirm": "¿Descartar esta visita? Se eliminarán sus fotos y notas.",
       "generalNotes": "Notas generales",
-      "generalNotesPlaceholder": "Algo general — acceso, estacionamiento, horario, con quién hablaste…"
+      "generalNotesPlaceholder": "Algo general — acceso, estacionamiento, horario, con quién hablaste…",
+      "nextShort": "Detalles del estimado"
     },
     "camera": {
       "starting": "Abriendo cámara…",

@@ -654,13 +654,14 @@
       "deleteNote": "Delete this note?",
       "deleteNoteWithPhotos_one": "Delete this note? Its photo stays, as unfiled.",
       "deleteNoteWithPhotos_other": "Delete this note? Its {{count}} photos stay, as unfiled.",
-      "next": "Next",
+      "next": "Fill out estimate details",
       "failed_one": "{{count}} didn’t upload — tap ↻ to retry",
       "failed_other": "{{count}} didn’t upload — tap ↻ to retry",
       "discard": "Discard",
       "discardConfirm": "Discard this site walk? Its photos and notes will be deleted.",
       "generalNotes": "General notes",
-      "generalNotesPlaceholder": "Anything general — access, parking, hours, who you met…"
+      "generalNotesPlaceholder": "Anything general — access, parking, hours, who you met…",
+      "nextShort": "Estimate details"
     },
     "camera": {
       "starting": "Starting camera…",
