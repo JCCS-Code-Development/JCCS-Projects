@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+import { getMicStream, idleMic } from '../photos/mediaStreams'
 
 // WhatsApp-style voice recording:
 //  • press and HOLD the mic to record, release to send
@@ -78,7 +79,7 @@ export default function VoiceRecorder({ onRecorded, disabled, size = 'md', class
     lockSelection(false)
     const s = r.current
     clearInterval(s.tick); clearInterval(s.levelTimer); clearTimeout(s.maxTimer)
-    s.stream?.getTracks().forEach((tr) => tr.stop())
+    if (s.stream) idleMic() // keep the shared mic briefly for the next memo
     s.audioCtx?.close?.().catch(() => {})
     r.current = {}
     setPhase('idle'); setElapsed(0); setDrag({ dx: 0, dy: 0 })
@@ -96,12 +97,14 @@ export default function VoiceRecorder({ onRecorded, disabled, size = 'md', class
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { lockSelection(false); flashHint(t('quotes.voice.unsupported')); return }
     let stream
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+      // Shared mic (mediaStreams.js): back-to-back memos reuse it instead of
+      // asking for microphone permission again.
+      stream = await getMicStream()
     } catch {
       lockSelection(false); flashHint(t('quotes.voice.denied')); r.current = {}; return
     }
     // The finger came up while the permission prompt was open: nothing to record.
-    if (!s.down) { stream.getTracks().forEach((tr) => tr.stop()); lockSelection(false); flashHint(t('quotes.voice.holdHint')); r.current = {}; return }
+    if (!s.down) { idleMic(); lockSelection(false); flashHint(t('quotes.voice.holdHint')); r.current = {}; return }
     s.stream = stream
     s.mime = pickMime()
     s.chunks = []

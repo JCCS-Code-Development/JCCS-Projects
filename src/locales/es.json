@@ -667,7 +667,9 @@
     "camera": {
       "starting": "Abriendo cámara…",
       "unavailable": "La cámara no está disponible aquí (se negó el permiso o no hay cámara).",
-      "usePhoneCamera": "Usar cámara del teléfono"
+      "usePhoneCamera": "Usar cámara del teléfono",
+      "paused": "El sistema apagó la cámara.",
+      "resume": "Volver a encender la cámara"
     },
     "unsaved": "Sin guardar",
     "est": {

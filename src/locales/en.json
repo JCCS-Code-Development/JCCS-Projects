@@ -667,7 +667,9 @@
     "camera": {
       "starting": "Starting camera…",
       "unavailable": "The camera isn’t available here (permission was denied, or there’s no camera).",
-      "usePhoneCamera": "Use phone camera"
+      "usePhoneCamera": "Use phone camera",
+      "paused": "The camera was turned off by the system.",
+      "resume": "Turn the camera back on"
     },
     "unsaved": "Unsaved",
     "est": {

@@ -38,7 +38,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="fixed bottom-20 lg:bottom-4 inset-x-4 sm:inset-x-auto sm:right-4 sm:left-auto z-[100] flex flex-col gap-2 sm:w-80 pointer-events-none">
+      <div className="fixed bottom-20 lg:bottom-4 inset-x-4 sm:inset-x-auto sm:right-4 sm:left-auto z-[1500] flex flex-col gap-2 sm:w-80 pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id} className={`pointer-events-auto rounded-xl shadow-lg px-4 py-3 text-sm font-medium flex items-start gap-3 ${VARIANT_STYLES[t.variant] ?? VARIANT_STYLES.info}`}>
             <span className="flex-1">{t.message}</span>

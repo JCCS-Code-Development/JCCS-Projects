@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getCameraStream, release } from './mediaStreams'
 
 // CompanyCam-style in-app camera: a live viewfinder and a shutter you can tap
 // over and over without leaving the app (the native file picker returns to
@@ -16,31 +17,61 @@ export default function CameraView({ active = true, onCapture, onFiles, header, 
   const streamRef = useRef(null)
   const nativeRef = useRef(null)
   const libraryRef = useRef(null)
-  const [status, setStatus] = useState('starting') // starting | live | unavailable
+  const [status, setStatus] = useState('starting') // starting | live | paused | unavailable
   const [flash, setFlash] = useState(false)
   const [shots, setShots] = useState(0)
+  const [attempt, setAttempt] = useState(0) // bump to (re)start the camera
+  const [hidden, setHidden] = useState(() => document.visibilityState === 'hidden')
+
+  // The camera is switched off while the app is in the background (so the
+  // system's "camera in use" indicator doesn't linger) and back on after.
+  useEffect(() => {
+    const onVis = () => {
+      const h = document.visibilityState === 'hidden'
+      if (h) release('camera')
+      setHidden(h)
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
 
   useEffect(() => {
-    if (!active) return
+    if (!active || hidden) return
     let cancelled = false
+    let retried = false
+    const video = videoRef.current
     if (!navigator.mediaDevices?.getUserMedia) { setStatus('unavailable'); return }
     setStatus('starting')
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1920 } },
-      audio: false,
-    }).then((stream) => {
-      if (cancelled) { stream.getTracks().forEach((tr) => tr.stop()); return }
+
+    // Shared stream (mediaStreams.js): reused across tab switches so the
+    // browser doesn't ask for permission again each time.
+    const open = () => getCameraStream().then((stream) => {
+      if (cancelled) return
       streamRef.current = stream
       const v = videoRef.current
       if (v) { v.srcObject = stream; v.play().catch(() => {}) }
       setStatus('live')
-    }).catch(() => { if (!cancelled) setStatus('unavailable') })
+      // iPadOS/iOS can cut the camera from outside the app — the user taps
+      // the system "recording" indicator, or the mic starts for a voice memo.
+      // Reconnect once automatically; if that fails, offer a button instead
+      // of leaving a dead black viewfinder.
+      for (const track of stream.getVideoTracks()) {
+        track.addEventListener('ended', () => {
+          if (cancelled) return
+          streamRef.current = null
+          if (!retried) { retried = true; setTimeout(() => { if (!cancelled) open().catch(() => setStatus('paused')) }, 400) }
+          else setStatus('paused')
+        })
+      }
+    })
+    open().catch(() => { if (!cancelled) setStatus('unavailable') })
     return () => {
+      // Don't stop the shared stream here — the screen releases it on leave.
       cancelled = true
-      streamRef.current?.getTracks().forEach((tr) => tr.stop())
+      if (video) video.srcObject = null
       streamRef.current = null
     }
-  }, [active])
+  }, [active, hidden, attempt])
 
   const shoot = () => {
     const v = videoRef.current
@@ -77,6 +108,14 @@ export default function CameraView({ active = true, onCapture, onFiles, header, 
         <video ref={videoRef} playsInline muted autoPlay
           className={`w-full h-full object-cover ${status === 'live' ? '' : 'hidden'}`} />
         {status === 'starting' && <p className="text-sm text-white/60">{t('quotes.camera.starting')}</p>}
+        {status === 'paused' && (
+          <div className="flex flex-col items-center gap-3 px-6 text-center">
+            <p className="text-sm text-white/70">{t('quotes.camera.paused')}</p>
+            <button onClick={() => setAttempt((n) => n + 1)} className="rounded-full bg-white text-gray-900 px-5 py-2.5 text-sm font-bold">
+              {t('quotes.camera.resume')}
+            </button>
+          </div>
+        )}
         {status === 'unavailable' && (
           <div className="flex flex-col items-center gap-3 px-6 text-center">
             <p className="text-sm text-white/70">{t('quotes.camera.unavailable')}</p>

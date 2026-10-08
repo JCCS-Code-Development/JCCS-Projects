@@ -7,6 +7,7 @@ import { useConfirm } from '../../components/ConfirmProvider'
 import { getQuoteRequest, deleteQuoteRequest, createQuoteNote, updateQuoteRequest } from '../../api/quoteRequests'
 import { usePhotoUploader } from './photos/usePhotoUploader'
 import CameraView from './photos/CameraView'
+import { release as releaseMedia } from './photos/mediaStreams'
 import { useAutosave } from './photos/useAutosave'
 import WalkNotesSheet from './photos/WalkNotesSheet'
 import VoiceRecorder from './voice/VoiceRecorder'
@@ -58,6 +59,8 @@ export default function QuoteCapture() {
   }), [id, navigate, toast, t])
 
   const uploader = usePhotoUploader(id, { onUploaded: load })
+  // Leaving the site-visit screen turns the camera and mic off.
+  useEffect(() => () => releaseMedia(), [])
   const voice = useVoiceMemos(id, load)
 
   const addNote = useCallback(async ({ focus = true } = {}) => {
