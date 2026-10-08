@@ -41,6 +41,15 @@ if ($method === 'GET') {
     $s->execute([$id]);
     $out['notes'] = array_map(function ($n) { $n['id'] = (int)$n['id']; $n['sort_order'] = (int)$n['sort_order']; return $n; }, $s->fetchAll());
 
+    $s = $pdo->prepare('SELECT id, note_id, file_path, mime, duration_sec, peaks, uploaded_by_name, created_at FROM quote_request_audio WHERE quote_request_id = ? ORDER BY id');
+    $s->execute([$id]);
+    $out['audio'] = array_map(function ($a) {
+        return ['id' => (int)$a['id'], 'note_id' => $a['note_id'] !== null ? (int)$a['note_id'] : null, 'url' => qrFileUrl($a['file_path']),
+                'mime' => $a['mime'], 'duration_sec' => $a['duration_sec'] !== null ? (int)$a['duration_sec'] : null,
+                'peaks' => $a['peaks'] ? array_map('intval', explode(',', $a['peaks'])) : [],
+                'uploaded_by_name' => $a['uploaded_by_name'], 'created_at' => $a['created_at']];
+    }, $s->fetchAll());
+
     $s = $pdo->prepare('SELECT * FROM quote_request_files WHERE quote_request_id = ? ORDER BY id');
     $s->execute([$id]);
     $out['files'] = array_map(function ($f) { $f['id'] = (int)$f['id']; $f['url'] = qrFileUrl($f['file_path']); return $f; }, $s->fetchAll());
@@ -144,14 +153,14 @@ if ($method === 'GET') {
         http_response_code(403); exit(json_encode(['error' => 'Only your own drafts can be deleted']));
     }
     $paths = [];
-    foreach (['quote_request_photos', 'quote_request_files'] as $t) {
+    foreach (['quote_request_photos', 'quote_request_files', 'quote_request_audio'] as $t) {
         $s = $pdo->prepare("SELECT file_path FROM $t WHERE quote_request_id = ?");
         $s->execute([$id]);
         $paths = array_merge($paths, $s->fetchAll(PDO::FETCH_COLUMN));
     }
     $pdo->beginTransaction();
     try {
-        foreach (['quote_request_photos', 'quote_request_files', 'quote_request_comments', 'quote_request_activity', 'quote_request_versions', 'quote_request_recipients', 'quote_request_notes'] as $t) {
+        foreach (['quote_request_photos', 'quote_request_files', 'quote_request_comments', 'quote_request_activity', 'quote_request_versions', 'quote_request_recipients', 'quote_request_notes', 'quote_request_audio'] as $t) {
             $pdo->prepare("DELETE FROM $t WHERE quote_request_id = ?")->execute([$id]);
         }
         $pdo->prepare('DELETE FROM notifications WHERE recipient_type = ? AND link_path = ?')->execute(['staff', '/quotes/' . $id]);

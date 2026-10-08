@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next'
 // save battery. If the camera can't be opened (permission denied, desktop
 // without one, insecure origin) it falls back to the phone camera / library
 // pickers, which always work.
-export default function CameraView({ active = true, onCapture, onFiles, header, className = '' }) {
+export default function CameraView({ active = true, onCapture, onFiles, header, className = '', extra = null }) {
   const { t } = useTranslation()
   const videoRef = useRef(null)
   const streamRef = useRef(null)
@@ -104,7 +104,7 @@ export default function CameraView({ active = true, onCapture, onFiles, header, 
           </button>
           <span className="text-[11px] font-bold uppercase tracking-wider text-white/80">{t('quotes.photos.takePhoto')}</span>
         </div>
-        <span className="w-12 text-center text-xs font-bold text-white/70 tabular-nums">{shots > 0 ? `${shots}` : ''}</span>
+        {extra ?? <span className="w-12 text-center text-xs font-bold text-white/70 tabular-nums">{shots > 0 ? `${shots}` : ''}</span>}
       </div>
     </div>
   )

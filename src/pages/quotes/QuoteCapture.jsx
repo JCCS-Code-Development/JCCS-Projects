@@ -9,6 +9,8 @@ import { usePhotoUploader } from './photos/usePhotoUploader'
 import CameraView from './photos/CameraView'
 import { useAutosave } from './photos/useAutosave'
 import WalkNotesSheet from './photos/WalkNotesSheet'
+import VoiceRecorder from './voice/VoiceRecorder'
+import { useVoiceMemos } from './voice/useVoiceMemos'
 import PhotoViewer from './photos/PhotoViewer'
 
 function useMediaQuery(query) {
@@ -52,6 +54,7 @@ export default function QuoteCapture() {
   }).catch(() => { navigate('/quotes', { replace: true }) }), [id, navigate])
 
   const uploader = usePhotoUploader(id, { onUploaded: load })
+  const voice = useVoiceMemos(id, load)
 
   const addNote = useCallback(async ({ focus = true } = {}) => {
     setAdding(true)
@@ -149,7 +152,8 @@ export default function QuoteCapture() {
     <WalkNotesSheet notes={notes} photos={quote.photos} uploader={uploader} editable
       activeNoteId={activeNoteId} onSelect={setActiveNoteId} focusNoteId={focusNoteId}
       onOpenPhoto={setViewing} onChanged={load} onAddNote={() => addNote()} adding={adding}
-      generalNotes={generalNotes} onGeneralNotesChange={setGeneralNotes} />
+      generalNotes={generalNotes} onGeneralNotesChange={setGeneralNotes}
+      audio={quote.audio ?? []} voice={voice} />
   )
 
   return (
@@ -189,6 +193,7 @@ export default function QuoteCapture() {
       <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {tab === 'notes' ? sheet : (
           <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}
+            extra={<VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, activeNoteId)} className="!w-12 !h-12" />}
             className="h-[calc(100svh-260px)] min-h-[380px]" />
         )}
       </div>
@@ -200,6 +205,7 @@ export default function QuoteCapture() {
         <div className="min-w-0">{sheet}</div>
         <div className="sticky top-2">
           <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}
+            extra={<VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, activeNoteId)} className="!w-12 !h-12" />}
             className="h-[calc(100svh-200px)] min-h-[420px]" />
         </div>
       </div>

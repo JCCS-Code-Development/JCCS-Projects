@@ -828,6 +828,22 @@
         "done": "Draft filled from the notes — check it against the photos.",
         "notesTitle": "To check / confirm"
       }
+    },
+    "voice": {
+      "holdHint": "Hold to record, release to send",
+      "slideCancel": "Slide to cancel",
+      "lock": "Lock",
+      "lockedHint": "Recording — tap send when done",
+      "discard": "Discard",
+      "send": "Send",
+      "sending": "Sending…",
+      "failed": "Not sent — tap ↻",
+      "deleteConfirm": "Delete this voice memo?",
+      "unsupported": "This browser can’t record audio",
+      "denied": "Microphone access was blocked — allow it in the browser settings",
+      "title": "Voice memos",
+      "formHint": "Listen while you fill this out — or hold the mic to add one.",
+      "empty": "No voice memos yet."
     }
   },
   "library": {

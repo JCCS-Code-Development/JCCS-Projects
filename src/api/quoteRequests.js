@@ -77,3 +77,19 @@ export const deleteQuoteNote = (noteId) =>
 // Can take a minute with many photos.
 export const aiDraftEstimate = (quoteRequestId) =>
   client.post('/quote-requests/ai-draft.php', { id: quoteRequestId }, { timeout: 240000 }).then((r) => r.data)
+
+// Voice memos (WhatsApp-style clips) on a request or a walk note.
+export const uploadQuoteAudio = (quoteRequestId, blob, { mime, duration, peaks, noteId, clientUid } = {}) => {
+  const ext = /mp4|m4a|aac/.test(mime) ? 'm4a' : /ogg/.test(mime) ? 'ogg' : 'webm'
+  const form = new FormData()
+  form.append('quote_request_id', quoteRequestId)
+  form.append('file', new File([blob], `memo.${ext}`, { type: mime }))
+  if (duration != null) form.append('duration', duration)
+  if (peaks?.length) form.append('peaks', peaks.join(','))
+  if (noteId) form.append('note_id', noteId)
+  if (clientUid) form.append('client_uid', clientUid)
+  return client.post('/quote-requests/audio.php', form, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+}
+
+export const deleteQuoteAudio = (id) =>
+  client.delete(`/quote-requests/audio.php?id=${id}`).then((r) => r.data)

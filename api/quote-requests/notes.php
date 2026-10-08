@@ -77,6 +77,7 @@ if ($method === 'POST') {
     } else {
         $pdo->beginTransaction();
         $pdo->prepare('UPDATE quote_request_photos SET note_id = NULL WHERE note_id = ?')->execute([$noteId]);
+        $pdo->prepare('UPDATE quote_request_audio SET note_id = NULL WHERE note_id = ?')->execute([$noteId]);
         $pdo->prepare('DELETE FROM quote_request_notes WHERE id = ?')->execute([$noteId]);
         $pdo->commit();
         echo json_encode(['message' => 'Deleted']);

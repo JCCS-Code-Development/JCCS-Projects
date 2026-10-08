@@ -12,6 +12,9 @@ import { generateScope, normalizeForm, toInvoiceToGoText, CATEGORY_KEYS } from '
 import { formFromNotes } from '../../scope-engine/fromNotes'
 import { useAutosave } from './photos/useAutosave'
 import { Segmented } from './QuoteParts'
+import VoiceRecorder from './voice/VoiceRecorder'
+import VoiceMemoStack from './voice/VoiceMemoStack'
+import { useVoiceMemos } from './voice/useVoiceMemos'
 import { copyText } from './quoteUtils'
 
 const LOCKED = ['approved', 'estimating', 'sent', 'accepted', 'declined', 'cancelled']
@@ -192,6 +195,7 @@ export default function EstimateForm() {
   const [tab, setTab] = useState('form') // phones: form | preview
   const [saving, setSaving] = useState(false)
   const [drafting, setDrafting] = useState(false)
+  const voice = useVoiceMemos(id, () => load())
 
   const load = useCallback(() => getQuoteRequest(id).then((d) => {
     setQuote(d.quoteRequest)
@@ -292,6 +296,23 @@ export default function EstimateForm() {
     </section>
   )
 
+  const noteNo = Object.fromEntries((quote.notes ?? []).map((n, i) => [n.id, i + 1]))
+  const memos = (
+    <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-gray-900">{t('quotes.voice.title')}</h2>
+          <p className="text-xs text-gray-500">{t('quotes.voice.formHint')}</p>
+        </div>
+        {!readOnly && <VoiceRecorder onRecorded={(rec) => voice.add(rec, null)} />}
+      </div>
+      {(quote.audio ?? []).length === 0 && voice.pending.length === 0
+        ? <p className="text-sm text-gray-400">{t('quotes.voice.empty')}</p>
+        : <VoiceMemoStack memos={quote.audio ?? []} voice={voice} all editable={!readOnly}
+            labelFor={(m) => (m.note_id && noteNo[m.note_id] ? t('quotes.walk.noteN', { n: noteNo[m.note_id] }) : t('quotes.walk.generalNotes'))} />}
+    </section>
+  )
+
   const scope = (
     <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-3">
       <h2 className="text-base font-semibold text-gray-900">{t('quotes.est.scope')}</h2>
@@ -380,7 +401,7 @@ export default function EstimateForm() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        <div className={`flex flex-col gap-4 min-w-0 ${tab === 'form' ? '' : 'hidden lg:flex'}`}>{general}{scope}</div>
+        <div className={`flex flex-col gap-4 min-w-0 ${tab === 'form' ? '' : 'hidden lg:flex'}`}>{memos}{general}{scope}</div>
         <div className={`lg:sticky lg:top-4 min-w-0 ${tab === 'preview' ? '' : 'hidden lg:block'}`}>{preview}</div>
       </div>
     </div>

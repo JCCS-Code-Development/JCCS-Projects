@@ -16,6 +16,7 @@ import {
 import { usePhotoUploader } from './photos/usePhotoUploader'
 import PhotoGallery from './photos/PhotoGallery'
 import WalkNotesSheet from './photos/WalkNotesSheet'
+import VoiceMemoStack from './voice/VoiceMemoStack'
 import PhotoViewer from './photos/PhotoViewer'
 import { StatusPill, FlagPills, QuoteDetailsForm, TextArea, Select } from './QuoteParts'
 import { useQuotePickers } from './useQuotePickers'
@@ -322,7 +323,7 @@ function PhotosSection({ quote, canEdit, onChanged }) {
       {asSheet ? (
         <>
           <WalkNotesSheet notes={notes} photos={quote.photos} uploader={uploader} editable={false}
-            onOpenPhoto={setViewing} generalNotes={quote.description} />
+            onOpenPhoto={setViewing} generalNotes={quote.description} audio={quote.audio ?? []} />
           {viewing != null && (
             <PhotoViewer photos={quote.photos} startId={viewing} canEdit={canEdit} notes={notes}
               onChanged={onChanged} onClose={() => setViewing(null)} />
@@ -333,6 +334,7 @@ function PhotosSection({ quote, canEdit, onChanged }) {
           {count === 0 && uploader.items.length === 0
             ? <p className="text-sm text-gray-400 text-center py-4">{t('quotes.photos.empty')}</p>
             : <PhotoGallery photos={quote.photos} uploader={uploader} canEdit={canEdit} onChanged={onChanged} />}
+          <VoiceMemoStack memos={quote.audio ?? []} all />
         </>
       )}
     </section>

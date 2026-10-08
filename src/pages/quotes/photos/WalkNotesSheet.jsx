@@ -5,6 +5,8 @@ import { useConfirm } from '../../../components/ConfirmProvider'
 import { useToast } from '../../../components/ToastProvider'
 import { updateQuoteNote, deleteQuoteNote } from '../../../api/quoteRequests'
 import { useAutosave } from './useAutosave'
+import VoiceRecorder from '../voice/VoiceRecorder'
+import VoiceMemoStack from '../voice/VoiceMemoStack'
 
 function Thumb({ src, onClick, pending, error, onRetry }) {
   return (
@@ -19,19 +21,24 @@ function Thumb({ src, onClick, pending, error, onRetry }) {
   )
 }
 
-function NoteRow({ note, index, photos, pending, active, editable, onSelect, onOpenPhoto, onDeleted, uploader, autoFocus }) {
+function NoteRow({ note, index, photos, pending, active, editable, onSelect, onOpenPhoto, onDeleted, uploader, autoFocus, audio, voice }) {
   const { t } = useTranslation()
   const toast = useToast()
   const confirmDialog = useConfirm()
   const [text, setText] = useState(note.body ?? '')
   const [saving, setSaving] = useState(false)
   const taRef = useRef(null)
-  // Grow the box with its text instead of scrolling inside a tiny field.
+  // Grow the box with its text instead of scrolling inside a tiny field —
+  // re-measured when the text changes AND when its width changes (tab
+  // switches, rotation, layout shifts), or a line can end up hidden.
   useLayoutEffect(() => {
     const el = taRef.current
     if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
+    const fit = () => { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px` }
+    fit()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null
+    ro?.observe(el)
+    return () => ro?.disconnect()
   }, [text])
 
   useAutosave(text, async (v) => {
@@ -51,9 +58,8 @@ function NoteRow({ note, index, photos, pending, active, editable, onSelect, onO
   const count = photos.length + pending.length
   return (
     <div onClick={onSelect}
-      className={`grid grid-cols-2 border-b border-gray-200 transition-colors ${
-        active ? 'bg-brand-100/50' : 'bg-white'
-      } ${editable ? 'cursor-pointer' : ''}`}>
+      className={`border-b border-gray-200 transition-colors ${active ? 'bg-brand-100/50' : 'bg-white'} ${editable ? 'cursor-pointer' : ''}`}>
+    <div className="grid grid-cols-2">
       {/* Cue column: the note */}
       <div className={`relative min-h-[7.5rem] border-r border-gray-200 p-3 ${active ? 'border-l-4 border-l-brand-500' : 'border-l-4 border-l-transparent'}`}>
         <div className="flex items-center justify-between gap-1 mb-1">
@@ -63,6 +69,7 @@ function NoteRow({ note, index, photos, pending, active, editable, onSelect, onO
           {editable && (
             <span className="flex items-center gap-1">
               {saving && <Spinner size="sm" className="text-gray-300" />}
+              {voice && <VoiceRecorder onRecorded={(rec) => { onSelect(); voice.add(rec, note.id) }} />}
               <button type="button" onClick={(e) => { e.stopPropagation(); remove() }} aria-label={t('common.delete')}
                 className="w-6 h-6 rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 text-sm leading-none">×</button>
             </span>
@@ -92,6 +99,13 @@ function NoteRow({ note, index, photos, pending, active, editable, onSelect, onO
         )}
       </div>
     </div>
+    {/* Voice memos for this note — full width so the waveform has room. */}
+    {(audio.some((a) => a.note_id === note.id) || (voice?.pending ?? []).some((p) => p.note_id === note.id)) && (
+      <div className={`px-3 pb-3 ${active ? 'border-l-4 border-l-brand-500' : 'border-l-4 border-l-transparent'}`}>
+        <VoiceMemoStack memos={audio} voice={voice} noteId={note.id} editable={editable} />
+      </div>
+    )}
+    </div>
   )
 }
 
@@ -101,7 +115,7 @@ function NoteRow({ note, index, photos, pending, active, editable, onSelect, onO
 // capture mode the tapped row is the "active" note new photos are filed under.
 export default function WalkNotesSheet({
   notes, photos, uploader, activeNoteId, onSelect, editable, onOpenPhoto, onChanged,
-  onAddNote, adding, focusNoteId, generalNotes, onGeneralNotesChange,
+  onAddNote, adding, focusNoteId, generalNotes, onGeneralNotesChange, audio = [], voice,
 }) {
   const { t } = useTranslation()
   const pendingFor = (noteId) => (uploader?.items ?? []).filter((it) => (it.meta?.note_id ?? null) === noteId)
@@ -118,7 +132,8 @@ export default function WalkNotesSheet({
       {notes.map((n, i) => (
         <NoteRow key={n.id} note={n} index={i} active={editable && n.id === activeNoteId} editable={editable}
           photos={photos.filter((p) => p.note_id === n.id)} pending={pendingFor(n.id)} uploader={uploader}
-          onSelect={() => onSelect?.(n.id)} onOpenPhoto={onOpenPhoto} onDeleted={onChanged} autoFocus={n.id === focusNoteId} />
+          onSelect={() => onSelect?.(n.id)} onOpenPhoto={onOpenPhoto} onDeleted={onChanged} autoFocus={n.id === focusNoteId}
+          audio={audio} voice={editable ? voice : null} />
       ))}
 
       {(unfiled.length > 0 || unfiledPending.length > 0) && (
@@ -140,16 +155,20 @@ export default function WalkNotesSheet({
         </button>
       )}
 
-      {(editable || generalNotes) && (
-        <div className="p-3 bg-gray-50">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">{t('quotes.walk.generalNotes')}</p>
+      {(editable || generalNotes || audio.some((a) => !a.note_id)) && (
+        <div className="p-3 bg-gray-50 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{t('quotes.walk.generalNotes')}</p>
+            {editable && voice && <VoiceRecorder onRecorded={(rec) => voice.add(rec, null)} />}
+          </div>
           {editable ? (
             <textarea value={generalNotes ?? ''} onChange={(e) => onGeneralNotesChange(e.target.value)} rows={3}
               placeholder={t('quotes.walk.generalNotesPlaceholder')}
               className="w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-base lg:text-sm outline-none focus:border-brand-500" />
           ) : (
-            <p className="text-sm text-gray-800 whitespace-pre-wrap">{generalNotes}</p>
+            generalNotes ? <p className="text-sm text-gray-800 whitespace-pre-wrap">{generalNotes}</p> : null
           )}
+          <VoiceMemoStack memos={audio} voice={voice} noteId={null} editable={editable} />
         </div>
       )}
     </div>

@@ -828,6 +828,22 @@
         "done": "Borrador listo desde las notas — revísalo contra las fotos.",
         "notesTitle": "Para revisar / confirmar"
       }
+    },
+    "voice": {
+      "holdHint": "Mantén presionado para grabar, suelta para enviar",
+      "slideCancel": "Desliza para cancelar",
+      "lock": "Bloquear",
+      "lockedHint": "Grabando — toca enviar al terminar",
+      "discard": "Descartar",
+      "send": "Enviar",
+      "sending": "Enviando…",
+      "failed": "No enviado — toca ↻",
+      "deleteConfirm": "¿Eliminar este audio?",
+      "unsupported": "Este navegador no puede grabar audio",
+      "denied": "Se bloqueó el micrófono — permítelo en la configuración del navegador",
+      "title": "Audios",
+      "formHint": "Escúchalos mientras llenas esto — o mantén el micrófono para agregar uno.",
+      "empty": "Aún no hay audios."
     }
   },
   "library": {
