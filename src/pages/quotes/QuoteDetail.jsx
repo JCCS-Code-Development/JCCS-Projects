@@ -169,7 +169,8 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
     if (!form.title.trim()) { toast.error(t('quotes.titleRequired')); return }
     setSaving(true)
     try {
-      await updateQuoteRequest(quote.id, payloadFromForm(form, isAdmin))
+      // Saving details always saves the request (gives an unsaved walk its Q-number).
+      await updateQuoteRequest(quote.id, { ...payloadFromForm(form, isAdmin), keep: true })
       setEditing(false)
       onEditDone?.()
       onSaved()
@@ -536,7 +537,7 @@ export default function QuoteDetail() {
 
       <div className="flex flex-col items-center text-center gap-2 lg:items-start lg:text-left">
         <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-          <span className="text-xs font-bold text-gray-400 tracking-wide">{quote.request_no}{quote.estimate_number ? ` · #${quote.estimate_number}` : ''}</span>
+          <span className="text-xs font-bold text-gray-400 tracking-wide">{quote.request_no ?? t('quotes.unsaved')}{quote.estimate_number ? ` · #${quote.estimate_number}` : ''}</span>
           <StatusPill status={quote.status} />
           <FlagPills quote={quote} />
         </div>

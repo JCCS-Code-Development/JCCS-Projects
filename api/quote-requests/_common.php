@@ -22,8 +22,29 @@ const QR_PRIORITIES = ['low', 'normal', 'high', 'urgent'];
 
 const QR_UPLOAD_DIR = __DIR__ . '/../uploads/quote-requests';
 
-function qrRequestNo(int $id): string {
-    return 'Q-' . str_pad((string)$id, 4, '0', STR_PAD_LEFT);
+// "Q-0012" from quote_number; null for an unsaved site walk (no number yet).
+function qrRequestNo($quoteNumber): ?string {
+    if ($quoteNumber === null || $quoteNumber === '') return null;
+    return 'Q-' . str_pad((string)(int)$quoteNumber, 4, '0', STR_PAD_LEFT);
+}
+
+// Gives a request its Q-number the first time it's saved. Numbers come from
+// their own counter (not the row id), so discarded unsaved walks leave no
+// gaps. The UNIQUE key settles any race between two saves; retry on a clash.
+function qrAssignNumber(PDO $pdo, int $id): void {
+    for ($attempt = 0; $attempt < 5; $attempt++) {
+        $s = $pdo->prepare('SELECT quote_number FROM quote_requests WHERE id = ?');
+        $s->execute([$id]);
+        if ($s->fetchColumn() !== null) return;
+        $next = (int)$pdo->query('SELECT COALESCE(MAX(quote_number), 0) + 1 FROM quote_requests')->fetchColumn();
+        try {
+            $pdo->prepare('UPDATE quote_requests SET quote_number = ? WHERE id = ? AND quote_number IS NULL')->execute([$next, $id]);
+            return;
+        } catch (PDOException $e) {
+            if ($e->getCode() !== '23000') throw $e;
+        }
+    }
+    throw new RuntimeException('Could not assign a quote number — try again');
 }
 
 function qrIsAdmin(array $auth): bool {
@@ -117,7 +138,9 @@ function qrValidDateTime(?string $v): ?string {
 function qrPresent(array $row, array $auth): array {
     $out = $row;
     $out['id'] = (int)$row['id'];
-    $out['request_no'] = qrRequestNo((int)$row['id']);
+    $out['request_no'] = qrRequestNo($row['quote_number'] ?? null);
+    $out['is_saved'] = isset($row['quote_number']) && $row['quote_number'] !== null;
+    unset($out['quote_number']);
     foreach (['customer_id', 'contact_id', 'calendar_event_id', 'field_manager_id', 'assigned_to', 'document_id', 'created_by', 'follow_up_days'] as $k) {
         if (array_key_exists($k, $row)) $out[$k] = $row[$k] !== null ? (int)$row[$k] : null;
     }

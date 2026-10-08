@@ -65,7 +65,7 @@ function QuoteCard({ q, showAssignees, cover = false }) {
     <div className="min-w-0 flex-1">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-bold text-gray-400 tracking-wide truncate">
-          {q.request_no}{q.estimate_number ? ` · #${q.estimate_number}` : ''}{q.work_type === 'addon' && q.project_number ? ` · ${t('quotes.addonShort')} #${q.project_number}` : ''}
+          {q.request_no ?? t('quotes.unsaved')}{q.estimate_number ? ` · #${q.estimate_number}` : ''}{q.work_type === 'addon' && q.project_number ? ` · ${t('quotes.addonShort')} #${q.project_number}` : ''}
         </span>
         <StatusPill status={q.status} />
       </div>
@@ -136,7 +136,8 @@ export default function QuotesHome() {
     setStarting(true)
     try {
       const today = new Date().toLocaleDateString(i18n.language === 'es' ? 'es-US' : 'en-US', { month: 'short', day: 'numeric' })
-      const res = await createQuoteRequest({ title: t('quotes.capture.autoTitle', { date: today }), work_type: 'new' })
+      // Unsaved until Next/Save/Submit: no Q-number yet, and Cancel discards it.
+      const res = await createQuoteRequest({ title: t('quotes.capture.autoTitle', { date: today }), work_type: 'new', unsaved: true })
       navigate(`/quotes/${res.id}/capture`)
     } catch (err) {
       toast.error(err?.response?.data?.error ?? t('common.couldNotSave'))

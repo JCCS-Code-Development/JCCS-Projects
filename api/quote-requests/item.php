@@ -91,7 +91,9 @@ if ($method === 'GET') {
         http_response_code(409); exit(json_encode(['error' => 'The site walk is locked — reopen the request to edit it']));
     }
 
-    if (!$sets && $recipientIds === null) { echo json_encode(['message' => 'Nothing to update']); exit; }
+    // keep: true — the user saved (Next / Save): give an unsaved walk its Q-number.
+    $keep = !empty($body['keep']);
+    if (!$sets && $recipientIds === null && !$keep) { echo json_encode(['message' => 'Nothing to update']); exit; }
 
     $pdo->beginTransaction();
     try {
@@ -100,6 +102,7 @@ if ($method === 'GET') {
             $pdo->prepare('UPDATE quote_requests SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);
         }
         if ($recipientIds !== null) qrSetRecipients($pdo, $id, $recipientIds);
+        if ($keep) qrAssignNumber($pdo, $id);
         $updated = qrLoadVisible($pdo, $auth, $id);
 
         if ($scopeChanged) {
@@ -129,7 +132,7 @@ if ($method === 'GET') {
         throw $e;
     }
 
-    echo json_encode(['message' => 'Saved']);
+    echo json_encode(['message' => 'Saved', 'request_no' => qrRequestNo($updated['quote_number'])]);
 
 } elseif ($method === 'DELETE') {
     // Permanent delete: admins any request, field managers only their own

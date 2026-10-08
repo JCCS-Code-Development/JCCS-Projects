@@ -54,6 +54,7 @@ try {
             if (trim((string)$row['description']) === '' && !$row['form_json'] && !(int)$nc->fetchColumn()) $fail('Describe the work before submitting');
             if ($row['work_type'] === 'addon' && !$row['project_number']) $fail('Pick the project this add-on belongs to');
             $sets[] = 'submitted_at = NOW()';
+            qrAssignNumber($pdo, $id); // submitting always saves
             if (!$row['site_visit_date'] && !qrIsAdmin($auth)) { $sets[] = 'site_visit_date = CURDATE()'; }
             break;
 

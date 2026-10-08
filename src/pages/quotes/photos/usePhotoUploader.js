@@ -16,5 +16,6 @@ export function usePhotoUploader(quoteRequestId, { onUploaded } = {}) {
     addFiles: (files, meta) => ctx.addFiles(quoteRequestId, files, meta),
     retry: ctx.retry,
     discard: ctx.discard,
+    discardAll: () => ctx.discardRequest(quoteRequestId),
   }
 }

@@ -17,7 +17,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     // List view — the heavy columns (form, scope) are left out; the detail
     // endpoint returns those.
-    $sql = "SELECT q.id, q.status, q.work_type, q.estimate_type, q.title, q.facility, q.location_detail,
+    $sql = "SELECT q.id, q.quote_number, q.status, q.work_type, q.estimate_type, q.title, q.facility, q.location_detail,
                    q.project_number, q.estimate_number, q.priority, q.needed_by, q.site_visit_date, q.site_visit_at,
                    q.field_manager_id, q.field_manager_name, q.assigned_to, q.assigned_to_name,
                    q.follow_up_days, q.decline_reason,
@@ -35,6 +35,10 @@ if ($method === 'GET') {
     if (!qrIsAdmin($auth)) {
         $where[] = '(q.created_by = ? OR q.field_manager_id = ?)';
         $params[] = $auth['user_id']; $params[] = $auth['user_id'];
+    } else {
+        // Someone else's unsaved walk-in-progress isn't a quote yet.
+        $where[] = '(q.quote_number IS NOT NULL OR q.created_by = ?)';
+        $params[] = $auth['user_id'];
     }
     if (!empty($_GET['status'])) {
         $statuses = array_values(array_intersect(explode(',', (string)$_GET['status']), QR_STATUSES));
@@ -108,16 +112,21 @@ if ($method === 'GET') {
         ->execute($params);
     $id = (int)$pdo->lastInsertId();
     if ($recipientIds) qrSetRecipients($pdo, $id, $recipientIds);
+    // A site walk starts unsaved (no Q-number) so photos can upload while it's
+    // captured; everything else — e.g. the office's New request form — is
+    // saved on creation.
+    $unsaved = !empty($body['unsaved']);
+    if (!$unsaved) qrAssignNumber($pdo, $id);
 
     $row = qrLoadVisible($pdo, $auth, $id);
     qrLogActivity($pdo, $id, $auth, 'created', null, 'draft');
 
     // Admin handed it to someone else to walk → tell them.
-    if (qrIsAdmin($auth) && !empty($row['field_manager_id'])) {
+    if (!$unsaved && qrIsAdmin($auth) && !empty($row['field_manager_id'])) {
         qrNotifyUser($pdo, (int)$row['field_manager_id'], $row, 'quote_assigned_field',
             'Site walk assigned: ' . $row['title'], $row['facility'], $auth['user_id']);
     }
 
-    echo json_encode(['id' => $id, 'request_no' => qrRequestNo($id), 'message' => 'Quote request created']);
+    echo json_encode(['id' => $id, 'request_no' => qrRequestNo($row['quote_number']), 'message' => 'Quote request created']);
 
 } else { http_response_code(405); }

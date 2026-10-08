@@ -658,13 +658,16 @@
       "deleteNoteWithPhotos_other": "Delete this note? Its {{count}} photos stay, as unfiled.",
       "next": "Next",
       "failed_one": "{{count}} didn’t upload — tap ↻ to retry",
-      "failed_other": "{{count}} didn’t upload — tap ↻ to retry"
+      "failed_other": "{{count}} didn’t upload — tap ↻ to retry",
+      "discard": "Discard",
+      "discardConfirm": "Discard this site walk? Its photos and notes will be deleted."
     },
     "camera": {
       "starting": "Starting camera…",
       "unavailable": "The camera isn’t available here (permission was denied, or there’s no camera).",
       "usePhoneCamera": "Use phone camera"
-    }
+    },
+    "unsaved": "Unsaved"
   },
   "library": {
     "title": "Materials Library",

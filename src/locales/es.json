@@ -658,13 +658,16 @@
       "deleteNoteWithPhotos_other": "¿Eliminar esta nota? Sus {{count}} fotos se quedan, sin nota.",
       "next": "Siguiente",
       "failed_one": "{{count}} no se subió — toca ↻ para reintentar",
-      "failed_other": "{{count}} no se subieron — toca ↻ para reintentar"
+      "failed_other": "{{count}} no se subieron — toca ↻ para reintentar",
+      "discard": "Descartar",
+      "discardConfirm": "¿Descartar esta visita? Se eliminarán sus fotos y notas."
     },
     "camera": {
       "starting": "Abriendo cámara…",
       "unavailable": "La cámara no está disponible aquí (se negó el permiso o no hay cámara).",
       "usePhoneCamera": "Usar cámara del teléfono"
-    }
+    },
+    "unsaved": "Sin guardar"
   },
   "library": {
     "title": "Biblioteca de Materiales",

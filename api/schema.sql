@@ -381,12 +381,15 @@ CREATE TABLE customer_contacts (
   INDEX idx_contacts_customer (customer_id)
 );
 
--- One row per quote request / site walk. request # shown as Q-0001 (derived
--- from id, not stored). form_json holds the structured site-walk answers the
+-- One row per quote request / site walk. request # shown as Q-0001 from
+-- quote_number (assigned on first save). form_json holds the structured site-walk answers the
 -- scope generator reads; scope_text is the current (possibly hand-edited)
 -- Scope of Work that gets copied into InvoiceToGo.
 CREATE TABLE quote_requests (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  -- Q-number, assigned only once the request is saved (NULL = unsaved site
+  -- walk still being captured). migrations/2026-10-08b_quote_numbers.sql
+  quote_number INT UNSIGNED NULL UNIQUE,
   status ENUM('draft','submitted','needs_info','in_review','approved','estimating','sent','accepted','declined','cancelled')
          NOT NULL DEFAULT 'draft',
   work_type ENUM('new','addon') NOT NULL DEFAULT 'new',

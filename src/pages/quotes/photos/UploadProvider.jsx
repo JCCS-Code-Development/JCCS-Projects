@@ -40,8 +40,13 @@ export default function UploadProvider({ children }) {
           queue.current = queue.current.filter((x) => x !== it)
           notify(it.requestId)
         } catch (err) {
-          it.status = 'error'
-          it.error = err?.response?.data?.error ?? err?.message ?? 'Upload failed'
+          if (it.cancelled) {
+            URL.revokeObjectURL(it.previewUrl)
+            queue.current = queue.current.filter((x) => x !== it)
+          } else {
+            it.status = 'error'
+            it.error = err?.response?.data?.error ?? err?.message ?? 'Upload failed'
+          }
         } finally {
           active.current -= 1
           sync()
@@ -78,6 +83,19 @@ export default function UploadProvider({ children }) {
     sync()
   }, [])
 
+  // The request was discarded: forget its photos. Ones mid-upload are marked
+  // cancelled and dropped silently when their request fails.
+  const discardRequest = useCallback((requestId) => {
+    const k = String(requestId)
+    queue.current = queue.current.filter((it) => {
+      if (it.requestId !== k) return true
+      if (it.status === 'uploading') { it.cancelled = true; return true }
+      URL.revokeObjectURL(it.previewUrl)
+      return false
+    })
+    sync()
+  }, [])
+
   const subscribe = useCallback((requestId, cb) => {
     const k = String(requestId)
     if (!listeners.current.has(k)) listeners.current.set(k, new Set())
@@ -104,6 +122,7 @@ export default function UploadProvider({ children }) {
     return () => window.removeEventListener('beforeunload', handler)
   }, [pending])
 
-  const value = useMemo(() => ({ items, addFiles, retry, discard, subscribe }), [items, addFiles, retry, discard, subscribe])
+  const value = useMemo(() => ({ items: items.filter((it) => !it.cancelled), addFiles, retry, discard, discardRequest, subscribe }),
+    [items, addFiles, retry, discard, discardRequest, subscribe])
   return <UploadContext.Provider value={value}>{children}</UploadContext.Provider>
 }

@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Spinner from '../../components/ui/Spinner'
 import { useToast } from '../../components/ToastProvider'
+import { useConfirm } from '../../components/ConfirmProvider'
 import { getQuoteRequest, deleteQuoteRequest, createQuoteNote, updateQuoteRequest } from '../../api/quoteRequests'
 import { usePhotoUploader } from './photos/usePhotoUploader'
 import { useAutosave } from './photos/useAutosave'
@@ -33,6 +34,7 @@ export default function QuoteCapture() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
+  const confirmDialog = useConfirm()
   const [quote, setQuote] = useState(null)
   const [activeNoteId, setActiveNoteId] = useState(null)
   const [focusNoteId, setFocusNoteId] = useState(null)
@@ -98,18 +100,25 @@ export default function QuoteCapture() {
     if (n) setTab('notes')
   }
 
-  // Leaving an untouched walk shouldn't leave an empty draft behind.
+  // Cancel on a walk that was never saved discards it entirely — it never
+  // becomes a quote and never takes a Q-number. (Asks first if anything was
+  // captured.) A saved walk just goes back to its page.
   const cancel = async () => {
+    if (quote.is_saved) { navigate(`/quotes/${id}`); return }
     const empty = !quote.photos.length && !uploader.items.length && !(summary ?? '').trim()
       && notes.every((n) => !(n.body ?? '').trim())
-    if (empty && quote.status === 'draft') {
-      try { await deleteQuoteRequest(id) } catch { /* stays as a draft */ }
-      navigate('/quotes')
-    } else {
-      navigate(`/quotes/${id}`)
-    }
+    if (!empty && !await confirmDialog(t('quotes.walk.discardConfirm'), { danger: true, confirmLabel: t('quotes.walk.discard') })) return
+    uploader.discardAll()
+    try { await deleteQuoteRequest(id) } catch { /* already gone */ }
+    navigate('/quotes', { replace: true })
   }
-  const next = () => navigate(`/quotes/${id}?edit=1`)
+  // Next = save: the walk becomes a quote request and gets its Q-number.
+  const next = async () => {
+    try {
+      if (!quote.is_saved) await updateQuoteRequest(id, { keep: true, ...(summary !== null ? { description: summary } : {}) })
+      navigate(`/quotes/${id}?edit=1`)
+    } catch (err) { toast.error(err?.response?.data?.error ?? t('common.couldNotSave')) }
+  }
 
   const onTouchStart = (e) => { touchX.current = e.touches[0].clientX }
   const onTouchEnd = (e) => {
@@ -146,7 +155,7 @@ export default function QuoteCapture() {
       <div className="flex items-center justify-between gap-3">
         <button onClick={cancel} className="text-sm font-semibold text-gray-500 py-2 pr-2">{t('common.cancel')}</button>
         <div className="min-w-0 text-center">
-          <p className="text-[11px] font-bold text-gray-400 tracking-wide">{quote.request_no}</p>
+          <p className="text-[11px] font-bold text-gray-400 tracking-wide">{quote.request_no ?? t('quotes.unsaved')}</p>
           <p className="text-sm font-bold text-gray-900 truncate">{quote.title}</p>
         </div>
         <button onClick={next} className="rounded-full bg-gray-900 text-white px-4 py-2 text-sm font-bold active:bg-gray-700">
