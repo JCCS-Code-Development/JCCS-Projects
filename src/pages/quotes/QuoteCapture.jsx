@@ -139,7 +139,7 @@ export default function QuoteCapture() {
     <div className="flex items-center justify-between gap-2">
       <button onClick={() => setTab('notes')}
         className="min-w-0 max-w-[70%] rounded-full bg-black/60 backdrop-blur px-3 py-1.5 text-left text-xs text-white">
-        <span className="font-bold">{active ? `${t('quotes.walk.noteN', { n: activeIndex + 1 })}` : t('quotes.walk.unfiled')}</span>
+        <span className="font-bold">{active ? `${t('quotes.walk.noteN', { n: activeIndex + 1 })}` : t('quotes.walk.generalNotes')}</span>
         {active?.body ? <span className="text-white/80"> · {active.body.split('\n')[0]}</span> : null}
       </button>
       {/* Side by side, the sheet's own "+ New note" is right there. */}
@@ -149,6 +149,16 @@ export default function QuoteCapture() {
           + {t('quotes.walk.newNote')}
         </button>
       )}
+    </div>
+  )
+
+  // WhatsApp-style record bar under the notes: one mic for the selected card.
+  const composer = (
+    <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/95 backdrop-blur px-3 py-2 shadow-sm">
+      <span className="flex-1 min-w-0 text-sm text-gray-600 truncate">
+        {t('quotes.voice.holdHint')} · <b className="text-gray-900">{active ? t('quotes.walk.noteN', { n: activeIndex + 1 }) : t('quotes.walk.generalNotes')}</b>
+      </span>
+      <VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, activeNoteId)} className="!w-12 !h-12" />
     </div>
   )
 
@@ -195,7 +205,12 @@ export default function QuoteCapture() {
       </div>
 
       <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        {tab === 'notes' ? sheet : (
+        {tab === 'notes' ? (
+          <div className="flex flex-col gap-3">
+            {sheet}
+            <div className="sticky z-20" style={{ bottom: 'calc(76px + env(safe-area-inset-bottom))' }}>{composer}</div>
+          </div>
+        ) : (
           <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}
             extra={<VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, activeNoteId)} className="!w-12 !h-12" />}
             className="h-[calc(100svh-260px)] min-h-[380px]" />
@@ -205,13 +220,16 @@ export default function QuoteCapture() {
 
       {/* iPad / landscape: notes left, camera right. */}
       {wide && (
-      <div className="grid grid-cols-2 gap-4 items-start">
-        <div className="min-w-0">{sheet}</div>
-        <div className="sticky top-2">
-          <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}
-            extra={<VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, activeNoteId)} className="!w-12 !h-12" />}
-            className="h-[calc(100svh-200px)] min-h-[420px]" />
+      // Both columns fill the screen height: the notes scroll inside their own
+      // column (record bar pinned under them), the camera takes the rest.
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-4 h-[calc(100svh-150px)] min-h-[460px]">
+        <div className="min-w-0 flex flex-col gap-3 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1">{sheet}</div>
+          {composer}
         </div>
+        <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}
+          extra={<VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, activeNoteId)} className="!w-12 !h-12" />}
+          className="h-full" />
       </div>
       )}
 
