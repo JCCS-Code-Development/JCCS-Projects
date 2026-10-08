@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Spinner from '../../../components/ui/Spinner'
 import PhotoViewer from './PhotoViewer'
+import { MarkedImage } from './AnnotationLayer'
 import { parseDate } from '../quoteUtils'
 
 // Touch devices get a "Take photo" button that opens the camera directly
@@ -124,7 +125,7 @@ export default function PhotoGallery({ photos, uploader, canEdit, onChanged }) {
           <div className={grid}>
             {g.items.map((p) => (
               <button key={p.id} onClick={() => setViewing(p.id)} className="relative aspect-square overflow-hidden rounded-md bg-gray-100 active:opacity-80">
-                <img src={p.url} alt={p.caption ?? ''} loading="lazy" className="w-full h-full object-cover" />
+                <MarkedImage src={p.url} alt={p.caption ?? ''} shapes={p.annotations?.shapes} className="w-full h-full" />
                 {p.annotations?.shapes?.length > 0 && <MarkupBadge />}
                 {(p.is_before || p.is_reference) && (
                   <span className="absolute top-1 left-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">

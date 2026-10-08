@@ -6,11 +6,12 @@ import { useToast } from '../../../components/ToastProvider'
 import { updateQuoteNote, deleteQuoteNote } from '../../../api/quoteRequests'
 import { useAutosave } from './useAutosave'
 import VoiceMemoStack from '../voice/VoiceMemoStack'
+import { MarkedImage } from './AnnotationLayer'
 
-function Thumb({ src, onClick, pending, error, onRetry }) {
+function Thumb({ src, shapes, onClick, pending, error, onRetry }) {
   return (
     <button type="button" onClick={onClick} className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
-      <img src={src} alt="" loading="lazy" className={`w-full h-full object-cover ${pending ? 'opacity-60' : ''}`} />
+      <MarkedImage src={src} shapes={shapes} className="w-full h-full" imgClassName={pending ? 'opacity-60' : ''} />
       {pending && !error && <span className="absolute inset-0 flex items-center justify-center"><Spinner size="sm" className="text-white drop-shadow" /></span>}
       {error && (
         <span onClick={(e) => { e.stopPropagation(); onRetry() }}
@@ -32,7 +33,7 @@ function PhotoStrip({ photos, pending, uploader, onOpenPhoto, emptyText }) {
       {pending.map((it) => (
         <Thumb key={it.key} src={it.previewUrl} pending error={it.status === 'error'} onRetry={() => uploader.retry(it.key)} />
       ))}
-      {photos.map((p) => <Thumb key={p.id} src={p.url} onClick={(e) => { e.stopPropagation(); onOpenPhoto(p.id) }} />)}
+      {photos.map((p) => <Thumb key={p.id} src={p.url} shapes={p.annotations?.shapes} onClick={(e) => { e.stopPropagation(); onOpenPhoto(p.id) }} />)}
     </div>
   )
 }

@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 // Markup drawn over a photo (arrows, circles, lines, freehand, text).
 // Stored on the photo as { v: 1, shapes: [...] } with every coordinate
 // normalized to 0..1 of the image, so it lines up at any display size.
@@ -47,12 +49,29 @@ function Shape({ s, w, h, sw }) {
   }
 }
 
-export default function AnnotationLayer({ shapes = [], width, height, className = '', ...rest }) {
+export default function AnnotationLayer({ shapes = [], width, height, className = '', weight = 1, ...rest }) {
   if (!width || !height) return null
-  const sw = Math.max(width, height) * 0.007
+  const sw = Math.max(width, height) * 0.007 * weight
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className={`absolute inset-0 w-full h-full ${className}`} {...rest}>
       {shapes.map((s, i) => <Shape key={i} s={s} w={width} h={height} sw={sw} />)}
     </svg>
+  )
+}
+
+// A cropped (object-cover) thumbnail with its markup drawn on top, cropped
+// the same way so arrows land where they were drawn. Lines are drawn a bit
+// heavier so they still read at thumbnail size.
+export function MarkedImage({ src, shapes, className = '', imgClassName = '', alt = '' }) {
+  const [size, setSize] = useState({ w: 0, h: 0 })
+  return (
+    <span className={`relative block ${className}`}>
+      <img src={src} alt={alt} loading="lazy" className={`w-full h-full object-cover ${imgClassName}`}
+        onLoad={(e) => setSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })} />
+      {shapes?.length > 0 && (
+        <AnnotationLayer shapes={shapes} width={size.w} height={size.h} weight={2.5}
+          preserveAspectRatio="xMidYMid slice" className="pointer-events-none" />
+      )}
+    </span>
   )
 }
