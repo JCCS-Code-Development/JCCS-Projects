@@ -72,3 +72,8 @@ export const updateQuoteNote = (noteId, payload) =>
 
 export const deleteQuoteNote = (noteId) =>
   client.delete(`/quote-requests/notes.php?id=${noteId}`).then((r) => r.data)
+
+// Claude reads the walk (notes + photos) and returns draft form answers.
+// Can take a minute with many photos.
+export const aiDraftEstimate = (quoteRequestId) =>
+  client.post('/quote-requests/ai-draft.php', { id: quoteRequestId }, { timeout: 240000 }).then((r) => r.data)

@@ -6,7 +6,7 @@ import Spinner from '../../components/ui/Spinner'
 import { useToast } from '../../components/ToastProvider'
 import { useConfirm } from '../../components/ConfirmProvider'
 import { useAuthStore } from '../../store/authStore'
-import { getQuoteRequest, updateQuoteRequest } from '../../api/quoteRequests'
+import { getQuoteRequest, updateQuoteRequest, aiDraftEstimate } from '../../api/quoteRequests'
 import { listLibrary } from '../../api/quoteLibrary'
 import { generateScope, normalizeForm, toInvoiceToGoText, CATEGORY_KEYS } from '../../scope-engine'
 import { useAutosave } from './photos/useAutosave'
@@ -190,6 +190,7 @@ export default function EstimateForm() {
   const [library, setLibrary] = useState([])
   const [tab, setTab] = useState('form') // phones: form | preview
   const [saving, setSaving] = useState(false)
+  const [drafting, setDrafting] = useState(false)
 
   const load = useCallback(() => getQuoteRequest(id).then((d) => {
     setQuote(d.quoteRequest)
@@ -221,6 +222,21 @@ export default function EstimateForm() {
     if (await copyText(text)) toast.success(t('quotes.est.copied'))
     else toast.error(t('common.couldNotSave'))
   }
+  // Claude reads the walk's notes + photos and fills the form. The answers
+  // stay fully editable; its notes for the estimator are kept on the form.
+  const draftWithAi = async () => {
+    const started = CATEGORY_KEYS.some((k) => form.cats[k].on)
+    if (started && !await confirmDialog(t('quotes.est.ai.replace'), { confirmLabel: t('quotes.est.ai.button') })) return
+    setDrafting(true)
+    try {
+      const res = await aiDraftEstimate(id)
+      setForm(normalizeForm({ ...res.form, aiNotes: res.office_notes, aiDraftedAt: new Date().toISOString() }))
+      toast.success(t('quotes.est.ai.done', { count: res.photos_used }))
+    } catch (err) {
+      toast.error(err?.response?.data?.error ?? t('quotes.est.ai.failed'))
+    } finally { setDrafting(false) }
+  }
+
   const useAsScope = async () => {
     if (quote.scope_text && !await confirmDialog(t('quotes.est.replaceScope'), { confirmLabel: t('quotes.est.useAsScope') })) return
     try {
@@ -312,6 +328,24 @@ export default function EstimateForm() {
         <h1 className="text-lg lg:text-xl font-bold text-gray-900">{t('quotes.est.title')}</h1>
         <p className="text-sm text-gray-500">{readOnly ? t('quotes.est.readOnly') : t('quotes.est.subtitle')}</p>
       </div>
+
+      {!readOnly && (
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-violet-900">{t('quotes.est.ai.title')}</p>
+            <p className="text-xs text-violet-800/80">{drafting ? t('quotes.est.ai.working') : t('quotes.est.ai.hint')}</p>
+          </div>
+          <Button onClick={draftWithAi} loading={drafting} className="!bg-violet-600 hover:!bg-violet-500 shrink-0">
+            ✨ {t('quotes.est.ai.button')}
+          </Button>
+        </div>
+      )}
+      {form.aiNotes && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-700 mb-1">{t('quotes.est.ai.notesTitle')}</p>
+          <p className="text-sm text-amber-900 whitespace-pre-wrap">{form.aiNotes}</p>
+        </div>
+      )}
 
       <div className="lg:hidden grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1">
         {['form', 'preview'].map((k) => (

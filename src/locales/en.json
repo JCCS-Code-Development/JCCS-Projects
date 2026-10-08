@@ -598,7 +598,8 @@
       "assigned_estimator": "Estimator",
       "assigned_field": "Field manager",
       "estimate_number": "Estimate #",
-      "portal_access": "Portal access granted to recipients"
+      "portal_access": "Portal access granted to recipients",
+      "ai_draft": "AI draft generated"
     },
     "versionKind": {
       "field_submission": "Field submission",
@@ -807,6 +808,17 @@
         "replaceWithoutDemo": "Drywall is being replaced but no demolition is selected.",
         "moldWithoutIc": "Antimicrobial work without infection control — confirm with the facility.",
         "disconnectWithoutPlumbing": "The item is disconnected from plumbing, but Plumbing isn’t selected (no capping/reconnecting)."
+      },
+      "ai": {
+        "title": "Provisional estimate from the walk",
+        "hint": "Claude reads the walk notes and photos and fills in this form. You review and edit everything.",
+        "working": "Reading the notes and photos… this can take up to a minute.",
+        "button": "Generate provisional estimate",
+        "replace": "Replace the current answers with a new draft from the walk?",
+        "done_one": "Draft ready from the notes and {{count}} photo — review and edit it.",
+        "done_other": "Draft ready from the notes and {{count}} photos — review and edit it.",
+        "failed": "Could not generate a draft.",
+        "notesTitle": "Notes for the estimator (from the AI draft)"
       }
     }
   },

@@ -598,7 +598,8 @@
       "assigned_estimator": "Estimador",
       "assigned_field": "Supervisor de campo",
       "estimate_number": "Estimado #",
-      "portal_access": "Acceso al portal otorgado a los destinatarios"
+      "portal_access": "Acceso al portal otorgado a los destinatarios",
+      "ai_draft": "Borrador con IA generado"
     },
     "versionKind": {
       "field_submission": "Envío de campo",
@@ -807,6 +808,17 @@
         "replaceWithoutDemo": "Se reemplaza drywall pero no hay demolición seleccionada.",
         "moldWithoutIc": "Trabajo antimicrobiano sin control de infecciones — confírmalo con la instalación.",
         "disconnectWithoutPlumbing": "Se desconecta de la plomería pero Plomería no está seleccionada."
+      },
+      "ai": {
+        "title": "Estimado provisional desde la visita",
+        "hint": "Claude lee las notas y fotos de la visita y llena este formulario. Tú revisas y editas todo.",
+        "working": "Leyendo las notas y fotos… puede tardar hasta un minuto.",
+        "button": "Generar estimado provisional",
+        "replace": "¿Reemplazar las respuestas actuales con un nuevo borrador desde la visita?",
+        "done_one": "Borrador listo con las notas y {{count}} foto — revísalo y edítalo.",
+        "done_other": "Borrador listo con las notas y {{count}} fotos — revísalo y edítalo.",
+        "failed": "No se pudo generar el borrador.",
+        "notesTitle": "Notas para el estimador (del borrador con IA)"
       }
     }
   },

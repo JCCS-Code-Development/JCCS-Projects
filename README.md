@@ -165,3 +165,21 @@ from InvoiceToGo; this app owns everything before and after that.
   against the production database, then give field managers the Field Manager
   role from Users.
 
+## Estimate form, scope generator, AI draft
+
+- **Estimate form** (`/quotes/:id/estimate`): structured answers (general,
+  infection control, protect / verify, scope categories) with a live preview
+  of the JCCS Scope of Work. Autosaves to `quote_requests.form_json`.
+- **Scope generator** (`src/scope-engine`): deterministic; turns the answers
+  into the office's InvoiceToGo wording. `npm test` rebuilds the real
+  estimates #4577 / #4578 / #4587 / #4591 / #4599 word for word.
+- **Generate provisional estimate** (`api/quote-requests/ai-draft.php`):
+  Claude (`claude-opus-5-5`) reads the walk's notes, general notes and photos
+  and fills in the form answers (strict JSON schema). The answers then go
+  through the same generator, so the wording stays the office's. Uses the
+  official Anthropic PHP SDK, committed in `api/vendor` (composer.json in
+  `api/`; PHP 8.1+ — only this endpoint loads it). Set `ANTHROPIC_API_KEY` in
+  the server's config.php (the deploy copies it from
+  `secure_backups/projects-config.php`); without it the button explains it
+  isn't set up.
+

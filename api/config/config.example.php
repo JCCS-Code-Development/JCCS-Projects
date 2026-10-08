@@ -72,3 +72,8 @@ define('DEPOT_IMAP_FOLDER', 'INBOX');
 
 // Guard for hitting cron scripts over HTTP instead of the CLI.
 define('CRON_SECRET', 'CHANGE_ME');
+
+// Anthropic API key for "Generate provisional estimate" (Claude reads a site
+// walk's notes + photos and drafts the estimate form). Leave as CHANGE_ME to
+// keep the feature off — the button then explains it isn't set up.
+define('ANTHROPIC_API_KEY', 'CHANGE_ME');
