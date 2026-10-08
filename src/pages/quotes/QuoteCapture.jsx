@@ -154,7 +154,8 @@ export default function QuoteCapture() {
 
   // WhatsApp-style record bar under the notes: one mic for the selected card.
   const composer = (
-    <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/95 backdrop-blur px-3 py-2 shadow-sm">
+    <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/95 backdrop-blur px-3 py-2 shadow-sm select-none"
+      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}>
       <span className="flex-1 min-w-0 text-sm text-gray-600 truncate">
         {t('quotes.voice.holdHint')} · <b className="text-gray-900">{active ? t('quotes.walk.noteN', { n: activeIndex + 1 }) : t('quotes.walk.generalNotes')}</b>
       </span>

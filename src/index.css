@@ -31,3 +31,11 @@ input[type="datetime-local"]::-webkit-date-and-time-value {
   min-height: 1.5em;
 }
 
+/* While a voice memo is recording (hold-to-record), nothing on the page may
+   start a text selection or the iOS long-press callout. */
+.no-text-select, .no-text-select * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+

@@ -54,8 +54,28 @@ export default function VoiceRecorder({ onRecorded, disabled, size = 'md', class
   const [drag, setDrag] = useState({ dx: 0, dy: 0 })
   const [hint, setHint] = useState('')
   const r = useRef({}) // recorder, stream, chunks, levels, timers, start point…
+  const btnRef = useRef(null)
+
+  // iOS treats a long press as "select text / show the magnifier" and starts
+  // selecting whatever text is nearby. Pointer preventDefault doesn't stop
+  // that, and React registers touchstart as passive — so cancel it with a
+  // native non-passive listener. Pointer events still fire.
+  useEffect(() => {
+    const el = btnRef.current
+    if (!el) return
+    const stop = (e) => { if (e.cancelable) e.preventDefault() }
+    el.addEventListener('touchstart', stop, { passive: false })
+    return () => el.removeEventListener('touchstart', stop)
+  }, [])
+
+  // While recording, no text anywhere on the page can be selected.
+  const lockSelection = (on) => {
+    document.documentElement.classList.toggle('no-text-select', on)
+    if (on) window.getSelection?.()?.removeAllRanges()
+  }
 
   const cleanup = () => {
+    lockSelection(false)
     const s = r.current
     clearInterval(s.tick); clearInterval(s.levelTimer); clearTimeout(s.maxTimer)
     s.stream?.getTracks().forEach((tr) => tr.stop())
@@ -71,16 +91,17 @@ export default function VoiceRecorder({ onRecorded, disabled, size = 'md', class
     if (disabled || phase !== 'idle') return
     e.preventDefault()
     try { e.currentTarget.setPointerCapture?.(e.pointerId) } catch { /* fine */ }
+    lockSelection(true)
     const s = (r.current = { x: e.clientX, y: e.clientY, down: true, cancelled: false })
-    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { flashHint(t('quotes.voice.unsupported')); return }
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { lockSelection(false); flashHint(t('quotes.voice.unsupported')); return }
     let stream
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
     } catch {
-      flashHint(t('quotes.voice.denied')); r.current = {}; return
+      lockSelection(false); flashHint(t('quotes.voice.denied')); r.current = {}; return
     }
     // The finger came up while the permission prompt was open: nothing to record.
-    if (!s.down) { stream.getTracks().forEach((tr) => tr.stop()); flashHint(t('quotes.voice.holdHint')); r.current = {}; return }
+    if (!s.down) { stream.getTracks().forEach((tr) => tr.stop()); lockSelection(false); flashHint(t('quotes.voice.holdHint')); r.current = {}; return }
     s.stream = stream
     s.mime = pickMime()
     s.chunks = []
@@ -149,7 +170,7 @@ export default function VoiceRecorder({ onRecorded, disabled, size = 'md', class
 
   return (
     <>
-      <button type="button" disabled={disabled} aria-label={t('quotes.voice.holdHint')} title={t('quotes.voice.holdHint')}
+      <button ref={btnRef} type="button" disabled={disabled} aria-label={t('quotes.voice.holdHint')} title={t('quotes.voice.holdHint')}
         onPointerDown={start} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
         onContextMenu={(e) => e.preventDefault()}
         className={`${btn} ${phase === 'idle' ? 'bg-brand-500 text-white active:scale-95' : 'bg-red-600 text-white scale-125'} disabled:opacity-40 ${className}`}
