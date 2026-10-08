@@ -51,7 +51,11 @@ export default function QuoteCapture() {
     setQuote(d.quoteRequest)
     setGeneralNotes((g) => (g === null ? (d.quoteRequest.description ?? '') : g))
     return d.quoteRequest
-  }).catch(() => { navigate('/quotes', { replace: true }) }), [id, navigate])
+  }).catch((err) => {
+    // Don't bounce silently — say why the walk couldn't open.
+    toast.error(`${t('quotes.openFailed')}${err?.response?.data?.error ? ` (${err.response.data.error})` : ''}`)
+    navigate('/quotes', { replace: true })
+  }), [id, navigate, toast, t])
 
   const uploader = usePhotoUploader(id, { onUploaded: load })
   const voice = useVoiceMemos(id, load)

@@ -514,7 +514,8 @@ export default function QuoteDetail() {
   const startEditing = searchParams.get('edit') === '1' && !!quote?.can_edit
 
   const load = useCallback(() => {
-    getQuoteRequest(id).then((d) => setQuote(d.quoteRequest)).catch(() => setError(true))
+    getQuoteRequest(id).then((d) => setQuote(d.quoteRequest))
+      .catch((err) => setError(err?.response?.data?.error || err?.message || true))
   }, [id])
   useEffect(load, [load])
 
@@ -525,7 +526,13 @@ export default function QuoteDetail() {
     catch (err) { toast.error(errMsg(err, t)) }
   }
 
-  if (error) return <Card><p className="text-sm text-gray-500">{t('quotes.noResults')}</p><Link to="/quotes" className="text-sm font-semibold text-brand-500">← {t('nav.quotes')}</Link></Card>
+  if (error) return (
+    <Card>
+      <p className="text-sm font-semibold text-gray-800">{t('quotes.openFailed')}</p>
+      {typeof error === 'string' && <p className="text-xs text-gray-500 mt-1 break-words">{error}</p>}
+      <Link to="/quotes" className="mt-3 inline-block text-sm font-semibold text-brand-500">← {isAdmin ? t('nav.quotes') : t('nav.siteWalks')}</Link>
+    </Card>
+  )
   if (!quote) return <div className="flex justify-center py-16"><Spinner size="lg" className="text-brand-500" /></div>
 
   const fieldReadOnly = !isAdmin && !quote.can_edit

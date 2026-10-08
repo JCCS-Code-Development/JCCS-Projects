@@ -52,7 +52,7 @@ $noteNo = [];
 foreach ($notes as $i => $n) $noteNo[(int)$n['id']] = $i + 1;
 
 if (!$notes && !$photos && trim((string)$row['description']) === '') {
-    http_response_code(422); exit(json_encode(['error' => 'Add some notes or photos to the walk first.']));
+    http_response_code(422); exit(json_encode(['error' => 'Add some notes or photos to the site visit first.']));
 }
 
 // ── Photos: downscale (GD) so a full walk fits comfortably in one request ──

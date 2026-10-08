@@ -844,7 +844,8 @@
       "title": "Audios",
       "formHint": "Escúchalos mientras llenas esto — o mantén el micrófono para agregar uno.",
       "empty": "Aún no hay audios."
-    }
+    },
+    "openFailed": "No se pudo abrir esta solicitud."
   },
   "library": {
     "title": "Biblioteca de Materiales",

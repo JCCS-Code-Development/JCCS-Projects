@@ -19,7 +19,7 @@
     "language": "Language",
     "signOut": "Sign Out",
     "quotes": "Quotes",
-    "siteWalks": "Site Walks",
+    "siteWalks": "Site Visits",
     "library": "Materials"
   },
   "notifications": {
@@ -309,7 +309,7 @@
     "addStaffHint": "Someone with a FieldClock login — Admin, Project Manager or Field Manager.",
     "addClientTitle": "Client",
     "addClientHint": "An outside customer contact. Can receive estimates and get read-only portal access to their projects.",
-    "allProjectsSiteWalks": "All projects + Site Walks"
+    "allProjectsSiteWalks": "All projects + Site Visits"
   },
   "projectDetail": {
     "overview": "Overview",
@@ -388,15 +388,15 @@
   },
   "quotes": {
     "title": "Quote Requests",
-    "subtitle": "Site walks and estimate requests, from intake to accepted.",
-    "fieldTitle": "My Site Walks",
+    "subtitle": "Site visits and estimate requests, from intake to accepted.",
+    "fieldTitle": "My Site Visits",
     "fieldSubtitle": "Document the job — the office turns it into the estimate.",
     "newRequest": "New request",
-    "newSiteWalk": "New site walk",
+    "newSiteWalk": "New site visit",
     "search": "Search title, facility, client, estimate #",
     "showClosed": "Show closed",
     "empty": "No quote requests yet.",
-    "emptyField": "No site walks yet. Tap \"New site walk\" to start one.",
+    "emptyField": "No site visits yet. Tap \"New site visit\" to start one.",
     "noResults": "Nothing matches that search.",
     "status": {
       "draft": "Draft",
@@ -524,7 +524,7 @@
       "approve": "Approve and lock this scope? You can reopen it later.",
       "estimateNumber": "InvoiceToGo Estimate #",
       "reopen": "Reopen for editing? The approved version stays in history.",
-      "noPhotos": "This site walk has no photos. Submit it anyway?"
+      "noPhotos": "This site visit has no photos. Submit it anyway?"
     },
     "photos": {
       "add": "Add photos",
@@ -635,13 +635,13 @@
       "nextNoPhotos": "Skip — no photos",
       "skipHint": "No photos to take? You can skip and add them later.",
       "detailsTitle": "Step 2 of 2 — Details",
-      "autoTitle": "Site walk – {{date}}"
+      "autoTitle": "Site visit – {{date}}"
     },
     "searchShort": "Search quotes",
     "loadFailed": "Couldn't load quote requests.",
     "walk": {
-      "title": "Site walk",
-      "open": "Open walk",
+      "title": "Site visit",
+      "open": "Open visit",
       "notesCol": "Notes",
       "photosCol": "Photos",
       "camera": "Camera",
@@ -659,7 +659,7 @@
       "failed_one": "{{count}} didn’t upload — tap ↻ to retry",
       "failed_other": "{{count}} didn’t upload — tap ↻ to retry",
       "discard": "Discard",
-      "discardConfirm": "Discard this site walk? Its photos and notes will be deleted.",
+      "discardConfirm": "Discard this site visit? Its photos and notes will be deleted.",
       "generalNotes": "General notes",
       "generalNotesPlaceholder": "Anything general — access, parking, hours, who you met…",
       "nextShort": "Estimate details"
@@ -810,21 +810,21 @@
         "disconnectWithoutPlumbing": "The item is disconnected from plumbing, but Plumbing isn’t selected (no capping/reconnecting)."
       },
       "ai": {
-        "title": "Provisional estimate from the walk",
-        "hint": "Claude reads the walk notes and photos and fills in this form. You review and edit everything.",
+        "title": "Provisional estimate from the visit",
+        "hint": "Claude reads the visit notes and photos and fills in this form. You review and edit everything.",
         "working": "Reading the notes and photos… this can take up to a minute.",
         "button": "Draft with AI (reads photos)",
-        "replace": "Replace the current answers with a new draft from the walk?",
+        "replace": "Replace the current answers with a new draft from the visit?",
         "done_one": "Draft ready from the notes and {{count}} photo — review and edit it.",
         "done_other": "Draft ready from the notes and {{count}} photos — review and edit it.",
         "failed": "Could not generate a draft.",
         "notesTitle": "Notes for the estimator (from the AI draft)"
       },
       "auto": {
-        "title": "Draft it from the walk",
+        "title": "Draft it from the visit",
         "hint": "Fill the form from what the field manager wrote — then review and edit everything.",
-        "button": "Auto-fill from walk notes",
-        "replace": "Replace the current answers with a draft from the walk notes?",
+        "button": "Auto-fill from visit notes",
+        "replace": "Replace the current answers with a draft from the visit notes?",
         "done": "Draft filled from the notes — check it against the photos.",
         "notesTitle": "To check / confirm"
       }
@@ -844,11 +844,12 @@
       "title": "Voice memos",
       "formHint": "Listen while you fill this out — or hold the mic to add one.",
       "empty": "No voice memos yet."
-    }
+    },
+    "openFailed": "Couldn’t open this request."
   },
   "library": {
     "title": "Materials Library",
-    "subtitle": "Colors, laminates, solid surfaces and products the site-walk form offers as one-tap picks.",
+    "subtitle": "Colors, laminates, solid surfaces and products the site-visit form offers as one-tap picks.",
     "add": "Add material",
     "edit": "Edit material",
     "kind": "Type",

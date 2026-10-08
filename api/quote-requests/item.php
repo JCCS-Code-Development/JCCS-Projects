@@ -37,18 +37,15 @@ if ($method === 'GET') {
         return $p;
     }, $s->fetchAll());
 
-    $s = $pdo->prepare('SELECT id, body, sort_order, created_by_name, created_at, updated_at FROM quote_request_notes WHERE quote_request_id = ? ORDER BY sort_order, id');
-    $s->execute([$id]);
-    $out['notes'] = array_map(function ($n) { $n['id'] = (int)$n['id']; $n['sort_order'] = (int)$n['sort_order']; return $n; }, $s->fetchAll());
+    $out['notes'] = array_map(function ($n) { $n['id'] = (int)$n['id']; $n['sort_order'] = (int)$n['sort_order']; return $n; },
+        qrOptionalRows($pdo, 'SELECT id, body, sort_order, created_by_name, created_at, updated_at FROM quote_request_notes WHERE quote_request_id = ? ORDER BY sort_order, id', [$id]));
 
-    $s = $pdo->prepare('SELECT id, note_id, file_path, mime, duration_sec, peaks, uploaded_by_name, created_at FROM quote_request_audio WHERE quote_request_id = ? ORDER BY id');
-    $s->execute([$id]);
     $out['audio'] = array_map(function ($a) {
         return ['id' => (int)$a['id'], 'note_id' => $a['note_id'] !== null ? (int)$a['note_id'] : null, 'url' => qrFileUrl($a['file_path']),
                 'mime' => $a['mime'], 'duration_sec' => $a['duration_sec'] !== null ? (int)$a['duration_sec'] : null,
                 'peaks' => $a['peaks'] ? array_map('intval', explode(',', $a['peaks'])) : [],
                 'uploaded_by_name' => $a['uploaded_by_name'], 'created_at' => $a['created_at']];
-    }, $s->fetchAll());
+    }, qrOptionalRows($pdo, 'SELECT id, note_id, file_path, mime, duration_sec, peaks, uploaded_by_name, created_at FROM quote_request_audio WHERE quote_request_id = ? ORDER BY id', [$id]));
 
     $s = $pdo->prepare('SELECT * FROM quote_request_files WHERE quote_request_id = ? ORDER BY id');
     $s->execute([$id]);
@@ -99,7 +96,7 @@ if ($method === 'GET') {
     }
     // Once approved, the structured form is part of the locked record too.
     if (array_key_exists('form', $body) && in_array($row['status'], QR_SCOPE_LOCKED, true)) {
-        http_response_code(409); exit(json_encode(['error' => 'The site walk is locked — reopen the request to edit it']));
+        http_response_code(409); exit(json_encode(['error' => 'The site visit is locked — reopen the request to edit it']));
     }
 
     // keep: true — the user saved (Next / Save): give an unsaved walk its Q-number.
@@ -154,14 +151,13 @@ if ($method === 'GET') {
     }
     $paths = [];
     foreach (['quote_request_photos', 'quote_request_files', 'quote_request_audio'] as $t) {
-        $s = $pdo->prepare("SELECT file_path FROM $t WHERE quote_request_id = ?");
-        $s->execute([$id]);
-        $paths = array_merge($paths, $s->fetchAll(PDO::FETCH_COLUMN));
+        $paths = array_merge($paths, array_column(qrOptionalRows($pdo, "SELECT file_path FROM $t WHERE quote_request_id = ?", [$id]), 'file_path'));
     }
     $pdo->beginTransaction();
     try {
         foreach (['quote_request_photos', 'quote_request_files', 'quote_request_comments', 'quote_request_activity', 'quote_request_versions', 'quote_request_recipients', 'quote_request_notes', 'quote_request_audio'] as $t) {
-            $pdo->prepare("DELETE FROM $t WHERE quote_request_id = ?")->execute([$id]);
+            try { $pdo->prepare("DELETE FROM $t WHERE quote_request_id = ?")->execute([$id]); }
+            catch (PDOException $e) { if ($e->getCode() !== '42S02') throw $e; } // table not migrated yet
         }
         $pdo->prepare('DELETE FROM notifications WHERE recipient_type = ? AND link_path = ?')->execute(['staff', '/quotes/' . $id]);
         $pdo->prepare('DELETE FROM quote_requests WHERE id = ?')->execute([$id]);

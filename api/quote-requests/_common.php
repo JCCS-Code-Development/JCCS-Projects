@@ -198,7 +198,7 @@ function qrCollectFields(PDO $pdo, array $body, array $auth, array &$sets, array
     if (array_key_exists('form', $body)) {
         if ($body['form'] !== null && !is_array($body['form'])) { http_response_code(422); exit(json_encode(['error' => 'form must be an object'])); }
         $json = $body['form'] === null ? null : json_encode($body['form'], JSON_UNESCAPED_UNICODE);
-        if ($json !== null && strlen($json) > 4 * 1024 * 1024) { http_response_code(422); exit(json_encode(['error' => 'Site-walk form is too large'])); }
+        if ($json !== null && strlen($json) > 4 * 1024 * 1024) { http_response_code(422); exit(json_encode(['error' => 'Site-visit form is too large'])); }
         $sets[] = 'form_json = ?'; $params[] = $json;
     }
 
@@ -262,6 +262,23 @@ function qrStoreUpload(int $requestId, string $tmp, string $ext): string {
         http_response_code(500); exit(json_encode(['error' => 'Could not save the file']));
     }
     return "quote-requests/{$filename}";
+}
+
+// Rows from a table added by a later migration. If that migration hasn't been
+// run on this server yet (table / column missing), return [] instead of
+// failing the whole request — the request still opens, just without that part.
+function qrOptionalRows(PDO $pdo, string $sql, array $params): array {
+    try {
+        $s = $pdo->prepare($sql);
+        $s->execute($params);
+        return $s->fetchAll();
+    } catch (PDOException $e) {
+        if (in_array($e->getCode(), ['42S02', '42S22'], true)) {
+            error_log('quote-requests: optional query skipped (run the pending migration): ' . $e->getMessage());
+            return [];
+        }
+        throw $e;
+    }
 }
 
 function qrFileUrl(string $relativePath): string {
