@@ -149,6 +149,14 @@ from InvoiceToGo; this app owns everything before and after that.
   `QR_ACTIONS` (`api/quote-requests/_common.php`); every change is logged to
   `quote_request_activity`, and scope edits / submissions / approvals are
   snapshotted in `quote_request_versions`.
+- **Site walk (field managers)** — Cornell-notes style: a sheet of short notes
+  (one per area/issue) with the photos for each note beside it and a summary
+  at the bottom (= the request description), plus a live in-app camera
+  (getUserMedia; falls back to the phone camera / library). Every shot is
+  filed under the active note. iPad / landscape: sheet left, camera right;
+  upright phone: swipe between Notes and Camera. Notes autosave; photo uploads
+  run in an app-wide background queue (`UploadProvider`) so nothing blocks.
+  Migration: `api/migrations/2026-10-08_walk_notes.sql`.
 - **Also** — site-walk photos (resized on the phone before upload, retry-safe via
   `client_uid`), reference documents, an internal comment thread, in-app
   notifications, a Customers list with contacts, and an admin-editable

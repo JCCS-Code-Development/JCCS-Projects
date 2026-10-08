@@ -28,6 +28,7 @@ if ($method === 'GET') {
     $s->execute([$id]);
     $out['photos'] = array_map(function ($p) {
         $p['id'] = (int)$p['id'];
+        $p['note_id'] = $p['note_id'] !== null ? (int)$p['note_id'] : null;
         $p['is_before'] = (int)$p['is_before'];
         $p['is_reference'] = (int)$p['is_reference'];
         $p['annotations'] = $p['annotations_json'] ? json_decode($p['annotations_json'], true) : null;
@@ -35,6 +36,10 @@ if ($method === 'GET') {
         $p['url'] = qrFileUrl($p['file_path']);
         return $p;
     }, $s->fetchAll());
+
+    $s = $pdo->prepare('SELECT id, body, sort_order, created_by_name, created_at, updated_at FROM quote_request_notes WHERE quote_request_id = ? ORDER BY sort_order, id');
+    $s->execute([$id]);
+    $out['notes'] = array_map(function ($n) { $n['id'] = (int)$n['id']; $n['sort_order'] = (int)$n['sort_order']; return $n; }, $s->fetchAll());
 
     $s = $pdo->prepare('SELECT * FROM quote_request_files WHERE quote_request_id = ? ORDER BY id');
     $s->execute([$id]);
@@ -141,7 +146,7 @@ if ($method === 'GET') {
     }
     $pdo->beginTransaction();
     try {
-        foreach (['quote_request_photos', 'quote_request_files', 'quote_request_comments', 'quote_request_activity', 'quote_request_versions', 'quote_request_recipients'] as $t) {
+        foreach (['quote_request_photos', 'quote_request_files', 'quote_request_comments', 'quote_request_activity', 'quote_request_versions', 'quote_request_recipients', 'quote_request_notes'] as $t) {
             $pdo->prepare("DELETE FROM $t WHERE quote_request_id = ?")->execute([$id]);
         }
         $pdo->prepare('DELETE FROM notifications WHERE recipient_type = ? AND link_path = ?')->execute(['staff', '/quotes/' . $id]);

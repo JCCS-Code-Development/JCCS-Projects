@@ -26,7 +26,7 @@ const ToolIcon = ({ tool }) => {
 // Full-screen, CompanyCam-style photo viewer: swipe / arrow keys between
 // photos, caption + Before/Reference tags, delete, and a markup mode for
 // drawing arrows, circles, lines, freehand and text labels on the photo.
-export default function PhotoViewer({ photos, startId, canEdit, onClose, onChanged }) {
+export default function PhotoViewer({ photos, startId, canEdit, onClose, onChanged, notes = [] }) {
   const { t, i18n } = useTranslation()
   const toast = useToast()
   const confirmDialog = useConfirm()
@@ -225,6 +225,12 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
           </div>
         ) : (
           <div className="flex flex-col gap-3 max-w-xl mx-auto">
+            {(() => {
+              const ni = notes.findIndex((n) => n.id === photo.note_id)
+              return ni >= 0 && notes[ni].body ? (
+                <p className="text-sm text-white/80 text-center"><span className="font-bold text-white">{t('quotes.walk.noteN', { n: ni + 1 })}</span> · {notes[ni].body}</p>
+              ) : null
+            })()}
             {canEdit ? (
               <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder={t('quotes.photos.captionPlaceholder')}
                 onBlur={() => caption !== (photo.caption ?? '') && patch({ caption })}

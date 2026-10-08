@@ -1,85 +1,201 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Spinner from '../../components/ui/Spinner'
 import { useToast } from '../../components/ToastProvider'
-import { getQuoteRequest, deleteQuoteRequest } from '../../api/quoteRequests'
+import { getQuoteRequest, deleteQuoteRequest, createQuoteNote, updateQuoteRequest } from '../../api/quoteRequests'
 import { usePhotoUploader } from './photos/usePhotoUploader'
-import PhotoGallery, { PhotoPickerButtons } from './photos/PhotoGallery'
+import { useAutosave } from './photos/useAutosave'
+import CameraView from './photos/CameraView'
+import WalkNotesSheet from './photos/WalkNotesSheet'
+import PhotoViewer from './photos/PhotoViewer'
 
-// Step 1 of a site walk — photos first, CompanyCam style. The draft request
-// already exists (created by "New site walk") so every photo uploads the
-// moment it's taken. "Next" goes to the details form; "Skip" is there for
-// the rare job with nothing to photograph.
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const on = () => setMatches(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [query])
+  return matches
+}
+
+// The site walk, Cornell-notes style: a sheet of short notes (one per area or
+// issue) with the photos for each note beside it, a summary at the bottom,
+// and a live in-app camera. Every photo taken is filed under the active note.
+//  - iPad / landscape (md+): sheet on the left, camera on the right.
+//  - Upright phone: swipe (or tap) between Notes and Camera.
+// Everything saves as you go and uploads run in the background, so nothing
+// ever blocks the field manager.
 export default function QuoteCapture() {
   const { id } = useParams()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
   const [quote, setQuote] = useState(null)
+  const [activeNoteId, setActiveNoteId] = useState(null)
+  const [focusNoteId, setFocusNoteId] = useState(null)
+  const [adding, setAdding] = useState(false)
+  const [tab, setTab] = useState('camera') // phones only: notes | camera
+  const [summary, setSummary] = useState(null)
+  const [viewing, setViewing] = useState(null)
+  const seeded = useRef(false)
+  const wide = useMediaQuery('(min-width: 768px)')
+  const touchX = useRef(null)
 
-  const load = useCallback(() => {
-    getQuoteRequest(id).then((d) => setQuote(d.quoteRequest)).catch(() => navigate('/quotes', { replace: true }))
-  }, [id, navigate])
-  useEffect(load, [load])
+  const load = useCallback(() => getQuoteRequest(id).then((d) => {
+    setQuote(d.quoteRequest)
+    setSummary((s) => (s === null ? (d.quoteRequest.description ?? '') : s))
+    return d.quoteRequest
+  }).catch(() => { navigate('/quotes', { replace: true }) }), [id, navigate])
 
   const uploader = usePhotoUploader(id, { onUploaded: load })
 
-  if (!quote) return <div className="flex justify-center py-16"><Spinner size="lg" className="text-brand-500" /></div>
+  const addNote = useCallback(async ({ focus = true } = {}) => {
+    setAdding(true)
+    try {
+      const { note } = await createQuoteNote(id, { client_uid: `n-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` })
+      await load()
+      setActiveNoteId(note.id)
+      if (focus) setFocusNoteId(note.id)
+      return note
+    } catch (err) {
+      toast.error(err?.response?.data?.error ?? t('common.couldNotSave'))
+      return null
+    } finally { setAdding(false) }
+  }, [id, load, toast, t])
 
-  // Photos can only be added while the request is editable — anything else
-  // belongs on the normal detail page.
+  // First load: start on the last note, or create the first one.
+  useEffect(() => {
+    load().then((q) => {
+      if (!q || seeded.current) return
+      seeded.current = true
+      if (q.notes?.length) setActiveNoteId(q.notes[q.notes.length - 1].id)
+      else if (q.can_edit) addNote({ focus: false })
+    })
+  }, [load, addNote])
+
+  useAutosave(summary, (v) => {
+    if (v === null) return
+    updateQuoteRequest(id, { description: v }).catch((err) => toast.error(err?.response?.data?.error ?? t('common.couldNotSave')))
+  })
+
+  if (!quote) return <div className="flex justify-center py-16"><Spinner size="lg" className="text-brand-500" /></div>
   if (!quote.can_edit) return <Navigate to={`/quotes/${id}`} replace />
 
-  const count = quote.photos.length
-  const busy = uploader.items.some((i) => i.status !== 'error')
+  const notes = quote.notes ?? []
+  const activeIndex = notes.findIndex((n) => n.id === activeNoteId)
+  const active = notes[activeIndex]
+  const meta = activeNoteId ? { note_id: activeNoteId } : {}
+  const capture = (file) => uploader.addFiles([file], meta)
+  const addFiles = (files) => uploader.addFiles(files, meta)
+  const uploading = uploader.items.filter((i) => i.status !== 'error').length
   const failed = uploader.items.filter((i) => i.status === 'error').length
 
-  const next = () => {
-    if (failed) { toast.error(t('quotes.photos.failedWarning', { count: failed })); return }
-    navigate(`/quotes/${id}?edit=1`)
+  const newNoteFromCamera = async () => {
+    const n = await addNote()
+    if (n) setTab('notes')
   }
-  // Leaving an untouched, photo-less draft shouldn't leave junk behind.
+
+  // Leaving an untouched walk shouldn't leave an empty draft behind.
   const cancel = async () => {
-    if (!count && !uploader.items.length && quote.status === 'draft' && !quote.description) {
-      try { await deleteQuoteRequest(id) } catch { /* fine — it just stays as a draft */ }
+    const empty = !quote.photos.length && !uploader.items.length && !(summary ?? '').trim()
+      && notes.every((n) => !(n.body ?? '').trim())
+    if (empty && quote.status === 'draft') {
+      try { await deleteQuoteRequest(id) } catch { /* stays as a draft */ }
+      navigate('/quotes')
+    } else {
+      navigate(`/quotes/${id}`)
     }
-    navigate('/quotes')
   }
+  const next = () => navigate(`/quotes/${id}?edit=1`)
+
+  const onTouchStart = (e) => { touchX.current = e.touches[0].clientX }
+  const onTouchEnd = (e) => {
+    if (touchX.current == null) return
+    const dx = e.changedTouches[0].clientX - touchX.current
+    touchX.current = null
+    if (Math.abs(dx) > 70) setTab(dx < 0 ? 'camera' : 'notes')
+  }
+
+  const cameraChip = (
+    <div className="flex items-center justify-between gap-2">
+      <button onClick={() => setTab('notes')}
+        className="min-w-0 max-w-[70%] rounded-full bg-black/60 backdrop-blur px-3 py-1.5 text-left text-xs text-white">
+        <span className="font-bold">{active ? `${t('quotes.walk.noteN', { n: activeIndex + 1 })}` : t('quotes.walk.unfiled')}</span>
+        {active?.body ? <span className="text-white/80"> · {active.body.split('\n')[0]}</span> : null}
+      </button>
+      <button onClick={newNoteFromCamera} disabled={adding}
+        className="shrink-0 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-900 disabled:opacity-60">
+        + {t('quotes.walk.newNote')}
+      </button>
+    </div>
+  )
+
+  const sheet = (
+    <WalkNotesSheet notes={notes} photos={quote.photos} uploader={uploader} editable
+      activeNoteId={activeNoteId} onSelect={setActiveNoteId} focusNoteId={focusNoteId}
+      onOpenPhoto={setViewing} onChanged={load} onAddNote={() => addNote()} adding={adding}
+      summary={summary} onSummaryChange={setSummary} />
+  )
 
   return (
-    <div className="flex flex-col gap-5 max-w-3xl mx-auto w-full">
+    <div className="flex flex-col gap-3 w-full">
+      {/* Header */}
       <div className="flex items-center justify-between gap-3">
-        <button onClick={cancel} className="text-sm font-semibold text-gray-500 py-2 pr-3">{t('common.cancel')}</button>
-        <span className="text-xs font-bold text-gray-400 tracking-wide">{quote.request_no}</span>
+        <button onClick={cancel} className="text-sm font-semibold text-gray-500 py-2 pr-2">{t('common.cancel')}</button>
+        <div className="min-w-0 text-center">
+          <p className="text-[11px] font-bold text-gray-400 tracking-wide">{quote.request_no}</p>
+          <p className="text-sm font-bold text-gray-900 truncate">{quote.title}</p>
+        </div>
+        <button onClick={next} className="rounded-full bg-gray-900 text-white px-4 py-2 text-sm font-bold active:bg-gray-700">
+          {t('quotes.walk.next')}
+        </button>
       </div>
 
-      <div className="text-center">
-        <p className="text-xs font-bold text-brand-500 uppercase tracking-widest">{t('quotes.capture.step')}</p>
-        <h1 className="text-2xl font-bold text-gray-900 mt-1">{t('quotes.capture.title')}</h1>
-        <p className="text-sm text-gray-500 mt-1">{t('quotes.capture.subtitle')}</p>
-      </div>
-
-      <PhotoPickerButtons onFiles={uploader.addFiles} />
-
-      {(count > 0 || uploader.items.length > 0) ? (
-        <PhotoGallery photos={quote.photos} uploader={uploader} canEdit onChanged={load} />
-      ) : (
-        <p className="text-sm text-gray-400 text-center py-6">{t('quotes.capture.empty')}</p>
+      {(uploading > 0 || failed > 0) && (
+        <p className="text-center text-xs text-gray-500">
+          {uploading > 0 && t('quotes.photos.uploading', { count: uploading })}
+          {failed > 0 && <span className="text-red-500 font-semibold"> · {t('quotes.walk.failed', { count: failed })}</span>}
+        </p>
       )}
 
-      {/* Sticky footer above the mobile bottom nav. */}
-      <div className="sticky bottom-20 lg:bottom-4 z-20 flex flex-col gap-2 rounded-2xl bg-white/95 backdrop-blur border border-gray-100 shadow-lg p-3">
-        <button onClick={next} disabled={busy}
-          className="w-full rounded-xl bg-gray-900 text-white py-4 text-base font-bold disabled:bg-gray-300 active:bg-gray-700">
-          {busy
-            ? t('quotes.photos.uploading', { count: uploader.items.filter((i) => i.status !== 'error').length })
-            : count > 0 ? t('quotes.capture.next', { count }) : t('quotes.capture.nextNoPhotos')}
-        </button>
-        {count === 0 && !uploader.items.length && (
-          <p className="text-xs text-gray-400 text-center">{t('quotes.capture.skipHint')}</p>
+      {/* Phones: Notes | Camera tabs (swipe or tap). Only one layout is
+          rendered at a time so there's never a second camera stream. */}
+      {!wide && (<>
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1">
+        {['notes', 'camera'].map((k) => (
+          <button key={k} onClick={() => setTab(k)}
+            className={`rounded-lg py-2 text-sm font-semibold ${tab === k ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>
+            {k === 'notes' ? `${t('quotes.walk.notesCol')} (${notes.length})` : `${t('quotes.walk.camera')} (${quote.photos.length + uploader.items.length})`}
+          </button>
+        ))}
+      </div>
+
+      <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        {tab === 'notes' ? sheet : (
+          <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}
+            className="h-[calc(100svh-260px)] min-h-[380px]" />
         )}
       </div>
+      </>)}
+
+      {/* iPad / landscape: notes left, camera right. */}
+      {wide && (
+      <div className="grid grid-cols-2 gap-4 items-start">
+        <div className="min-w-0">{sheet}</div>
+        <div className="sticky top-2">
+          <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}
+            className="h-[calc(100svh-200px)] min-h-[420px]" />
+        </div>
+      </div>
+      )}
+
+      {viewing != null && (
+        <PhotoViewer photos={quote.photos} startId={viewing} canEdit onChanged={load} onClose={() => setViewing(null)}
+          notes={notes} />
+      )}
     </div>
   )
 }

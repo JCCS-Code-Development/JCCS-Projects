@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore'
 import { logout as fieldclockLogout } from '../../api/fieldclockAuth'
 import { listNotifications, resolveNotification } from '../../api/notifications'
 import { verify as verifyProjectsAccess } from '../../api/auth'
+import UploadProvider from '../../pages/quotes/photos/UploadProvider'
 
 // ── Icons ─────────────────────────────────────────────────────────
 const ProjectsIcon = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5A2.5 2.5 0 015.5 5h4l2 2h7A2.5 2.5 0 0121 9.5v7A2.5 2.5 0 0118.5 19h-13A2.5 2.5 0 013 16.5v-9z"/></svg>
@@ -85,7 +86,10 @@ export default function StaffLayout() {
     navigate('/login', { replace: true })
   }
 
+  // UploadProvider wraps the whole layout (outside pull-to-refresh's remount
+  // key) so photo uploads survive both navigation and a refresh pull.
   return (
+    <UploadProvider>
     <div className="flex h-svh bg-gray-50 overflow-hidden">
 
       {/* ── Desktop sidebar ──────────────────────────────── */}
@@ -209,5 +213,6 @@ export default function StaffLayout() {
         )}
       </div>
     </div>
+    </UploadProvider>
   )
 }

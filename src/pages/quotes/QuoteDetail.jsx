@@ -14,7 +14,9 @@ import {
   uploadQuoteFile, deleteQuoteFile, getQuoteVersion,
 } from '../../api/quoteRequests'
 import { usePhotoUploader } from './photos/usePhotoUploader'
-import PhotoGallery, { PhotoPickerButtons } from './photos/PhotoGallery'
+import PhotoGallery from './photos/PhotoGallery'
+import WalkNotesSheet from './photos/WalkNotesSheet'
+import PhotoViewer from './photos/PhotoViewer'
 import { StatusPill, FlagPills, QuoteDetailsForm, TextArea, Select } from './QuoteParts'
 import { useQuotePickers } from './useQuotePickers'
 import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm } from './quoteUtils'
@@ -293,17 +295,45 @@ function ScopeCard({ quote, onSaved, loadIntoEditor }) {
 // ── Photos (the lead section, CompanyCam style) ──────────────────────────
 function PhotosSection({ quote, canEdit, onChanged }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const uploader = usePhotoUploader(quote.id, { onUploaded: onChanged })
+  const [viewing, setViewing] = useState(null)
   const count = quote.photos.length
+  const notes = quote.notes ?? []
+  // A walk captured on the walk sheet reads best the same way: notes beside
+  // their photos (Cornell style). Older/admin requests without notes keep the
+  // plain day-grouped gallery.
+  const asSheet = notes.length > 0
   return (
     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-gray-900">{t('quotes.sections.photos')} <span className="text-gray-400 font-normal">({count})</span></h2>
+        <h2 className="text-base font-semibold text-gray-900">
+          {asSheet ? t('quotes.walk.title') : t('quotes.sections.photos')} <span className="text-gray-400 font-normal">({count})</span>
+        </h2>
+        {canEdit && quote.can_edit && (
+          <button onClick={() => navigate(`/quotes/${quote.id}/capture`)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-2 text-sm font-bold text-white shadow-sm active:bg-brand-700">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+            {t('quotes.walk.open')}
+          </button>
+        )}
       </div>
-      {canEdit && <PhotoPickerButtons onFiles={uploader.addFiles} size="compact" />}
-      {count === 0 && uploader.items.length === 0
-        ? <p className="text-sm text-gray-400 text-center py-4">{t('quotes.photos.empty')}</p>
-        : <PhotoGallery photos={quote.photos} uploader={uploader} canEdit={canEdit} onChanged={onChanged} />}
+      {asSheet ? (
+        <>
+          <WalkNotesSheet notes={notes} photos={quote.photos} uploader={uploader} editable={false}
+            onOpenPhoto={setViewing} summary={quote.description} />
+          {viewing != null && (
+            <PhotoViewer photos={quote.photos} startId={viewing} canEdit={canEdit} notes={notes}
+              onChanged={onChanged} onClose={() => setViewing(null)} />
+          )}
+        </>
+      ) : (
+        <>
+          {count === 0 && uploader.items.length === 0
+            ? <p className="text-sm text-gray-400 text-center py-4">{t('quotes.photos.empty')}</p>
+            : <PhotoGallery photos={quote.photos} uploader={uploader} canEdit={canEdit} onChanged={onChanged} />}
+        </>
+      )}
     </section>
   )
 }

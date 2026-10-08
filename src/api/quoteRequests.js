@@ -62,3 +62,13 @@ export const listQuoteClients = () =>
 
 export const listProjectClientIds = (projectNumber) =>
   client.get('/quote-requests/pickers.php', { params: { kind: 'project_clients', project_number: projectNumber } }).then((r) => r.data)
+
+// Site-walk notes (Cornell-style walk sheet)
+export const createQuoteNote = (quoteRequestId, payload = {}) =>
+  client.post('/quote-requests/notes.php', { quote_request_id: quoteRequestId, ...payload }).then((r) => r.data)
+
+export const updateQuoteNote = (noteId, payload) =>
+  client.patch(`/quote-requests/notes.php?id=${noteId}`, payload).then((r) => r.data)
+
+export const deleteQuoteNote = (noteId) =>
+  client.delete(`/quote-requests/notes.php?id=${noteId}`).then((r) => r.data)

@@ -49,7 +49,9 @@ try {
         case 'submit':
             if (trim((string)$row['title']) === '') $fail('Add a title before submitting');
             if (trim((string)$row['facility']) === '' && !$row['customer_id']) $fail('Add the facility or customer before submitting');
-            if (trim((string)$row['description']) === '' && !$row['form_json']) $fail('Describe the work before submitting');
+            $nc = $pdo->prepare("SELECT COUNT(*) FROM quote_request_notes WHERE quote_request_id = ? AND body IS NOT NULL AND body <> ''");
+            $nc->execute([$id]);
+            if (trim((string)$row['description']) === '' && !$row['form_json'] && !(int)$nc->fetchColumn()) $fail('Describe the work before submitting');
             if ($row['work_type'] === 'addon' && !$row['project_number']) $fail('Pick the project this add-on belongs to');
             $sets[] = 'submitted_at = NOW()';
             if (!$row['site_visit_date'] && !qrIsAdmin($auth)) { $sets[] = 'site_visit_date = CURDATE()'; }

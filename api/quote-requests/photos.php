@@ -26,7 +26,16 @@ function qrPhotoEditable(array $auth, array $row): bool {
     return qrIsAdmin($auth) ? !in_array($row['status'], ['accepted', 'declined', 'cancelled'], true) : qrFieldCanEdit($auth, $row);
 }
 
-function qrPhotoMeta(array $src, array &$sets, array &$params): void {
+function qrPhotoMeta(array $src, array &$sets, array &$params, ?PDO $pdo = null, int $requestId = 0): void {
+    if (array_key_exists('note_id', $src) && $pdo) {
+        $nid = $src['note_id'] === '' || $src['note_id'] === null ? null : (int)$src['note_id'];
+        if ($nid) {
+            $chk = $pdo->prepare('SELECT id FROM quote_request_notes WHERE id = ? AND quote_request_id = ?');
+            $chk->execute([$nid, $requestId]);
+            if (!$chk->fetch()) { http_response_code(422); exit(json_encode(['error' => 'Note not found on this request'])); }
+        }
+        $sets[] = 'note_id = ?'; $params[] = $nid;
+    }
     if (array_key_exists('caption', $src))   { $sets[] = 'caption = ?';   $params[] = ($v = trim((string)$src['caption'])) === '' ? null : mb_substr($v, 0, 255); }
     if (array_key_exists('room_key', $src))  { $sets[] = 'room_key = ?';  $params[] = ($v = trim((string)$src['room_key'])) === '' ? null : mb_substr($v, 0, 40); }
     if (array_key_exists('category', $src))  { $sets[] = 'category = ?';  $params[] = ($v = trim((string)$src['category'])) === '' ? null : mb_substr($v, 0, 40); }
@@ -55,12 +64,15 @@ if ($method === 'POST') {
         if ($dupe = $s->fetch()) { echo json_encode(['id' => (int)$dupe['id'], 'url' => qrFileUrl($dupe['file_path']), 'duplicate' => true]); exit; }
     }
 
+    // Validate everything (incl. note_id) before the file touches the disk,
+    // so a rejected upload never leaves an orphaned file behind.
+    $metaSets = []; $metaParams = [];
+    qrPhotoMeta($_POST, $metaSets, $metaParams, $pdo, $requestId);
     [$tmp, $ext, $original] = qrAcceptUpload(QR_PHOTO_MIME, QR_PHOTO_MAX);
     $path = qrStoreUpload($requestId, $tmp, $ext);
 
-    $sets = ['quote_request_id = ?', 'client_uid = ?', 'file_path = ?', 'original_filename = ?', 'uploaded_by = ?', 'uploaded_by_name = ?'];
-    $params = [$requestId, $clientUid !== '' ? $clientUid : null, $path, $original, $auth['user_id'], $auth['name']];
-    qrPhotoMeta($_POST, $sets, $params);
+    $sets = array_merge(['quote_request_id = ?', 'client_uid = ?', 'file_path = ?', 'original_filename = ?', 'uploaded_by = ?', 'uploaded_by_name = ?'], $metaSets);
+    $params = array_merge([$requestId, $clientUid !== '' ? $clientUid : null, $path, $original, $auth['user_id'], $auth['name']], $metaParams);
     if (!empty($_POST['taken_at'])) { $sets[] = 'taken_at = ?'; $params[] = qrValidDateTime((string)$_POST['taken_at']); }
     if (isset($_POST['latitude'], $_POST['longitude']) && is_numeric($_POST['latitude']) && is_numeric($_POST['longitude'])) {
         $sets[] = 'latitude = ?';  $params[] = round((float)$_POST['latitude'], 6);
@@ -83,7 +95,7 @@ if ($method === 'POST') {
 
     if ($method === 'PATCH') {
         $sets = []; $params = [];
-        qrPhotoMeta(jsonBody(), $sets, $params);
+        qrPhotoMeta(jsonBody(), $sets, $params, $pdo, (int)$photo['quote_request_id']);
         if ($sets) {
             $params[] = $photoId;
             $pdo->prepare('UPDATE quote_request_photos SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);

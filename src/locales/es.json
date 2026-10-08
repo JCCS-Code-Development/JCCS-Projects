@@ -636,7 +636,34 @@
       "autoTitle": "Visita – {{date}}"
     },
     "searchShort": "Buscar cotizaciones",
-    "loadFailed": "No se pudieron cargar las solicitudes."
+    "loadFailed": "No se pudieron cargar las solicitudes.",
+    "walk": {
+      "title": "Visita",
+      "open": "Abrir visita",
+      "notesCol": "Notas",
+      "photosCol": "Fotos",
+      "camera": "Cámara",
+      "newNote": "Nueva nota",
+      "noteN": "Nota {{n}}",
+      "activeNote": "tomando fotos",
+      "notePlaceholder": "¿Qué hay aquí? ej. Consultorio 3 – daño por agua detrás del lavabo, ~40 SF",
+      "photosGoHere": "Las fotos que tomes ahora van aquí",
+      "noPhotos": "Sin fotos",
+      "unfiled": "Fotos sin nota",
+      "summary": "Resumen",
+      "summaryPlaceholder": "En general — qué hay que hacer…",
+      "deleteNote": "¿Eliminar esta nota?",
+      "deleteNoteWithPhotos_one": "¿Eliminar esta nota? Su foto se queda, sin nota.",
+      "deleteNoteWithPhotos_other": "¿Eliminar esta nota? Sus {{count}} fotos se quedan, sin nota.",
+      "next": "Siguiente",
+      "failed_one": "{{count}} no se subió — toca ↻ para reintentar",
+      "failed_other": "{{count}} no se subieron — toca ↻ para reintentar"
+    },
+    "camera": {
+      "starting": "Abriendo cámara…",
+      "unavailable": "La cámara no está disponible aquí (se negó el permiso o no hay cámara).",
+      "usePhoneCamera": "Usar cámara del teléfono"
+    }
   },
   "library": {
     "title": "Biblioteca de Materiales",
