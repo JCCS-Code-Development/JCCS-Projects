@@ -46,6 +46,29 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
   const [saving, setSaving] = useState(false)
   const svgWrap = useRef(null)
   const touchStart = useRef(null)
+  // Zoom: scale + offset of the photo (origin top-left), pinch / double-tap /
+  // wheel. Active pointers live in a ref so two-finger gestures can be told
+  // apart from drawing or swiping.
+  const [zoom, setZoom] = useState({ s: 1, x: 0, y: 0 })
+  const pointers = useRef(new Map())
+  const gesture = useRef(null)
+  const lastTap = useRef(0)
+  // The photo is sized to the space actually left between the top bar and
+  // the bottom panel (which is taller while marking up).
+  const stageRef = useRef(null)
+  const wheelRef = useRef(null)
+  const [stageH, setStageH] = useState(0)
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => setStageH(el.clientHeight))
+    ro.observe(el)
+    // Wheel / trackpad pinch zooms the photo, not the whole page (needs a
+    // non-passive listener to stop the browser's own zoom).
+    const onWheel = (e) => { e.preventDefault(); wheelRef.current?.(e) }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => { ro.disconnect(); el.removeEventListener('wheel', onWheel) }
+  }, [])
 
   // Reset per-photo state when moving to a different photo (keyed on the id
   // only — a caption save reloading the same photo must not wipe the editor).
@@ -56,6 +79,7 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
     setCaption(photo.caption ?? '')
     setMarkup(false); setDrawing(null); setTextAt(null)
     setNatural({ w: 0, h: 0 })
+    setZoom({ s: 1, x: 0, y: 0 })
   }
 
   // Photo deleted out from under us (or list emptied) → close.
@@ -104,20 +128,84 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
     const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))
     return [Math.round(x * 10000) / 10000, Math.round(y * 10000) / 10000]
   }
+  // ── Zoom ──
+  // Keep the zoomed photo covering its frame (no drifting off into black).
+  const clampZoom = (z) => {
+    const el = svgWrap.current
+    const s = Math.min(5, Math.max(1, z.s))
+    if (!el || s === 1) return { s: 1, x: 0, y: 0 }
+    const w = el.offsetWidth, h = el.offsetHeight
+    return { s, x: Math.min(0, Math.max(w * (1 - s), z.x)), y: Math.min(0, Math.max(h * (1 - s), z.y)) }
+  }
+  // Zoom to scale `to`, keeping the photo point under (cx, cy) in place.
+  const zoomAt = (cx, cy, to, from = zoom) => {
+    const r = svgWrap.current.getBoundingClientRect()
+    const restL = r.left - from.x, restT = r.top - from.y
+    const ux = (cx - r.left) / from.s, uy = (cy - r.top) / from.s
+    return clampZoom({ s: to, x: cx - restL - ux * to, y: cy - restT - uy * to })
+  }
+  const pinchInfo = () => {
+    const [a, b] = [...pointers.current.values()]
+    return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }
+  }
+  wheelRef.current = (e) => {
+    if (!svgWrap.current) return
+    setZoom((z) => zoomAt(e.clientX, e.clientY, z.s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)), z))
+  }
+
   const onPointerDown = (e) => {
-    if (!markup) return
     e.preventDefault()
-    const p = pointFrom(e)
-    if (tool === 'text') { setTextAt(p); setTextValue(''); return }
-    e.currentTarget.setPointerCapture?.(e.pointerId)
-    setDrawing(tool === 'pen' ? { t: 'pen', c: color, pts: [p] } : { t: tool, c: color, a: p, b: p })
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    try { e.currentTarget.setPointerCapture?.(e.pointerId) } catch { /* fine */ }
+    if (pointers.current.size === 2) {
+      // Second finger: it's a pinch — drop any stroke the first finger began.
+      setDrawing(null)
+      const { d, mx, my } = pinchInfo()
+      gesture.current = { kind: 'pinch', d0: d, mx0: mx, my0: my, z0: zoom }
+      return
+    }
+    if (pointers.current.size > 2) return
+    if (markup) {
+      const p = pointFrom(e)
+      if (tool === 'text') { setTextAt(p); setTextValue(''); return }
+      setDrawing(tool === 'pen' ? { t: 'pen', c: color, pts: [p] } : { t: tool, c: color, a: p, b: p })
+      return
+    }
+    // Double-tap / double-click: zoom in on that spot, or back out.
+    const now = Date.now()
+    if (now - lastTap.current < 300) {
+      lastTap.current = 0
+      setZoom(zoom.s > 1 ? { s: 1, x: 0, y: 0 } : zoomAt(e.clientX, e.clientY, 2.5))
+      return
+    }
+    lastTap.current = now
+    if (zoom.s > 1) gesture.current = { kind: 'pan', x0: e.clientX, y0: e.clientY, z0: zoom }
   }
   const onPointerMove = (e) => {
+    if (!pointers.current.has(e.pointerId)) return
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const g = gesture.current
+    if (g?.kind === 'pinch' && pointers.current.size === 2) {
+      const { d, mx, my } = pinchInfo()
+      // Scale around where the pinch started, and follow the fingers as they move.
+      const z = zoomAt(g.mx0, g.my0, g.z0.s * (d / g.d0), g.z0)
+      setZoom(clampZoom({ ...z, x: z.x + mx - g.mx0, y: z.y + my - g.my0 }))
+      return
+    }
+    if (g?.kind === 'pan') {
+      setZoom(clampZoom({ ...g.z0, x: g.z0.x + e.clientX - g.x0, y: g.z0.y + e.clientY - g.y0 }))
+      return
+    }
     if (!drawing) return
     const p = pointFrom(e)
     setDrawing((d) => (d.t === 'pen' ? { ...d, pts: [...d.pts, p] } : { ...d, b: p }))
   }
-  const onPointerUp = () => {
+  const onPointerUp = (e) => {
+    pointers.current.delete(e.pointerId)
+    if (gesture.current) {
+      if (pointers.current.size === 0) gesture.current = null
+      return
+    }
     if (!drawing) return
     const d = drawing
     const tiny = d.t === 'pen' ? d.pts.length < 2 : Math.hypot(d.b[0] - d.a[0], d.b[1] - d.a[1]) < 0.01
@@ -137,9 +225,11 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
 
   const shown = markup ? [...shapes, ...(drawing ? [drawing] : [])] : savedShapes
 
-  const onTouchStart = (e) => { if (!markup) touchStart.current = e.touches[0].clientX }
+  // Swipe to the next / previous photo — only when not zoomed in and it was
+  // a one-finger swipe (not the end of a pinch).
+  const onTouchStart = (e) => { touchStart.current = !markup && zoom.s === 1 && e.touches.length === 1 ? e.touches[0].clientX : null }
   const onTouchEnd = (e) => {
-    if (markup || touchStart.current == null) return
+    if (markup || zoom.s !== 1 || touchStart.current == null || e.touches.length) { touchStart.current = null; return }
     const dx = e.changedTouches[0].clientX - touchStart.current
     touchStart.current = null
     if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1)
@@ -151,7 +241,7 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
   return createPortal(
     <div className="fixed inset-0 z-[1200] bg-black flex flex-col select-none" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Top bar */}
-      <div className="flex items-center justify-between px-2 py-2 text-white">
+      <div className="shrink-0 flex items-center justify-between px-2 py-2 text-white">
         <button className={iconBtn} onClick={markup ? () => setMarkup(false) : onClose} aria-label="Close">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
@@ -164,18 +254,19 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
       </div>
 
       {/* Photo */}
-      <div className="relative flex-1 min-h-0 flex items-center justify-center px-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div ref={stageRef} className="relative flex-1 min-h-0 overflow-hidden flex items-center justify-center px-2"
+        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {!markup && photos.length > 1 && (
           <button className={`${iconBtn} absolute left-2 z-10 hidden sm:flex bg-black/40`} onClick={() => go(-1)} aria-label="Previous">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" /></svg>
           </button>
         )}
         <div ref={svgWrap} className="relative inline-block max-w-full max-h-full"
-          style={{ touchAction: markup ? 'none' : 'pan-y' }}
+          style={{ touchAction: 'none', transformOrigin: '0 0', transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.s})` }}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
           <img src={photo.url} alt={photo.caption ?? ''} draggable={false}
             onLoad={(e) => setNatural({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
-            className="block max-w-full object-contain" style={{ maxHeight: markup ? 'calc(100svh - 190px)' : 'calc(100svh - 250px)' }} />
+            className="block max-w-full object-contain" style={{ maxHeight: stageH ? stageH - 8 : 'calc(100svh - 250px)' }} />
           <AnnotationLayer shapes={shown} width={natural.w} height={natural.h} className={markup ? 'cursor-crosshair' : 'pointer-events-none'} />
         </div>
         {!markup && photos.length > 1 && (
@@ -186,7 +277,7 @@ export default function PhotoViewer({ photos, startId, canEdit, onClose, onChang
       </div>
 
       {/* Bottom panel */}
-      <div className="px-4 pt-3 text-white" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
+      <div className="shrink-0 px-4 pt-3 text-white" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
         {markup ? (
           <div className="flex flex-col gap-3 max-w-xl mx-auto">
             {textAt ? (
