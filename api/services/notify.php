@@ -36,14 +36,15 @@ function notifyStaff(PDO $pdo, int $fieldclockUserId, string $projectNumber, str
     )->execute(['staff', $fieldclockUserId, $projectNumber, $type, $title, $body, $linkPath]);
 }
 
-// Notifies every staff member provisioned on this project (admins always;
-// PMs only if pm_project_access grants them this project_number) — used so
+// Notifies every staff member provisioned on this project (admins and Field
+// Managers always — they cover every project; PMs only if pm_project_access
+// grants them this project_number) — used so
 // a client's comment reaches whoever can actually act on it, not just
 // whichever admin happens to be looking.
 function notifyProjectStaff(PDO $pdo, string $projectNumber, string $type, string $title, ?string $body, string $linkPath): void {
     $stmt = $pdo->prepare(
         "SELECT s.fieldclock_user_id FROM projects_staff_roles s WHERE s.is_active = 1 AND (
-             s.role = 'admin' OR EXISTS (
+             s.role IN ('admin', 'field') OR EXISTS (
                  SELECT 1 FROM pm_project_access pa WHERE pa.fieldclock_user_id = s.fieldclock_user_id AND pa.project_number = ?
              )
          )"

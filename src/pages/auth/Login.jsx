@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button'
 import LangSwitcher from '../../components/ui/LangSwitcher'
 import { login as fieldclockLogin } from '../../api/fieldclockAuth'
 import { verify as verifyProjectsAccess } from '../../api/auth'
+import { homeForRole } from '../../router/RoleRoute'
 import { login as clientLogin } from '../../api/clientPortalAuth'
 import { useAuthStore } from '../../store/authStore'
 import { useClientAuthStore } from '../../store/clientAuthStore'
@@ -75,7 +76,8 @@ export default function Login() {
       staffLogin(data.user, data.token, data.refreshToken)
       const access = await verifyProjectsAccess()
       staffLogin({ ...data.user, role: access.role }, data.token, data.refreshToken)
-      navigate(staffRedirect, { replace: true })
+      // No specific destination → that role's home (Site Walks for Field Managers).
+      navigate(from && !from.pathname?.startsWith('/portal') ? staffRedirect : homeForRole(access.role), { replace: true })
     } catch (err) {
       staffLogout()
       if (err?.response?.status === 403) {

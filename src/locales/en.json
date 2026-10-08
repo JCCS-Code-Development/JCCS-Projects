@@ -308,7 +308,8 @@
     "addStaffTitle": "JCCS staff member",
     "addStaffHint": "Someone with a FieldClock login — Admin, Project Manager or Field Manager.",
     "addClientTitle": "Client",
-    "addClientHint": "An outside customer contact. Can receive estimates and get read-only portal access to their projects."
+    "addClientHint": "An outside customer contact. Can receive estimates and get read-only portal access to their projects.",
+    "allProjectsSiteWalks": "All projects + Site Walks"
   },
   "projectDetail": {
     "overview": "Overview",

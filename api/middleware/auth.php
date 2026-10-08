@@ -10,13 +10,14 @@
 //                         secret, separate table) and returns which
 //                         project_numbers that client may see.
 
-// $roles is deny-by-default: the 'field' role (site-walk only) is NOT in the
-// default list, so every existing project/log/document endpoint rejects field
-// managers without needing its own check. Endpoints a field manager may use
-// (verify, notifications, quote requests) opt in explicitly.
+// Roles: admin (everything), pm (project work on the projects in
+// pm_project_access), field (Field Manager — the same project work as a PM
+// but on EVERY project, plus site walks / quote requests). Admin-only actions
+// still check requireAdmin() separately. Endpoints that should exclude a role
+// pass their own list (e.g. quote requests use QR_ROLES = admin + field).
 const ALL_STAFF_ROLES = ['admin', 'pm', 'field'];
 
-function requireAuth(array $roles = ['admin', 'pm']): array {
+function requireAuth(array $roles = ALL_STAFF_ROLES): array {
     $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
     if (!str_starts_with($auth, 'Bearer ')) {
         http_response_code(401);
@@ -60,11 +61,12 @@ function requireAdmin(array $auth): void {
     }
 }
 
-// Returns null for admins (unrestricted — sees every project) or an array of
-// project_number strings a PM is scoped to. Callers should treat null as
-// "no filter" and an empty array as "sees nothing yet."
+// Returns null for admins and Field Managers (unrestricted — every project)
+// or an array of project_number strings a PM is scoped to. Callers should
+// treat null as "no project filter" (NOT as "is admin" — use requireAdmin for
+// that) and an empty array as "sees nothing yet."
 function pmProjectScope(array $auth): ?array {
-    if ($auth['role'] === 'admin') return null;
+    if ($auth['role'] === 'admin' || $auth['role'] === 'field') return null;
     $pdo  = getPDO();
     $stmt = $pdo->prepare('SELECT project_number FROM pm_project_access WHERE fieldclock_user_id = ?');
     $stmt->execute([$auth['user_id']]);

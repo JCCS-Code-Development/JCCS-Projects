@@ -308,7 +308,8 @@
     "addStaffTitle": "Personal de JCCS",
     "addStaffHint": "Alguien con usuario de FieldClock — Administrador, Gerente de Proyecto o Supervisor de Campo.",
     "addClientTitle": "Cliente",
-    "addClientHint": "Un contacto externo. Puede recibir estimados y tener acceso de solo lectura al portal de sus proyectos."
+    "addClientHint": "Un contacto externo. Puede recibir estimados y tener acceso de solo lectura al portal de sus proyectos.",
+    "allProjectsSiteWalks": "Todos los proyectos + Visitas"
   },
   "projectDetail": {
     "overview": "Resumen",

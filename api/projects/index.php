@@ -58,15 +58,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') { http_response_code(405); exit; }
 $pdo    = getPDO();
 $result = inventoryListProjects($auth['raw_token']);
 
+// Inventory only answers people who have an Inventory account. If it refuses
+// (or is unreachable), serve the locally cached copy of the project list
+// instead of failing — it's refreshed on every successful staff read.
+if ($result['status'] !== 200 || !isset($result['data']['projects'])) {
+    $rows = $pdo->query("SELECT project_number, name, client_name, client_address, is_active, status
+                         FROM project_cache WHERE project_number <> '0000' ORDER BY name")->fetchAll();
+    foreach ($rows as &$r) { $r['is_active'] = (int)$r['is_active']; }
+    $result = ['status' => 200, 'data' => ['projects' => $rows, 'source' => 'cache']];
+}
+
 // Cache name/client fields locally so the client portal (which has no
 // FieldClock identity to call Inventory with) can still show project info
 // without a live proxy call. Refreshed opportunistically on every staff read.
-if ($result['status'] === 200 && !empty($result['data']['projects'])) {
+if ($result['status'] === 200 && !empty($result['data']['projects']) && ($result['data']['source'] ?? '') !== 'cache') {
     cacheProjects($pdo, $result['data']['projects']);
 }
 
-// PMs only see projects they've been scoped to; admins see everything
-// Inventory returns.
+// PMs only see projects they've been scoped to; admins and Field Managers see
+// everything Inventory returns.
 $scope = pmProjectScope($auth);
 if ($scope !== null && isset($result['data']['projects'])) {
     $result['data']['projects'] = array_values(array_filter(

@@ -33,8 +33,7 @@ function SidebarItem({ to, icon, label, end }) {
 // "Projects" is the app's home (the outermost layer of the company → project
 // → tabs drill-down). Admins also get Quotes + Users, and on desktop the
 // Materials page lives inside Quotes (a button in its header) on every
-// screen size. Field managers
-// get a single destination: their Site Walks.
+// screen size. Field Managers get Site Walks (their home) + Projects.
 export default function StaffLayout() {
   const { t } = useTranslation()
   const [profileOpen, setProfileOpen] = useState(false)
@@ -71,6 +70,7 @@ export default function StaffLayout() {
 
   const NAV = role === 'field' ? [
     { to: '/quotes', icon: <QuotesIcon />, label: t('nav.siteWalks') },
+    { to: '/', icon: <ProjectsIcon />, label: t('nav.projects'), end: true },
   ] : [
     { to: '/', icon: <ProjectsIcon />, label: t('nav.projects'), end: true },
     ...(isAdmin ? [

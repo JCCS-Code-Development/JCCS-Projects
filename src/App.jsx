@@ -46,8 +46,9 @@ export default function App() {
       {/* Staff (Admin / PM-Lead / Field Manager) */}
       <Route element={<ProtectedRoute />}>
         <Route element={<StaffLayout />}>
-          {/* Projects — field managers are site-walk only and never see these */}
-          <Route element={<RoleRoute allowedRoles={['admin', 'pm']} />}>
+          {/* Projects — admins, PMs (their assigned projects) and Field
+              Managers (every project) */}
+          <Route element={<RoleRoute allowedRoles={['admin', 'pm', 'field']} />}>
             <Route path="/" element={<ProjectsHome />} />
             <Route path="/projects/:projectNumber" element={<ProjectDetail />} />
             <Route path="/projects/:projectNumber/daily-logs/:id" element={<DailyLogDetail />} />

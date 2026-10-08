@@ -207,7 +207,7 @@ function StaffSection({ projects, query, hidden, openRef }) {
                       </td>
                       <td className="px-4 py-3"><Badge variant={u.role === 'admin' ? 'active' : u.role === 'field' ? 'pending' : 'inactive'}>{t(`role.${u.role}`)}</Badge></td>
                       <td className="px-4 py-3 text-xs text-gray-500">
-                        {u.role === 'admin' ? t('users.allProjects') : u.role === 'field' ? t('nav.siteWalks') : (u.project_numbers.length ? u.project_numbers.join(', ') : '—')}
+                        {u.role === 'admin' ? t('users.allProjects') : u.role === 'field' ? t('users.allProjectsSiteWalks') : (u.project_numbers.length ? u.project_numbers.join(', ') : '—')}
                       </td>
                       <td className="px-4 py-3"><Badge variant={u.is_active ? 'active' : 'inactive'}>{u.is_active ? t('users.active') : t('users.inactive')}</Badge></td>
                       <td className="px-4 py-3 text-right">

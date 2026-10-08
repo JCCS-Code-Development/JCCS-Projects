@@ -1,8 +1,8 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 
-// Each role's home: field managers only have Site Walks, so bouncing them to
-// "/" (Projects, which they can't open) would loop.
+// Each role's home screen. Field Managers start on their Site Walks (they
+// also have Projects); everyone else on Projects.
 export const homeForRole = (role) => (role === 'field' ? '/quotes' : '/')
 
 export default function RoleRoute({ allowedRoles }) {
