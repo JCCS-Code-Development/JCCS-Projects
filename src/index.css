@@ -22,3 +22,12 @@
     min-height: 100svh;
   }
 }
+
+/* iOS Safari centres the value inside date inputs and gives the empty
+   value box no height — keep it left-aligned and full height. */
+input[type="date"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.5em;
+}
+

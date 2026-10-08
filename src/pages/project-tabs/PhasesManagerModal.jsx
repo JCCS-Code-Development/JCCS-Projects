@@ -64,10 +64,10 @@ function PhaseRow({ phase, onSaved }) {
       </div>
       <div className="flex items-center gap-2 pl-7">
         <input type="date" value={startDate ?? ''} onChange={(e) => setStartDate(e.target.value)}
-          className="rounded-lg border border-gray-300 px-2 py-1 text-xs outline-none focus:border-brand-500" />
+          className="appearance-none bg-white min-h-[34px] min-w-[8.5rem] rounded-lg border border-gray-300 px-2 py-1 text-base sm:text-xs outline-none focus:border-brand-500" />
         <span className="text-xs text-gray-300">–</span>
         <input type="date" value={endDate ?? ''} onChange={(e) => setEndDate(e.target.value)}
-          className="rounded-lg border border-gray-300 px-2 py-1 text-xs outline-none focus:border-brand-500" />
+          className="appearance-none bg-white min-h-[34px] min-w-[8.5rem] rounded-lg border border-gray-300 px-2 py-1 text-base sm:text-xs outline-none focus:border-brand-500" />
         <div className="flex-1" />
         {dirty && <Button size="sm" variant="primary" onClick={save} loading={saving}>{t('common.save')}</Button>}
         <Button size="sm" variant="ghost" onClick={remove} disabled={saving}>{t('common.delete')}</Button>

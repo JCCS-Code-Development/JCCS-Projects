@@ -1,5 +1,12 @@
 import { forwardRef } from 'react'
 
+// iOS/iPadOS Safari renders an EMPTY date/time input with no intrinsic size
+// (it ignores width/height until a value is picked), so it collapses and
+// overlaps its neighbours. Native appearance off + a fixed min height + block
+// display makes it size like every other field.
+const DATE_TYPES = ['date', 'datetime-local', 'time', 'month']
+const DATE_FIX = 'appearance-none block min-h-[50px] bg-white text-left'
+
 const Input = forwardRef(function Input({
   label,
   error,
@@ -19,6 +26,7 @@ const Input = forwardRef(function Input({
         type={type}
         inputMode={inputMode}
         className={`
+          ${DATE_TYPES.includes(type) ? DATE_FIX : ''}
           w-full rounded-xl border px-4 py-3 text-base outline-none transition-colors
           ${error
             ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100'
