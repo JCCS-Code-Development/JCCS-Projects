@@ -96,7 +96,10 @@ if ($method === 'GET') {
 
     // A field manager's own walk is theirs by default; an admin logging a
     // phone/email request can hand it to a field manager (or keep it).
-    if (!qrIsAdmin($auth)) {
+    // An admin starting a site walk themselves (unsaved, from the camera) is
+    // the one walking it, too.
+    $selfWalk = !qrIsAdmin($auth) || (!empty($body['unsaved']) && !array_key_exists('field_manager_id', $body));
+    if ($selfWalk) {
         $sets[] = 'field_manager_id = ?';   $params[] = $auth['user_id'];
         $sets[] = 'field_manager_name = ?'; $params[] = $auth['name'];
     }
