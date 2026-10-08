@@ -322,7 +322,7 @@ function PhotosSection({ quote, canEdit, onChanged }) {
       {asSheet ? (
         <>
           <WalkNotesSheet notes={notes} photos={quote.photos} uploader={uploader} editable={false}
-            onOpenPhoto={setViewing} summary={quote.description} />
+            onOpenPhoto={setViewing} generalNotes={quote.description} />
           {viewing != null && (
             <PhotoViewer photos={quote.photos} startId={viewing} canEdit={canEdit} notes={notes}
               onChanged={onChanged} onClose={() => setViewing(null)} />

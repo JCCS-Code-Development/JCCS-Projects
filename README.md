@@ -150,8 +150,8 @@ from InvoiceToGo; this app owns everything before and after that.
   `quote_request_activity`, and scope edits / submissions / approvals are
   snapshotted in `quote_request_versions`.
 - **Site walk (field managers)** — Cornell-notes style: a sheet of short notes
-  (one per area/issue) with the photos for each note beside it and a summary
-  at the bottom (= the request description), plus a live in-app camera
+  (one per area/issue) with the photos for each note beside it, plus a live
+  in-app camera
   (getUserMedia; falls back to the phone camera / library). Every shot is
   filed under the active note. iPad / landscape: sheet left, camera right;
   upright phone: swipe between Notes and Camera. Notes autosave; photo uploads

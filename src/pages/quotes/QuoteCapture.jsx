@@ -6,8 +6,8 @@ import { useToast } from '../../components/ToastProvider'
 import { useConfirm } from '../../components/ConfirmProvider'
 import { getQuoteRequest, deleteQuoteRequest, createQuoteNote, updateQuoteRequest } from '../../api/quoteRequests'
 import { usePhotoUploader } from './photos/usePhotoUploader'
-import { useAutosave } from './photos/useAutosave'
 import CameraView from './photos/CameraView'
+import { useAutosave } from './photos/useAutosave'
 import WalkNotesSheet from './photos/WalkNotesSheet'
 import PhotoViewer from './photos/PhotoViewer'
 
@@ -23,8 +23,7 @@ function useMediaQuery(query) {
 }
 
 // The site walk, Cornell-notes style: a sheet of short notes (one per area or
-// issue) with the photos for each note beside it, a summary at the bottom,
-// and a live in-app camera. Every photo taken is filed under the active note.
+// issue) with the photos for each note beside it, and a live in-app camera. Every photo taken is filed under the active note.
 //  - iPad / landscape (md+): sheet on the left, camera on the right.
 //  - Upright phone: swipe (or tap) between Notes and Camera.
 // Everything saves as you go and uploads run in the background, so nothing
@@ -40,15 +39,15 @@ export default function QuoteCapture() {
   const [focusNoteId, setFocusNoteId] = useState(null)
   const [adding, setAdding] = useState(false)
   const [tab, setTab] = useState('camera') // phones only: notes | camera
-  const [summary, setSummary] = useState(null)
   const [viewing, setViewing] = useState(null)
+  const [generalNotes, setGeneralNotes] = useState(null) // = the request description
   const seeded = useRef(false)
   const wide = useMediaQuery('(min-width: 768px)')
   const touchX = useRef(null)
 
   const load = useCallback(() => getQuoteRequest(id).then((d) => {
     setQuote(d.quoteRequest)
-    setSummary((s) => (s === null ? (d.quoteRequest.description ?? '') : s))
+    setGeneralNotes((g) => (g === null ? (d.quoteRequest.description ?? '') : g))
     return d.quoteRequest
   }).catch(() => { navigate('/quotes', { replace: true }) }), [id, navigate])
 
@@ -78,7 +77,8 @@ export default function QuoteCapture() {
     })
   }, [load, addNote])
 
-  useAutosave(summary, (v) => {
+
+  useAutosave(generalNotes, (v) => {
     if (v === null) return
     updateQuoteRequest(id, { description: v }).catch((err) => toast.error(err?.response?.data?.error ?? t('common.couldNotSave')))
   })
@@ -105,7 +105,7 @@ export default function QuoteCapture() {
   // captured.) A saved walk just goes back to its page.
   const cancel = async () => {
     if (quote.is_saved) { navigate(`/quotes/${id}`); return }
-    const empty = !quote.photos.length && !uploader.items.length && !(summary ?? '').trim()
+    const empty = !quote.photos.length && !uploader.items.length && !(generalNotes ?? '').trim()
       && notes.every((n) => !(n.body ?? '').trim())
     if (!empty && !await confirmDialog(t('quotes.walk.discardConfirm'), { danger: true, confirmLabel: t('quotes.walk.discard') })) return
     uploader.discardAll()
@@ -115,7 +115,7 @@ export default function QuoteCapture() {
   // Next = save: the walk becomes a quote request and gets its Q-number.
   const next = async () => {
     try {
-      if (!quote.is_saved) await updateQuoteRequest(id, { keep: true, ...(summary !== null ? { description: summary } : {}) })
+      if (!quote.is_saved) await updateQuoteRequest(id, { keep: true, ...(generalNotes !== null ? { description: generalNotes } : {}) })
       navigate(`/quotes/${id}?edit=1`)
     } catch (err) { toast.error(err?.response?.data?.error ?? t('common.couldNotSave')) }
   }
@@ -135,10 +135,13 @@ export default function QuoteCapture() {
         <span className="font-bold">{active ? `${t('quotes.walk.noteN', { n: activeIndex + 1 })}` : t('quotes.walk.unfiled')}</span>
         {active?.body ? <span className="text-white/80"> · {active.body.split('\n')[0]}</span> : null}
       </button>
-      <button onClick={newNoteFromCamera} disabled={adding}
-        className="shrink-0 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-900 disabled:opacity-60">
-        + {t('quotes.walk.newNote')}
-      </button>
+      {/* Side by side, the sheet's own "+ New note" is right there. */}
+      {!wide && (
+        <button onClick={newNoteFromCamera} disabled={adding}
+          className="shrink-0 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-900 disabled:opacity-60">
+          + {t('quotes.walk.newNote')}
+        </button>
+      )}
     </div>
   )
 
@@ -146,7 +149,7 @@ export default function QuoteCapture() {
     <WalkNotesSheet notes={notes} photos={quote.photos} uploader={uploader} editable
       activeNoteId={activeNoteId} onSelect={setActiveNoteId} focusNoteId={focusNoteId}
       onOpenPhoto={setViewing} onChanged={load} onAddNote={() => addNote()} adding={adding}
-      summary={summary} onSummaryChange={setSummary} />
+      generalNotes={generalNotes} onGeneralNotesChange={setGeneralNotes} />
   )
 
   return (

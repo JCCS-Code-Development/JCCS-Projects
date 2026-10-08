@@ -651,8 +651,6 @@
       "photosGoHere": "Las fotos que tomes ahora van aquí",
       "noPhotos": "Sin fotos",
       "unfiled": "Fotos sin nota",
-      "summary": "Resumen",
-      "summaryPlaceholder": "En general — qué hay que hacer…",
       "deleteNote": "¿Eliminar esta nota?",
       "deleteNoteWithPhotos_one": "¿Eliminar esta nota? Su foto se queda, sin nota.",
       "deleteNoteWithPhotos_other": "¿Eliminar esta nota? Sus {{count}} fotos se quedan, sin nota.",
@@ -660,7 +658,9 @@
       "failed_one": "{{count}} no se subió — toca ↻ para reintentar",
       "failed_other": "{{count}} no se subieron — toca ↻ para reintentar",
       "discard": "Descartar",
-      "discardConfirm": "¿Descartar esta visita? Se eliminarán sus fotos y notas."
+      "discardConfirm": "¿Descartar esta visita? Se eliminarán sus fotos y notas.",
+      "generalNotes": "Notas generales",
+      "generalNotesPlaceholder": "Algo general — acceso, estacionamiento, horario, con quién hablaste…"
     },
     "camera": {
       "starting": "Abriendo cámara…",

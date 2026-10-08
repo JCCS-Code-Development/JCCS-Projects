@@ -51,11 +51,11 @@ function NoteRow({ note, index, photos, pending, active, editable, onSelect, onO
   const count = photos.length + pending.length
   return (
     <div onClick={onSelect}
-      className={`grid grid-cols-2 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] border-b border-gray-200 transition-colors ${
+      className={`grid grid-cols-2 border-b border-gray-200 transition-colors ${
         active ? 'bg-brand-100/50' : 'bg-white'
       } ${editable ? 'cursor-pointer' : ''}`}>
       {/* Cue column: the note */}
-      <div className={`relative border-r border-gray-200 p-2.5 ${active ? 'border-l-4 border-l-brand-500' : 'border-l-4 border-l-transparent'}`}>
+      <div className={`relative min-h-[7.5rem] border-r border-gray-200 p-3 ${active ? 'border-l-4 border-l-brand-500' : 'border-l-4 border-l-transparent'}`}>
         <div className="flex items-center justify-between gap-1 mb-1">
           <span className={`text-[11px] font-bold ${active ? 'text-brand-700' : 'text-gray-400'}`}>
             {index + 1}{active && editable ? ` · ${t('quotes.walk.activeNote')}` : ''}
@@ -77,9 +77,9 @@ function NoteRow({ note, index, photos, pending, active, editable, onSelect, onO
         )}
       </div>
       {/* Main column: the photos for that note */}
-      <div className="p-2">
+      <div className="min-h-[7.5rem] p-2">
         {count === 0 ? (
-          <p className="h-full min-h-[3rem] flex items-center justify-center text-xs text-gray-300 text-center px-2">
+          <p className="h-full min-h-[7rem] flex items-center justify-center text-xs text-gray-300 text-center px-2">
             {editable && active ? t('quotes.walk.photosGoHere') : t('quotes.walk.noPhotos')}
           </p>
         ) : (
@@ -95,12 +95,13 @@ function NoteRow({ note, index, photos, pending, active, editable, onSelect, onO
   )
 }
 
-// The Cornell-style walk sheet: one row per note (cue on the left, its photos
-// on the right) and a summary at the bottom. In capture mode the tapped row is
-// the "active" note new photos are filed under.
+// The Cornell-style walk sheet: one row per note (note on the left, its photos
+// on the right, equal width) and a General notes box at the bottom for
+// anything that isn't about one area (stored as the request description). In
+// capture mode the tapped row is the "active" note new photos are filed under.
 export default function WalkNotesSheet({
   notes, photos, uploader, activeNoteId, onSelect, editable, onOpenPhoto, onChanged,
-  onAddNote, adding, summary, onSummaryChange, focusNoteId,
+  onAddNote, adding, focusNoteId, generalNotes, onGeneralNotesChange,
 }) {
   const { t } = useTranslation()
   const pendingFor = (noteId) => (uploader?.items ?? []).filter((it) => (it.meta?.note_id ?? null) === noteId)
@@ -109,7 +110,7 @@ export default function WalkNotesSheet({
 
   return (
     <div className="flex flex-col rounded-2xl border border-gray-200 bg-white overflow-hidden">
-      <div className="grid grid-cols-2 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] border-b-2 border-gray-300 bg-gray-50 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+      <div className="grid grid-cols-2 border-b-2 border-gray-300 bg-gray-50 text-[11px] font-bold uppercase tracking-wider text-gray-400">
         <span className="px-3 py-2 border-r border-gray-200">{t('quotes.walk.notesCol')}</span>
         <span className="px-3 py-2">{t('quotes.walk.photosCol')}</span>
       </div>
@@ -121,7 +122,7 @@ export default function WalkNotesSheet({
       ))}
 
       {(unfiled.length > 0 || unfiledPending.length > 0) && (
-        <div className="grid grid-cols-2 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] border-b border-gray-200">
+        <div className="grid grid-cols-2 border-b border-gray-200">
           <div className="border-r border-gray-200 p-2.5 border-l-4 border-l-transparent">
             <span className="text-[11px] font-bold text-gray-400">{t('quotes.walk.unfiled')}</span>
           </div>
@@ -139,16 +140,15 @@ export default function WalkNotesSheet({
         </button>
       )}
 
-      {/* Summary — the request's description. */}
-      {(editable || summary) && (
+      {(editable || generalNotes) && (
         <div className="p-3 bg-gray-50">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">{t('quotes.walk.summary')}</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">{t('quotes.walk.generalNotes')}</p>
           {editable ? (
-            <textarea value={summary ?? ''} onChange={(e) => onSummaryChange(e.target.value)} rows={3}
-              placeholder={t('quotes.walk.summaryPlaceholder')}
+            <textarea value={generalNotes ?? ''} onChange={(e) => onGeneralNotesChange(e.target.value)} rows={3}
+              placeholder={t('quotes.walk.generalNotesPlaceholder')}
               className="w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-base lg:text-sm outline-none focus:border-brand-500" />
           ) : (
-            <p className="text-sm text-gray-800 whitespace-pre-wrap">{summary}</p>
+            <p className="text-sm text-gray-800 whitespace-pre-wrap">{generalNotes}</p>
           )}
         </div>
       )}
