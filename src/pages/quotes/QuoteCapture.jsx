@@ -222,7 +222,7 @@ export default function QuoteCapture() {
       {wide && (
       // Both columns fill the screen height: the notes scroll inside their own
       // column (record bar pinned under them), the camera takes the rest.
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-4 h-[calc(100svh-150px)] min-h-[460px]">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-4 h-[calc(100svh-175px)] min-h-[440px]">
         <div className="min-w-0 flex flex-col gap-3 min-h-0">
           <div className="flex-1 min-h-0 overflow-y-auto pr-1">{sheet}</div>
           {composer}
