@@ -3,48 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Card from '../../components/ui/Card'
 import PageHeader from '../../components/ui/PageHeader'
-import Button from '../../components/ui/Button'
-import Modal from '../../components/ui/Modal'
 import { useToast } from '../../components/ToastProvider'
 import { useAuthStore } from '../../store/authStore'
 import { listQuoteRequests, createQuoteRequest } from '../../api/quoteRequests'
-import { useQuotePickers } from './useQuotePickers'
-import { StatusPill, FlagPills, QuoteDetailsForm } from './QuoteParts'
-import { BOARD_COLUMNS, CLOSED_STATUSES, quoteFlags, fmtDate, EMPTY_QUOTE_FORM, payloadFromForm } from './quoteUtils'
-
-function NewRequestModal({ isOpen, onClose, isAdmin, pickers }) {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-  const [form, setForm] = useState(EMPTY_QUOTE_FORM)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
-
-  const close = () => { setForm(EMPTY_QUOTE_FORM); setError(''); onClose() }
-
-  const save = async () => {
-    if (!form.title.trim()) { setError(t('quotes.titleRequired')); return }
-    if (form.work_type === 'addon' && !form.project_number) { setError(t('quotes.projectRequired')); return }
-    setSaving(true); setError('')
-    try {
-      const res = await createQuoteRequest(payloadFromForm(form, isAdmin))
-      setForm(EMPTY_QUOTE_FORM)
-      navigate(`/quotes/${res.id}`)
-    } catch (err) {
-      setError(err?.response?.data?.error ?? t('common.couldNotSave'))
-    } finally { setSaving(false) }
-  }
-
-  return (
-    <Modal isOpen={isOpen} onClose={close} title={isAdmin ? t('quotes.newRequest') : t('quotes.newSiteWalk')} size="xl">
-      <div className="flex flex-col gap-4">
-        <QuoteDetailsForm form={form} set={set} isAdmin={isAdmin} {...pickers} />
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        <Button size="lg" onClick={save} loading={saving} fullWidth>{isAdmin ? t('quotes.newRequest') : t('quotes.newSiteWalk')}</Button>
-      </div>
-    </Modal>
-  )
-}
+import { StatusPill, FlagPills } from './QuoteParts'
+import { BOARD_COLUMNS, CLOSED_STATUSES, quoteFlags, fmtDate } from './quoteUtils'
 
 const CameraIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
@@ -118,14 +81,12 @@ export default function QuotesHome() {
   const toast = useToast()
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role === 'admin'
-  const pickers = useQuotePickers(isAdmin)
 
   const [quotes, setQuotes] = useState([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [showClosed, setShowClosed] = useState(false)
-  const [showNew, setShowNew] = useState(false)
   const [tab, setTab] = useState(null)
   const [starting, setStarting] = useState(false)
   const navigate = useNavigate()
@@ -184,19 +145,13 @@ export default function QuotesHome() {
       <PageHeader
         title={isAdmin ? t('quotes.title') : t('quotes.fieldTitle')}
         subtitle={isAdmin ? t('quotes.subtitle') : t('quotes.fieldSubtitle')}
-        actionLabel={isAdmin ? t('quotes.newRequest') : t('quotes.newSiteWalk')}
-        onAction={isAdmin ? () => setShowNew(true) : startSiteWalk}
+        actionLabel={t('quotes.newSiteWalk')}
+        onAction={startSiteWalk}
         actionLoading={starting}
-        actionIcon={isAdmin ? undefined : CameraIcon}>
+        actionIcon={CameraIcon}>
         {/* The Materials library lives inside Quotes on every screen size. */}
         {isAdmin && (
           <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start lg:w-full lg:order-last">
-            {/* Admins who walk jobs themselves start a site visit right here. */}
-            <button type="button" onClick={startSiteWalk} disabled={starting}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm active:bg-gray-700 disabled:opacity-60">
-              <CameraIcon className="w-4 h-4" />
-              {t('quotes.newSiteWalk')}
-            </button>
             <Link to="/quotes/materials"
               className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm active:bg-brand-100">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7a3 3 0 013-3h10v13H7a3 3 0 00-3 3V7zM4 20a3 3 0 013-3h10v3H7"/></svg>
@@ -281,7 +236,6 @@ export default function QuotesHome() {
         </div>
       )}
 
-      <NewRequestModal isOpen={showNew} onClose={() => setShowNew(false)} isAdmin={isAdmin} pickers={pickers} />
     </div>
   )
 }
