@@ -25,6 +25,37 @@ function useMediaQuery(query) {
   return matches
 }
 
+// Fits the site-visit screen exactly between where it starts and the bottom
+// of the screen (or the top of the mobile tab bar), and stops the page itself
+// from scrolling — only the notes column scrolls. Re-measured on rotate /
+// resize. Returns a callback ref for the screen's root element.
+function useFitToScreen() {
+  const [height, setHeight] = useState(null)
+  const [el, setEl] = useState(null)
+  useEffect(() => {
+    if (!el) return
+    const scroller = el.closest('.overflow-y-auto')
+    const prev = scroller?.style.overflowY
+    if (scroller) { scroller.scrollTop = 0; scroller.style.overflowY = 'hidden' }
+    const fit = () => {
+      const nav = document.querySelector('[data-bottom-nav]')
+      const navTop = nav?.getBoundingClientRect().height ? nav.getBoundingClientRect().top : window.innerHeight
+      setHeight(Math.max(380, Math.floor(navTop - el.getBoundingClientRect().top - 12)))
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    window.addEventListener('orientationchange', fit)
+    const t = setTimeout(fit, 300) // after the rotate animation settles
+    return () => {
+      window.removeEventListener('resize', fit)
+      window.removeEventListener('orientationchange', fit)
+      clearTimeout(t)
+      if (scroller) scroller.style.overflowY = prev ?? ''
+    }
+  }, [el])
+  return [setEl, height]
+}
+
 // The site walk, Cornell-notes style: a sheet of short notes (one per area or
 // issue) with the photos for each note beside it, and a live in-app camera. Every photo taken is filed under the active note.
 //  - iPad / landscape (md+): sheet on the left, camera on the right.
@@ -47,6 +78,7 @@ export default function QuoteCapture() {
   const seeded = useRef(false)
   const wide = useMediaQuery('(min-width: 768px)')
   const touchX = useRef(null)
+  const [fitRef, fitHeight] = useFitToScreen()
 
   const load = useCallback(() => getQuoteRequest(id).then((d) => {
     setQuote(d.quoteRequest)
@@ -175,9 +207,9 @@ export default function QuoteCapture() {
   )
 
   return (
-    <div className="flex flex-col gap-3 w-full">
+    <div ref={fitRef} className="flex flex-col gap-3 w-full" style={fitHeight ? { height: fitHeight } : undefined}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="shrink-0 flex items-center justify-between gap-3">
         <button onClick={cancel} className="text-sm font-semibold text-gray-500 py-2 pr-2">{t('common.cancel')}</button>
         <div className="min-w-0 text-center">
           <p className="text-[11px] font-bold text-gray-400 tracking-wide">{quote.request_no ?? t('quotes.unsaved')}</p>
@@ -190,7 +222,7 @@ export default function QuoteCapture() {
       </div>
 
       {(uploading > 0 || failed > 0) && (
-        <p className="text-center text-xs text-gray-500">
+        <p className="shrink-0 text-center text-xs text-gray-500">
           {uploading > 0 && t('quotes.photos.uploading', { count: uploading })}
           {failed > 0 && <span className="text-red-500 font-semibold"> · {t('quotes.walk.failed', { count: failed })}</span>}
         </p>
@@ -199,7 +231,7 @@ export default function QuoteCapture() {
       {/* Phones: Notes | Camera tabs (swipe or tap). Only one layout is
           rendered at a time so there's never a second camera stream. */}
       {!wide && (<>
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1">
+      <div className="shrink-0 grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1">
         {['notes', 'camera'].map((k) => (
           <button key={k} onClick={() => setTab(k)}
             className={`rounded-lg py-2 text-sm font-semibold ${tab === k ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>
@@ -208,16 +240,17 @@ export default function QuoteCapture() {
         ))}
       </div>
 
-      <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="flex-1 min-h-0" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {tab === 'notes' ? (
-          <div className="flex flex-col gap-3">
-            {sheet}
-            <div className="sticky z-20" style={{ bottom: 'calc(76px + env(safe-area-inset-bottom))' }}>{composer}</div>
+          // Only the notes scroll; the record bar stays put under them.
+          <div className="h-full flex flex-col gap-3">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">{sheet}</div>
+            {composer}
           </div>
         ) : (
           <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}
             extra={<VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, activeNoteId)} className="!w-12 !h-12" />}
-            className="h-[calc(100svh-260px)] min-h-[380px]" />
+            className="h-full" />
         )}
       </div>
       </>)}
@@ -226,9 +259,9 @@ export default function QuoteCapture() {
       {wide && (
       // Both columns fill the screen height: the notes scroll inside their own
       // column (record bar pinned under them), the camera takes the rest.
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-4 h-[calc(100svh-175px)] min-h-[440px]">
+      <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-4">
         <div className="min-w-0 flex flex-col gap-3 min-h-0">
-          <div className="flex-1 min-h-0 overflow-y-auto pr-1">{sheet}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1">{sheet}</div>
           {composer}
         </div>
         <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}

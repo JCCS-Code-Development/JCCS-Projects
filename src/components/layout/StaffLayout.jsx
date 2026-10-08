@@ -163,7 +163,7 @@ export default function StaffLayout() {
         </PullToRefresh>
 
         {/* ── Mobile bottom nav ────────────────────────────── */}
-        <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 flex z-40"
+        <nav data-bottom-nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 flex z-40"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)', boxShadow: '0 -1px 6px rgba(0,0,0,0.06)' }}>
           {MOBILE_NAV.map(item => (
             <NavLink key={item.to} to={item.to} end={item.end}

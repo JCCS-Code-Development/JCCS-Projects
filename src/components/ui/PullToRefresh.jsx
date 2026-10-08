@@ -12,6 +12,9 @@ export default function PullToRefresh({ children, className = '', style, onRefre
   const atTop = () => (ref.current?.scrollTop ?? 0) < 2
 
   function onTouchStart(e) {
+    // A screen that locks the page scroll (e.g. the site visit, where only
+    // the notes column scrolls) opts out of pull-to-refresh.
+    if (ref.current?.style.overflowY === 'hidden') return
     if (atTop() && !refreshing) startY.current = e.touches[0].clientY
   }
 
