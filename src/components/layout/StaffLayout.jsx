@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import OfflineBanner from '../OfflineBanner'
@@ -8,6 +8,7 @@ import NotificationBell from '../NotificationBell'
 import { useAuthStore } from '../../store/authStore'
 import { logout as fieldclockLogout } from '../../api/fieldclockAuth'
 import { listNotifications, resolveNotification } from '../../api/notifications'
+import { verify as verifyProjectsAccess } from '../../api/auth'
 
 // ── Icons ─────────────────────────────────────────────────────────
 const ProjectsIcon = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5A2.5 2.5 0 015.5 5h4l2 2h7A2.5 2.5 0 0121 9.5v7A2.5 2.5 0 0118.5 19h-13A2.5 2.5 0 013 16.5v-9z"/></svg>
@@ -38,7 +39,31 @@ export default function StaffLayout() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [refreshKey,  setRefreshKey]  = useState(0)
   const navigate = useNavigate()
-  const { refreshToken, logout, user } = useAuthStore()
+  const { refreshToken, logout, user, updateUser } = useAuthStore()
+
+  // The role is stored on the device at login. If an admin changes it later
+  // (e.g. PM → Field Manager) the app would keep showing the old screens and
+  // the server would reject them — so re-confirm with the server whenever the
+  // app opens or comes back to the foreground, and sign out if access was
+  // removed entirely.
+  useEffect(() => {
+    let cancelled = false
+    const check = () => {
+      verifyProjectsAccess()
+        .then((a) => {
+          if (cancelled) return
+          const cur = useAuthStore.getState().user
+          if (cur && (a.role !== cur.role || a.name !== cur.name)) updateUser({ role: a.role, name: a.name })
+        })
+        .catch((err) => {
+          if (!cancelled && err?.response?.status === 403) { logout(); navigate('/login', { replace: true }) }
+        })
+    }
+    check()
+    const onVisible = () => { if (document.visibilityState === 'visible') check() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { cancelled = true; document.removeEventListener('visibilitychange', onVisible) }
+  }, [logout, navigate, updateUser])
   const role = user?.role
   const isAdmin = role === 'admin'
   const ROLE_LABELS = { admin: t('role.admin'), pm: t('role.pm'), field: t('role.field') }

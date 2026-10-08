@@ -18,6 +18,10 @@ export const useAuthStore = create(
       logout: () =>
         set({ user: null, token: null, refreshToken: null, isAuthenticated: false }),
 
+      // Role/name re-confirmed with the server (see StaffLayout).
+      updateUser: (changes) =>
+        set((s) => ({ user: s.user ? { ...s.user, ...changes } : s.user })),
+
       updateToken: (token, refreshToken) =>
         set(refreshToken ? { token, refreshToken } : { token }),
     }),
