@@ -48,7 +48,9 @@ const MicIcon = ({ className = 'w-5 h-5' }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.92V21h2v-2.08A7 7 0 0019 12h-2z" /></svg>
 )
 
-export default function VoiceRecorder({ onRecorded, disabled, size = 'md', className = '' }) {
+// barEl: an element (the screen's record bar) to show the recording status
+// inside of, WhatsApp-style. Without one it floats at the bottom of the screen.
+export default function VoiceRecorder({ onRecorded, disabled, size = 'md', className = '', barEl = null }) {
   const { t } = useTranslation()
   const [phase, setPhase] = useState('idle') // idle | recording | locked
   const [elapsed, setElapsed] = useState(0)
@@ -168,6 +170,39 @@ export default function VoiceRecorder({ onRecorded, disabled, size = 'md', class
     if (phase === 'recording' && wasDown) finish(true)
   }
 
+  const status = (
+    <>
+      <span className="relative flex w-3 h-3 shrink-0">
+        <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-70" />
+        <span className="relative w-3 h-3 rounded-full bg-red-600" />
+      </span>
+      <span className="font-mono text-base font-semibold text-gray-900 tabular-nums">{fmt(elapsed)}</span>
+      {phase === 'recording' ? (
+        <>
+          <span className="flex-1 min-w-0 truncate text-center text-sm text-gray-500 transition-transform" style={{ transform: `translateX(${drag.dx / 2}px)` }}>
+            ‹ {t('quotes.voice.slideCancel')}
+          </span>
+          <span className="flex flex-col items-center text-[11px] font-semibold text-gray-400" style={{ transform: `translateY(${drag.dy / 3}px)` }}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="6" y="11" width="12" height="9" rx="2" /><path d="M9 11V8a3 3 0 016 0v3" /></svg>
+            ↑ {t('quotes.voice.lock')}
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="flex-1 min-w-0 truncate text-sm text-gray-500">{t('quotes.voice.lockedHint')}</span>
+          <button type="button" onClick={() => finish(false)} aria-label={t('quotes.voice.discard')}
+            className="w-11 h-11 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 active:bg-gray-200">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3" /></svg>
+          </button>
+          <button type="button" onClick={() => finish(true)} aria-label={t('quotes.voice.send')}
+            className="w-12 h-12 rounded-full bg-brand-500 text-white flex items-center justify-center active:scale-95">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4l17.45-7.48a1 1 0 000-1.84L3.4 3.6a.99.99 0 00-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z" /></svg>
+          </button>
+        </>
+      )}
+    </>
+  )
+
   const big = size === 'lg'
   const btn = `${big ? 'w-14 h-14' : 'w-10 h-10'} shrink-0 rounded-full flex items-center justify-center select-none touch-none transition-transform`
 
@@ -185,39 +220,18 @@ export default function VoiceRecorder({ onRecorded, disabled, size = 'md', class
         <div className="fixed left-1/2 -translate-x-1/2 z-[1300] rounded-full bg-gray-900/90 px-4 py-2 text-sm font-semibold text-white"
           style={{ bottom: 'calc(96px + env(safe-area-inset-bottom))' }}>{hint}</div>, document.body)}
 
-      {phase !== 'idle' && createPortal(
-        <div className="fixed inset-x-0 z-[1250] px-3" style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
-          <div className="mx-auto max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-200 px-4 py-3 flex items-center gap-3">
-            <span className="relative flex w-3 h-3 shrink-0">
-              <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-70" />
-              <span className="relative w-3 h-3 rounded-full bg-red-600" />
-            </span>
-            <span className="font-mono text-base font-semibold text-gray-900 tabular-nums">{fmt(elapsed)}</span>
-            {phase === 'recording' ? (
-              <>
-                <span className="flex-1 text-center text-sm text-gray-500 transition-transform" style={{ transform: `translateX(${drag.dx / 2}px)` }}>
-                  ‹ {t('quotes.voice.slideCancel')}
-                </span>
-                <span className="flex flex-col items-center text-[11px] font-semibold text-gray-400" style={{ transform: `translateY(${drag.dy / 3}px)` }}>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="6" y="11" width="12" height="9" rx="2" /><path d="M9 11V8a3 3 0 016 0v3" /></svg>
-                  ↑ {t('quotes.voice.lock')}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="flex-1 text-sm text-gray-500">{t('quotes.voice.lockedHint')}</span>
-                <button type="button" onClick={() => finish(false)} aria-label={t('quotes.voice.discard')}
-                  className="w-11 h-11 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 active:bg-gray-200">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3" /></svg>
-                </button>
-                <button type="button" onClick={() => finish(true)} aria-label={t('quotes.voice.send')}
-                  className="w-12 h-12 rounded-full bg-brand-500 text-white flex items-center justify-center active:scale-95">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4l17.45-7.48a1 1 0 000-1.84L3.4 3.6a.99.99 0 00-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z" /></svg>
-                </button>
-              </>
-            )}
-          </div>
-        </div>, document.body)}
+      {phase !== 'idle' && (barEl
+        // Inside the record bar, covering its hint text (the mic stays visible).
+        ? createPortal(
+          <div className="absolute inset-y-0 left-0 right-[68px] z-10 rounded-l-2xl bg-white px-4 flex items-center gap-3">
+            {status}
+          </div>, barEl)
+        : createPortal(
+          <div className="fixed inset-x-0 z-[1250] px-3" style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+            <div className="mx-auto max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-200 px-4 py-3 flex items-center gap-3">
+              {status}
+            </div>
+          </div>, document.body))}
     </>
   )
 }
