@@ -566,6 +566,17 @@ export default function QuoteDetail() {
 
       {!startEditing && <PhotosSection quote={quote} canEdit={canEditMedia} onChanged={load} />}
 
+      {!startEditing && (
+        <Link to={`/quotes/${quote.id}/estimate`}
+          className="flex items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3.5 shadow-sm hover:border-brand-400 active:bg-brand-100/40">
+          <span className="min-w-0">
+            <span className="block text-sm font-bold text-gray-900">{t('quotes.est.open')}</span>
+            <span className="block text-xs text-gray-500">{quote.form ? t('quotes.est.openHintStarted') : t('quotes.est.openHint')}</span>
+          </span>
+          <span className="text-brand-500 text-lg">→</span>
+        </Link>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
         <div className="lg:col-span-3 flex flex-col gap-4 min-w-0">
           <DetailsCard quote={quote} isAdmin={isAdmin} pickers={pickers} onSaved={load}

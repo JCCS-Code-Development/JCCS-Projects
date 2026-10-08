@@ -16,6 +16,7 @@ import Users from './pages/Users'
 import QuotesHome from './pages/quotes/QuotesHome'
 import QuoteDetail from './pages/quotes/QuoteDetail'
 import QuoteCapture from './pages/quotes/QuoteCapture'
+import EstimateForm from './pages/quotes/EstimateForm'
 import MaterialsLibrary from './pages/MaterialsLibrary'
 
 import PortalHome from './pages/portal/PortalHome'
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/quotes" element={<QuotesHome />} />
             <Route path="/quotes/:id" element={<QuoteDetail />} />
             <Route path="/quotes/:id/capture" element={<QuoteCapture />} />
+            <Route path="/quotes/:id/estimate" element={<EstimateForm />} />
           </Route>
 
           {/* Admin only */}

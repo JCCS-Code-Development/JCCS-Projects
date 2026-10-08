@@ -668,7 +668,147 @@
       "unavailable": "La cámara no está disponible aquí (se negó el permiso o no hay cámara).",
       "usePhoneCamera": "Usar cámara del teléfono"
     },
-    "unsaved": "Sin guardar"
+    "unsaved": "Sin guardar",
+    "est": {
+      "open": "Llenar formulario del estimado",
+      "openHint": "Responde las preguntas guiadas — el Alcance se escribe solo.",
+      "openHintStarted": "Empezado — continúa donde lo dejaste.",
+      "title": "Formulario del estimado",
+      "subtitle": "Las respuestas se guardan solas. El Alcance a la derecha se actualiza en vivo.",
+      "readOnly": "Esta solicitud está bloqueada — se muestran las respuestas guardadas.",
+      "general": "General",
+      "scope": "Alcance del trabajo",
+      "preview": "Alcance (vista previa)",
+      "more": "Más opciones de redacción",
+      "tab": {
+        "form": "Formulario",
+        "preview": "Vista previa"
+      },
+      "ic": {
+        "none": "Sin control",
+        "limited": "Control de polvo",
+        "required": "Control de infecciones"
+      },
+      "copied": "Copiado — pégalo en InvoiceToGo.",
+      "copyTitle": "Copiar título",
+      "copyDescription": "Copiar descripción",
+      "useAsScope": "Usar como Alcance",
+      "replaceScope": "¿Reemplazar el Alcance actual con este?",
+      "f": {
+        "title": "Título del estimado",
+        "area": "Área de trabajo",
+        "areaHint": "Completa la frase \"Prepare the designated …\"",
+        "locations": "Cuartos / ubicaciones",
+        "ic": "Control de infecciones",
+        "protect": "Proteger lo adyacente…",
+        "verify": "Verificar en campo…",
+        "addOther": "Agregar otro…",
+        "allRooms": "Frase \"Throughout …\"",
+        "allRoomsHint": "Para trabajo en varios cuartos, ej. \"all four exam rooms\"",
+        "leaveArea": "Dejar … limpio, seguro y listo",
+        "item": "Objeto a remover",
+        "disconnectPlumbing": "Desconectarlo de la plomería primero",
+        "wallDrywall": "Drywall de pared",
+        "insulation": "Aislamiento",
+        "coveBase": "Zócalo",
+        "solidCeiling": "Drywall de techo sólido",
+        "otherMaterial": "Otro material (opcional)",
+        "framingArea": "Qué se enmarca",
+        "framingPurpose": "Para crear un…",
+        "antimicrobialNote": "Siempre incluye la exclusión de pruebas de moho, laboratorio y remediación certificada.",
+        "drywallType": "Tipo de drywall",
+        "newInsulation": "Aislamiento nuevo en las cavidades",
+        "level5": "Acabado Nivel 5",
+        "ceilingNote": "Reparación de techo sólido de drywall — nunca menciona plafón ni rejilla.",
+        "qty": "Cant.",
+        "width": "Ancho (in)",
+        "height": "Alto (in)",
+        "glazing": "Vidrio",
+        "approx": "Medidas aproximadas",
+        "touchUp": "Resanar y retocar pintura alrededor",
+        "color": "Color",
+        "colorHint": "Vacío = \"the approved color\"",
+        "exteriorDoor": "También pintar la puerta exterior",
+        "sectionHeading": "Título de sección",
+        "sectionBullets": "Viñetas (una por línea)",
+        "addSection": "Agregar sección"
+      },
+      "cat": {
+        "itemRemoval": "Remover objeto",
+        "demo": "Demolición",
+        "plumbing": "Plomería",
+        "framing": "Estructura",
+        "antimicrobial": "Antimicrobiano",
+        "drywall": "Drywall",
+        "ceiling": "Techo sólido",
+        "windowFilm": "Película",
+        "window": "Ventana nueva",
+        "painting": "Pintura",
+        "coveBase": "Zócalo",
+        "other": "Otro"
+      },
+      "opt": {
+        "demo": {
+          "mode": {
+            "affected": "Materiales afectados",
+            "wallboard": "Todo el panel"
+          }
+        },
+        "plumbing": {
+          "work": {
+            "cap": "Taponar",
+            "reconnect": "Desconectar y reconectar"
+          }
+        },
+        "drywall": {
+          "mode": {
+            "new": "Sobre estructura nueva",
+            "replace": "Reemplazar afectado",
+            "full": "Paredes nuevas"
+          },
+          "type": {
+            "standard": "Estándar",
+            "mold-resistant": "Resistente al moho",
+            "moisture-resistant": "Resistente a humedad",
+            "fire-rated": "Contra fuego"
+          }
+        },
+        "windowFilm": {
+          "film": {
+            "frosted": "Esmerilada",
+            "tinted": "Polarizada"
+          }
+        },
+        "window": {
+          "kind": {
+            "sliding": "Corrediza",
+            "fixed": "Fija"
+          }
+        },
+        "painting": {
+          "mode": {
+            "match": "Igualar existente",
+            "full": "Acabado nuevo"
+          }
+        },
+        "coveBase": {
+          "mode": {
+            "match": "Igualar existente",
+            "new": "Color nuevo"
+          }
+        }
+      },
+      "missing": {
+        "scope": "Elige al menos una categoría.",
+        "title": "Agrega un título."
+      },
+      "warn": {
+        "medicalCleaningWithoutIc": "Limpieza grado médico activada sin control de infecciones.",
+        "replaceWithoutDemo": "Se reemplaza drywall pero no hay demolición seleccionada.",
+        "moldWithoutIc": "Trabajo antimicrobiano sin control de infecciones — confírmalo con la instalación.",
+        "disconnectWithoutPlumbing": "Se desconecta de la plomería pero Plomería no está seleccionada."
+      }
+    }
   },
   "library": {
     "title": "Biblioteca de Materiales",

@@ -668,7 +668,147 @@
       "unavailable": "The camera isn’t available here (permission was denied, or there’s no camera).",
       "usePhoneCamera": "Use phone camera"
     },
-    "unsaved": "Unsaved"
+    "unsaved": "Unsaved",
+    "est": {
+      "open": "Fill out estimate form",
+      "openHint": "Answer the guided questions — the Scope of Work writes itself.",
+      "openHintStarted": "Started — continue where you left off.",
+      "title": "Estimate form",
+      "subtitle": "Answers save as you go. The Scope of Work on the right updates live.",
+      "readOnly": "This request is locked — showing the saved answers.",
+      "general": "General",
+      "scope": "Scope of work",
+      "preview": "Scope of Work (preview)",
+      "more": "More wording options",
+      "tab": {
+        "form": "Form",
+        "preview": "Preview"
+      },
+      "ic": {
+        "none": "No IC",
+        "limited": "Dust control",
+        "required": "Infection control"
+      },
+      "copied": "Copied — paste it into InvoiceToGo.",
+      "copyTitle": "Copy title",
+      "copyDescription": "Copy description",
+      "useAsScope": "Use as Scope of Work",
+      "replaceScope": "Replace the current Scope of Work with this one?",
+      "f": {
+        "title": "Estimate title",
+        "area": "Work area",
+        "areaHint": "Finishes the sentence \"Prepare the designated …\"",
+        "locations": "Rooms / locations",
+        "ic": "Infection control",
+        "protect": "Protect adjacent…",
+        "verify": "Field verify…",
+        "addOther": "Add another…",
+        "allRooms": "\"Throughout …\" phrase",
+        "allRoomsHint": "For multi-room work, e.g. \"all four exam rooms\"",
+        "leaveArea": "Leave … clean, safe, and ready for use",
+        "item": "Item being removed",
+        "disconnectPlumbing": "Disconnect it from plumbing first",
+        "wallDrywall": "Wall drywall",
+        "insulation": "Insulation",
+        "coveBase": "Cove base",
+        "solidCeiling": "Solid (hard-lid) ceiling drywall",
+        "otherMaterial": "Other material (optional)",
+        "framingArea": "What gets framed",
+        "framingPurpose": "To create a…",
+        "antimicrobialNote": "Always written with the exclusion for mold testing, lab analysis and certified mold remediation.",
+        "drywallType": "Drywall type",
+        "newInsulation": "New insulation in the wall cavities",
+        "level5": "Level 5 finish",
+        "ceilingNote": "Solid drywall (hard-lid) ceiling repair — never mentions tile or grid.",
+        "qty": "Qty",
+        "width": "Width (in)",
+        "height": "Height (in)",
+        "glazing": "Glass",
+        "approx": "Measurements are approximate",
+        "touchUp": "Patch & touch-up paint around it",
+        "color": "Color",
+        "colorHint": "Leave blank for \"the approved color\"",
+        "exteriorDoor": "Also paint the exterior door",
+        "sectionHeading": "Section heading",
+        "sectionBullets": "Bullets (one per line)",
+        "addSection": "Add section"
+      },
+      "cat": {
+        "itemRemoval": "Item removal",
+        "demo": "Demolition",
+        "plumbing": "Plumbing",
+        "framing": "Framing",
+        "antimicrobial": "Antimicrobial",
+        "drywall": "Drywall",
+        "ceiling": "Hard-lid ceiling",
+        "windowFilm": "Window film",
+        "window": "New window",
+        "painting": "Painting",
+        "coveBase": "Cove base",
+        "other": "Other"
+      },
+      "opt": {
+        "demo": {
+          "mode": {
+            "affected": "Affected materials",
+            "wallboard": "All wallboard"
+          }
+        },
+        "plumbing": {
+          "work": {
+            "cap": "Cap off",
+            "reconnect": "Disconnect & reconnect"
+          }
+        },
+        "drywall": {
+          "mode": {
+            "new": "Over new framing",
+            "replace": "Replace affected",
+            "full": "All new walls"
+          },
+          "type": {
+            "standard": "Standard",
+            "mold-resistant": "Mold-resistant",
+            "moisture-resistant": "Moisture-resistant",
+            "fire-rated": "Fire-rated"
+          }
+        },
+        "windowFilm": {
+          "film": {
+            "frosted": "Frosted",
+            "tinted": "Tinted"
+          }
+        },
+        "window": {
+          "kind": {
+            "sliding": "Sliding",
+            "fixed": "Fixed"
+          }
+        },
+        "painting": {
+          "mode": {
+            "match": "Match existing",
+            "full": "New finish"
+          }
+        },
+        "coveBase": {
+          "mode": {
+            "match": "Match existing",
+            "new": "New color"
+          }
+        }
+      },
+      "missing": {
+        "scope": "Pick at least one scope category.",
+        "title": "Add an estimate title."
+      },
+      "warn": {
+        "medicalCleaningWithoutIc": "Medical-grade cleaning is on but infection control is off.",
+        "replaceWithoutDemo": "Drywall is being replaced but no demolition is selected.",
+        "moldWithoutIc": "Antimicrobial work without infection control — confirm with the facility.",
+        "disconnectWithoutPlumbing": "The item is disconnected from plumbing, but Plumbing isn’t selected (no capping/reconnecting)."
+      }
+    }
   },
   "library": {
     "title": "Materials Library",
