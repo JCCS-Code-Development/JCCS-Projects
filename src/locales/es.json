@@ -813,12 +813,20 @@
         "title": "Estimado provisional desde la visita",
         "hint": "Claude lee las notas y fotos de la visita y llena este formulario. Tú revisas y editas todo.",
         "working": "Leyendo las notas y fotos… puede tardar hasta un minuto.",
-        "button": "Generar estimado provisional",
+        "button": "Borrador con IA (lee fotos)",
         "replace": "¿Reemplazar las respuestas actuales con un nuevo borrador desde la visita?",
         "done_one": "Borrador listo con las notas y {{count}} foto — revísalo y edítalo.",
         "done_other": "Borrador listo con las notas y {{count}} fotos — revísalo y edítalo.",
         "failed": "No se pudo generar el borrador.",
         "notesTitle": "Notas para el estimador (del borrador con IA)"
+      },
+      "auto": {
+        "title": "Llenarlo desde la visita",
+        "hint": "Llena el formulario con lo que escribió el supervisor — luego revisa y edita todo.",
+        "button": "Llenar con las notas de la visita",
+        "replace": "¿Reemplazar las respuestas actuales con un borrador desde las notas?",
+        "done": "Borrador listo desde las notas — revísalo contra las fotos.",
+        "notesTitle": "Para revisar / confirmar"
       }
     }
   },

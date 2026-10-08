@@ -59,6 +59,8 @@ if ($method === 'GET') {
         $out['versions'] = $s->fetchAll();
     }
 
+    // Only show the paid AI button when the server is actually set up for it.
+    $out['ai_available']   = defined('ANTHROPIC_API_KEY') && ANTHROPIC_API_KEY !== '' && ANTHROPIC_API_KEY !== 'CHANGE_ME' && PHP_VERSION_ID >= 80100;
     $out['actions']        = qrAvailableActions($auth, $row);
     $out['can_edit']       = $isAdmin ? $row['status'] !== 'cancelled' : qrFieldCanEdit($auth, $row);
     $out['can_edit_scope'] = $isAdmin && !in_array($row['status'], QR_SCOPE_LOCKED, true);

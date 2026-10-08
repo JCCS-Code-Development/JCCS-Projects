@@ -173,13 +173,19 @@ from InvoiceToGo; this app owns everything before and after that.
 - **Scope generator** (`src/scope-engine`): deterministic; turns the answers
   into the office's InvoiceToGo wording. `npm test` rebuilds the real
   estimates #4577 / #4578 / #4587 / #4591 / #4599 word for word.
-- **Generate provisional estimate** (`api/quote-requests/ai-draft.php`):
+- **Auto-fill from walk notes** (`src/scope-engine/fromNotes.js`): free,
+  offline, runs in the browser. Recognizes the work described in the walk's
+  notes and general notes (English / Spanish keywords, room numbers like
+  "Exam rm 3", sizes like 28x28, SF quantities, saved material names) and
+  drafts the form, with a "to check / confirm" list. Reads words, not photos.
+  Tests: `src/scope-engine/fromNotes.test.js`.
+- **Generate provisional estimate — optional, paid** (`api/quote-requests/ai-draft.php`):
   Claude (`claude-opus-5-5`) reads the walk's notes, general notes and photos
   and fills in the form answers (strict JSON schema). The answers then go
   through the same generator, so the wording stays the office's. Uses the
   official Anthropic PHP SDK, committed in `api/vendor` (composer.json in
   `api/`; PHP 8.1+ — only this endpoint loads it). Set `ANTHROPIC_API_KEY` in
   the server's config.php (the deploy copies it from
-  `secure_backups/projects-config.php`); without it the button explains it
-  isn't set up.
+  `secure_backups/projects-config.php`). Without a key the AI button isn't
+  shown at all (`ai_available` on the request payload), so nothing is charged.
 

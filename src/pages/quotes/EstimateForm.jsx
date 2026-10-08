@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore'
 import { getQuoteRequest, updateQuoteRequest, aiDraftEstimate } from '../../api/quoteRequests'
 import { listLibrary } from '../../api/quoteLibrary'
 import { generateScope, normalizeForm, toInvoiceToGoText, CATEGORY_KEYS } from '../../scope-engine'
+import { formFromNotes } from '../../scope-engine/fromNotes'
 import { useAutosave } from './photos/useAutosave'
 import { Segmented } from './QuoteParts'
 import { copyText } from './quoteUtils'
@@ -222,6 +223,22 @@ export default function EstimateForm() {
     if (await copyText(text)) toast.success(t('quotes.est.copied'))
     else toast.error(t('common.couldNotSave'))
   }
+  // Free, instant: recognize the work described in the walk's notes (runs in
+  // the browser — no AI service, nothing charged).
+  const autofillFromNotes = async () => {
+    const started = CATEGORY_KEYS.some((k) => form.cats[k].on)
+    if (started && !await confirmDialog(t('quotes.est.auto.replace'), { confirmLabel: t('quotes.est.auto.button') })) return
+    const { form: draft, notes: remarks } = formFromNotes({
+      notes: (quote.notes ?? []).map((n) => n.body).filter(Boolean),
+      generalNotes: quote.description ?? '',
+      title: quote.title,
+      locationDetail: quote.location_detail ?? '',
+      library,
+    })
+    setForm(normalizeForm({ ...draft, aiNotes: remarks.map((r) => `• ${r}`).join('\n'), aiDraftedAt: new Date().toISOString() }))
+    toast.success(t('quotes.est.auto.done'))
+  }
+
   // Claude reads the walk's notes + photos and fills the form. The answers
   // stay fully editable; its notes for the estimator are kept on the form.
   const draftWithAi = async () => {
@@ -330,19 +347,25 @@ export default function EstimateForm() {
       </div>
 
       {!readOnly && (
-        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-violet-900">{t('quotes.est.ai.title')}</p>
-            <p className="text-xs text-violet-800/80">{drafting ? t('quotes.est.ai.working') : t('quotes.est.ai.hint')}</p>
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 flex flex-col gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-violet-900">{t('quotes.est.auto.title')}</p>
+            <p className="text-xs text-violet-800/80">{drafting ? t('quotes.est.ai.working') : t('quotes.est.auto.hint')}</p>
           </div>
-          <Button onClick={draftWithAi} loading={drafting} className="!bg-violet-600 hover:!bg-violet-500 shrink-0">
-            ✨ {t('quotes.est.ai.button')}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button onClick={autofillFromNotes} disabled={drafting} className="!bg-violet-600 hover:!bg-violet-500">
+              {t('quotes.est.auto.button')}
+            </Button>
+            {/* Paid option — only when the server has an Anthropic key. */}
+            {quote.ai_available && (
+              <Button variant="secondary" onClick={draftWithAi} loading={drafting}>✨ {t('quotes.est.ai.button')}</Button>
+            )}
+          </div>
         </div>
       )}
       {form.aiNotes && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-amber-700 mb-1">{t('quotes.est.ai.notesTitle')}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-700 mb-1">{t('quotes.est.auto.notesTitle')}</p>
           <p className="text-sm text-amber-900 whitespace-pre-wrap">{form.aiNotes}</p>
         </div>
       )}

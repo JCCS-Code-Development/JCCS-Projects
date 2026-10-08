@@ -813,12 +813,20 @@
         "title": "Provisional estimate from the walk",
         "hint": "Claude reads the walk notes and photos and fills in this form. You review and edit everything.",
         "working": "Reading the notes and photos… this can take up to a minute.",
-        "button": "Generate provisional estimate",
+        "button": "Draft with AI (reads photos)",
         "replace": "Replace the current answers with a new draft from the walk?",
         "done_one": "Draft ready from the notes and {{count}} photo — review and edit it.",
         "done_other": "Draft ready from the notes and {{count}} photos — review and edit it.",
         "failed": "Could not generate a draft.",
         "notesTitle": "Notes for the estimator (from the AI draft)"
+      },
+      "auto": {
+        "title": "Draft it from the walk",
+        "hint": "Fill the form from what the field manager wrote — then review and edit everything.",
+        "button": "Auto-fill from walk notes",
+        "replace": "Replace the current answers with a draft from the walk notes?",
+        "done": "Draft filled from the notes — check it against the photos.",
+        "notesTitle": "To check / confirm"
       }
     }
   },
