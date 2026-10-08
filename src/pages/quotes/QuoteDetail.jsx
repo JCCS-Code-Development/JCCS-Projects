@@ -21,7 +21,7 @@ import EstimatePhotos from './photos/EstimatePhotos'
 import PhotoViewer from './photos/PhotoViewer'
 import { StatusPill, FlagPills, QuoteDetailsForm, TextArea, Select } from './QuoteParts'
 import { useQuotePickers } from './useQuotePickers'
-import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm } from './quoteUtils'
+import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm, BILLING_OPEN_STATUSES } from './quoteUtils'
 
 // "Prisma Health" (or the person's name when there's no company), de-duplicated.
 const recipientsLabel = (list = []) => [...new Set(list.map((r) => r.company || r.name))].join(', ')
@@ -45,21 +45,35 @@ const ACTION_UI = {
   undo_decision: {},
   cancel:        { confirm: 'cancel', danger: true, ghost: true },
   restore:       {},
+  // No PO: schedule → done → invoiced.
+  schedule:      { primary: true, schedule: true },
+  unschedule:    { confirm: 'unschedule' },
+  mark_done:     { primary: true, confirm: 'markDone' },
+  undo_done:     {},
+  mark_invoiced: { primary: true, invoice: true },
+  undo_invoiced: {},
 }
+
+// <input type="datetime-local"> value ⇄ MySQL DATETIME / ISO string.
+const toLocalInput = (v) => (v ? String(v).replace(' ', 'T').slice(0, 16) : '')
+const fromLocalInput = (v) => (v ? new Date(v).toISOString() : null)
 
 function ActionBar({ quote, onDone, onDelete, canDelete }) {
   const { t } = useTranslation()
   const toast = useToast()
   const confirmDialog = useConfirm()
   const [busy, setBusy] = useState(null)
-  const [dialog, setDialog] = useState(null) // { action, kind: 'prompt'|'number', optional }
+  const [dialog, setDialog] = useState(null) // { action, kind: 'prompt'|'number'|'invoice'|'schedule', optional }
   const [text, setText] = useState('')
+  const [when, setWhen] = useState({ start: '', end: '' })
 
   const run = async (action, extra = {}) => {
     setBusy(action)
     try {
-      await quoteAction(quote.id, action, extra)
+      const res = await quoteAction(quote.id, action, extra)
       setDialog(null); setText('')
+      // The change stands; the Calendar part just didn't go through.
+      if (res?.calendar_warning) toast.error(res.calendar_warning)
       onDone()
     } catch (err) {
       toast.error(errMsg(err, t))
@@ -74,6 +88,11 @@ function ActionBar({ quote, onDone, onDelete, canDelete }) {
     if (action === 'submit' && !quote.photos.length
       && !await confirmDialog(t('quotes.prompts.noPhotos'), { confirmLabel: t('quotes.actions.submit') })) return
     if (ui.prompt) { setText(''); setDialog({ action, kind: 'prompt', promptKey: ui.prompt }); return }
+    if (ui.schedule) {
+      setWhen({ start: toLocalInput(quote.scheduled_start), end: toLocalInput(quote.scheduled_end) })
+      setDialog({ action, kind: 'schedule' }); return
+    }
+    if (ui.invoice) { setText(quote.invoice_number ?? ''); setDialog({ action, kind: 'invoice' }); return }
     if (ui.number === true || (ui.number === 'ifMissing' && !quote.estimate_number)) {
       setText(quote.estimate_number ?? ''); setDialog({ action, kind: 'number' }); return
     }
@@ -87,6 +106,8 @@ function ActionBar({ quote, onDone, onDelete, canDelete }) {
   const submitDialog = () => {
     if (!dialog) return
     if (dialog.kind === 'number') return run(dialog.action, { estimate_number: text.trim() })
+    if (dialog.kind === 'invoice') return run(dialog.action, { invoice_number: text.trim() })
+    if (dialog.kind === 'schedule') return run(dialog.action, { scheduled_start: fromLocalInput(when.start), scheduled_end: fromLocalInput(when.end) })
     if (!dialog.optional && !text.trim()) return
     run(dialog.action, { note: text.trim() })
   }
@@ -94,7 +115,8 @@ function ActionBar({ quote, onDone, onDelete, canDelete }) {
   // A field manager's own draft can simply be deleted — "cancel" would be redundant.
   const actions = (quote.actions ?? []).filter((a) => !(a === 'cancel' && canDelete && quote.status === 'draft'))
   if (!actions.length && !canDelete) return null
-  const label = (a) => (a === 'submit' && quote.status === 'needs_info' ? t('quotes.actions.resubmit') : t(`quotes.actions.${a}`))
+  const label = (a) => (a === 'submit' && quote.status === 'needs_info' ? t('quotes.actions.resubmit')
+    : a === 'schedule' && quote.status === 'scheduled' ? t('quotes.actions.reschedule') : t(`quotes.actions.${a}`))
   const main = [...actions.filter((a) => ACTION_UI[a]?.primary), ...actions.filter((a) => !ACTION_UI[a]?.primary && !ACTION_UI[a]?.ghost)]
   const quiet = actions.filter((a) => ACTION_UI[a]?.ghost)
 
@@ -131,17 +153,54 @@ function ActionBar({ quote, onDone, onDelete, canDelete }) {
           <div className="flex flex-col gap-4">
             {dialog.kind === 'number' ? (
               <Input label={t('quotes.prompts.estimateNumber')} value={text} onChange={(e) => setText(e.target.value)} inputMode="numeric" autoFocus />
+            ) : dialog.kind === 'invoice' ? (
+              <Input label={t('quotes.prompts.invoiceNumber')} value={text} onChange={(e) => setText(e.target.value)} inputMode="numeric" autoFocus />
+            ) : dialog.kind === 'schedule' ? (
+              <div className="flex flex-col gap-3">
+                <Input type="datetime-local" label={t('quotes.prompts.scheduleStart')} value={when.start}
+                  onChange={(e) => setWhen((w) => ({ ...w, start: e.target.value }))} />
+                <Input type="datetime-local" label={t('quotes.prompts.scheduleEnd')} value={when.end} min={when.start || undefined}
+                  onChange={(e) => setWhen((w) => ({ ...w, end: e.target.value }))} />
+                <p className="text-xs text-gray-500">{t('quotes.prompts.scheduleHint')}</p>
+              </div>
             ) : (
               <TextArea label={t(`quotes.prompts.${dialog.promptKey}`)} value={text} onChange={setText} rows={4} />
             )}
             <Button size="lg" fullWidth loading={!!busy} onClick={submitDialog}
-              disabled={dialog.kind === 'number' ? !text.trim() : (!dialog.optional && !text.trim())}>
+              disabled={dialog.kind === 'schedule' ? !when.start
+                : ['number', 'invoice'].includes(dialog.kind) ? !text.trim() : (!dialog.optional && !text.trim())}>
               {label(dialog.action)}
             </Button>
           </div>
         )}
       </Modal>
     </>
+  )
+}
+
+// A no-PO job's Calendar update didn't go through (e.g. no Calendar
+// permission). The job itself is fine; offer to try the Calendar again.
+function CalendarWarning({ quote, onDone }) {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+  const retry = async () => {
+    setBusy(true)
+    try {
+      const res = await quoteAction(quote.id, 'schedule', { scheduled_start: quote.scheduled_start, scheduled_end: quote.scheduled_end })
+      if (res?.calendar_warning) toast.error(res.calendar_warning)
+      else toast.success(t('quotes.calendar.synced'))
+      onDone()
+    } catch (err) { toast.error(errMsg(err, t)) }
+    finally { setBusy(false) }
+  }
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <span className="flex-1">{quote.calendar_sync_error}</span>
+      {quote.status === 'scheduled' && (
+        <Button size="sm" variant="secondary" loading={busy} onClick={retry}>{t('quotes.calendar.retry')}</Button>
+      )}
+    </div>
   )
 }
 
@@ -185,7 +244,8 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
       action={quote.can_edit && !editing && <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>{t('quotes.actions.edit')}</Button>}>
       {editing ? (
         <div className="flex flex-col gap-4">
-          <QuoteDetailsForm form={form} set={set} isAdmin={isAdmin} mode="edit" {...pickers} />
+          <QuoteDetailsForm form={form} set={set} isAdmin={isAdmin} mode="edit" {...pickers}
+            billingLocked={!BILLING_OPEN_STATUSES.includes(quote.status)} />
           <div className="grid grid-cols-2 sm:flex gap-2">
             <Button size="lg" onClick={save} loading={saving}>{t('quotes.actions.save')}</Button>
             <Button size="lg" variant="secondary" onClick={() => { setEditing(false); onEditDone?.() }}>{t('quotes.actions.discard')}</Button>
@@ -193,6 +253,14 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
         </div>
       ) : (
         <dl className="divide-y divide-gray-50">
+          <DetailRow label={t('quotes.billing.label')}>{t(`quotes.billing.${quote.billing ?? 'po'}`)}</DetailRow>
+          <DetailRow label={t('quotes.fields.scheduled')}>
+            {quote.scheduled_start ? `${fmtDateTime(quote.scheduled_start, lang)}${quote.scheduled_end ? ` – ${fmtDateTime(quote.scheduled_end, lang)}` : ''}` : null}
+          </DetailRow>
+          <DetailRow label={t('quotes.fields.completed')}>
+            {quote.completed_at ? `${fmtDateTime(quote.completed_at, lang)}${quote.completed_by_name ? ` · ${quote.completed_by_name}` : ''}` : null}
+          </DetailRow>
+          <DetailRow label={t('quotes.fields.invoiceNumber')}>{quote.invoice_number}</DetailRow>
           <DetailRow label={t('quotes.workType.label')}>
             {t(`quotes.workType.${quote.work_type}`)}{quote.project_number ? ` — #${quote.project_number}` : ''}
           </DetailRow>
@@ -560,6 +628,7 @@ export default function QuoteDetail() {
       {!isAdmin && quote.status === 'needs_info' && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{t('quotes.needsInfoBanner')}</div>
       )}
+      {isAdmin && quote.calendar_sync_error && <CalendarWarning quote={quote} onDone={load} />}
       {fieldReadOnly && quote.status !== 'cancelled' && (
         <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">{t('quotes.readOnlyField')}</div>
       )}

@@ -12,17 +12,25 @@ export const STATUS_STYLES = {
   accepted:   'bg-green-100 text-green-800',
   declined:   'bg-red-100 text-red-700',
   cancelled:  'bg-gray-100 text-gray-400',
+  scheduled:  'bg-cyan-100 text-cyan-800',
+  done:       'bg-lime-100 text-lime-800',
+  invoiced:   'bg-emerald-100 text-emerald-800',
 }
+
+// With a PO the office writes an estimate; without one the job is scheduled,
+// done, then invoiced. The choice stays open until the job is on a path.
+export const BILLING_OPEN_STATUSES = ['draft', 'submitted', 'needs_info', 'in_review']
 
 export const BOARD_COLUMNS = [
   { key: 'intake',     statuses: ['draft', 'submitted', 'needs_info'] },
   { key: 'review',     statuses: ['in_review', 'approved'] },
   { key: 'estimating', statuses: ['estimating'] },
   { key: 'sent',       statuses: ['sent'] },
-  { key: 'closed',     statuses: ['accepted', 'declined', 'cancelled'] },
+  { key: 'jobs',       statuses: ['scheduled', 'done'] }, // no PO
+  { key: 'closed',     statuses: ['accepted', 'declined', 'cancelled', 'invoiced'] },
 ]
 
-export const CLOSED_STATUSES = ['accepted', 'declined', 'cancelled']
+export const CLOSED_STATUSES = ['accepted', 'declined', 'cancelled', 'invoiced']
 const PRE_SEND = ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating']
 
 const DAY = 24 * 60 * 60 * 1000
@@ -50,6 +58,7 @@ export function quoteFlags(q) {
     flags.push('followUpDue')
   }
   if (q.status === 'needs_info') flags.push('infoRequested')
+  if (q.billing === 'no_po') flags.push('noPo')
   return flags
 }
 
@@ -58,6 +67,7 @@ export const FLAG_STYLES = {
   dueSoon:       'bg-amber-100 text-amber-800',
   followUpDue:   'bg-orange-100 text-orange-800',
   infoRequested: 'bg-amber-100 text-amber-800',
+  noPo:          'bg-cyan-50 text-cyan-800 border border-cyan-200',
 }
 
 export const fmtDate = (v, lang) => {
@@ -95,7 +105,7 @@ export const FILE_KINDS = ['plan', 'sketch', 'product_data', 'finish_selection',
 
 // ── Request form state ⇄ API payload ──
 export const EMPTY_QUOTE_FORM = {
-  work_type: 'new', estimate_type: 'standard', title: '', recipient_ids: [],
+  billing: 'po', work_type: 'new', estimate_type: 'standard', title: '', recipient_ids: [],
   facility: '', location_detail: '', project_number: '', original_estimate_no: '', related_ref: '',
   description: '', needed_by: '', site_visit_date: '', priority: 'normal', request_source: '',
   field_manager_id: '', assigned_to: '', follow_up_days: 7, site_visit_at: '',

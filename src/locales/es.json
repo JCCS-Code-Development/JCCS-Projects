@@ -408,7 +408,10 @@
       "sent": "Enviada al cliente",
       "accepted": "Aceptada",
       "declined": "Rechazada",
-      "cancelled": "Cancelada"
+      "cancelled": "Cancelada",
+      "scheduled": "Programado",
+      "done": "Terminado",
+      "invoiced": "Facturado"
     },
     "workType": {
       "label": "Tipo de trabajo",
@@ -464,7 +467,10 @@
       "recipients": "El estimado va para",
       "recipientsSearch": "Agrega un cliente — busca nombre, empresa o correo",
       "recipientsNone": "Ningún cliente coincide. Agrégalo en Usuarios → Agregar usuario → Cliente.",
-      "recipientsHint": "Usuarios cliente de la lista de Usuarios. Para un adicional, los clientes del proyecto se agregan automáticamente."
+      "recipientsHint": "Usuarios cliente de la lista de Usuarios. Para un adicional, los clientes del proyecto se agregan automáticamente.",
+      "scheduled": "Programado",
+      "completed": "Terminado",
+      "invoiceNumber": "# de factura"
     },
     "overdue": "Atrasada",
     "dueSoon": "Vence pronto",
@@ -512,7 +518,14 @@
       "delete": "Eliminar permanentemente",
       "edit": "Editar detalles",
       "save": "Guardar",
-      "discard": "Descartar"
+      "discard": "Descartar",
+      "schedule": "Programar",
+      "reschedule": "Reprogramar",
+      "unschedule": "Quitar del calendario",
+      "mark_done": "Marcar terminado",
+      "undo_done": "Deshacer terminado",
+      "mark_invoiced": "Marcar facturado",
+      "undo_invoiced": "Deshacer facturado"
     },
     "prompts": {
       "request_info": "¿Qué información falta?",
@@ -524,7 +537,13 @@
       "approve": "¿Aprobar y bloquear este alcance? Puedes reabrirlo después.",
       "estimateNumber": "Estimado # de InvoiceToGo",
       "reopen": "¿Reabrir para editar? La versión aprobada queda en el historial.",
-      "noPhotos": "Esta visita no tiene fotos. ¿Enviarla de todos modos?"
+      "noPhotos": "Esta visita no tiene fotos. ¿Enviarla de todos modos?",
+      "unschedule": "¿Quitar este trabajo de la programación? También se quita del Calendario.",
+      "markDone": "¿Marcar el trabajo como terminado? Así la oficina lo puede facturar.",
+      "invoiceNumber": "# de factura de InvoiceToGo",
+      "scheduleStart": "Empieza",
+      "scheduleEnd": "Termina (opcional)",
+      "scheduleHint": "También se agrega a la app de Calendario, asignado al supervisor de campo."
     },
     "photos": {
       "add": "Agregar fotos",
@@ -619,7 +638,8 @@
       "review": "Revisión",
       "estimating": "Estimando",
       "sent": "Enviadas",
-      "closed": "Cerradas"
+      "closed": "Cerradas",
+      "jobs": "Trabajos sin PO"
     },
     "manageLibrary": "Biblioteca de materiales",
     "addonShort": "Adicional",
@@ -867,7 +887,20 @@
         "cover": "Llenar recuadros",
         "contain": "Fotos completas"
       }
-    }
+    },
+    "billing": {
+      "label": "¿Este trabajo tiene PO?",
+      "po": "Con PO",
+      "poHint": "La oficina primero hace un estimado.",
+      "no_po": "Sin PO",
+      "no_poHint": "Se programa, se hace el trabajo y se factura al final.",
+      "locked": "Ya está en su proceso — la oficina puede reabrirlo para cambiarlo."
+    },
+    "calendar": {
+      "retry": "Intentar de nuevo en el Calendario",
+      "synced": "Agregado al Calendario."
+    },
+    "noPo": "Sin PO"
   },
   "library": {
     "title": "Biblioteca de Materiales",

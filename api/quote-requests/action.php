@@ -10,6 +10,7 @@ require_once __DIR__ . '/../middleware/auth.php';
 require_once __DIR__ . '/../middleware/validate.php';
 require_once __DIR__ . '/_common.php';
 require_once __DIR__ . '/../services/inventory_client.php';
+require_once __DIR__ . '/../services/calendar_client.php';
 
 // Every status change goes through here (POST {id, action, note?, ...}) so
 // the transition rules in QR_ACTIONS are enforced in exactly one place and
@@ -105,6 +106,44 @@ try {
             $sets[] = 'decided_at = NULL';
             $sets[] = 'decline_reason = NULL';
             break;
+
+        // ── Without a PO ──
+        case 'schedule':
+            $start = qrValidDateTime($body['scheduled_start'] ?? null);
+            if (!$start) $fail('Pick when the work is scheduled');
+            $end = qrValidDateTime($body['scheduled_end'] ?? null);
+            if ($end && $end < $start) $fail('The end has to be after the start');
+            $sets[] = 'scheduled_start = ?'; $params[] = $start;
+            $sets[] = 'scheduled_end = ?';   $params[] = $end;
+            $note = $note !== '' ? $note : (($from === 'scheduled' ? 'Rescheduled for ' : 'Scheduled for ') . date('M j, g:i A', strtotime($start)));
+            break;
+
+        case 'unschedule':
+            $sets[] = 'scheduled_start = NULL';
+            $sets[] = 'scheduled_end = NULL';
+            break;
+
+        case 'mark_done':
+            $sets[] = 'completed_at = NOW()';
+            $sets[] = 'completed_by_name = ?'; $params[] = $auth['name'];
+            break;
+
+        case 'undo_done':
+            $sets[] = 'completed_at = NULL';
+            $sets[] = 'completed_by_name = NULL';
+            break;
+
+        case 'mark_invoiced':
+            $inv = trim((string)($body['invoice_number'] ?? ''));
+            if (!preg_match('/^[A-Za-z0-9-]{1,20}$/', $inv)) $fail('Enter the InvoiceToGo Invoice #');
+            $sets[] = 'invoice_number = ?'; $params[] = $inv;
+            $sets[] = 'invoiced_at = NOW()';
+            $note = $note !== '' ? $note : "Invoice #{$inv}";
+            break;
+
+        case 'undo_invoiced':
+            $sets[] = 'invoiced_at = NULL';
+            break;
     }
 
     $sets[] = 'status = ?'; $params[] = $to;
@@ -155,6 +194,17 @@ try {
         case 'decline':
             qrNotifyUser($pdo, qrFieldUserId($updated), $updated, 'quote_declined', 'Quote declined: ' . $title, $note, $auth['user_id']);
             break;
+
+        case 'schedule':
+            qrNotifyUser($pdo, qrFieldUserId($updated), $updated, 'job_scheduled',
+                ($from === 'scheduled' ? 'Job rescheduled: ' : 'Job scheduled: ') . $title, $note, $auth['user_id']);
+            break;
+
+        case 'mark_done':
+            if (!qrIsAdmin($auth)) {
+                qrNotifyOffice($pdo, $updated, 'job_done', 'Job done — ready to invoice: ' . $title, $updated['facility'] ?: $auth['name'], $auth['user_id']);
+            }
+            break;
     }
 
     $pdo->commit();
@@ -186,4 +236,32 @@ if ($acceptedProject !== null) {
     } catch (Throwable $e) { /* best-effort, see above */ }
 }
 
-echo json_encode(['message' => 'Done', 'status' => $updated['status']]);
+// No-PO jobs live on the Calendar too (also a network call, so outside the
+// transaction). Best-effort: the change above stands either way, and any
+// problem is saved on the request so the office sees it.
+$calendarWarning = null;
+$eventId = !empty($updated['calendar_event_id']) ? (int)$updated['calendar_event_id'] : null;
+$calendarAction = match (true) {
+    $action === 'schedule'                                       => 'save',
+    in_array($action, ['unschedule', 'cancel'], true) && $eventId => 'delete',
+    // Invoicing also completes the event, in case a field manager without
+    // Calendar access marked it done.
+    in_array($action, ['mark_done', 'undo_done', 'mark_invoiced'], true) && $eventId => 'done',
+    default => null,
+};
+if ($calendarAction !== null) {
+    try {
+        if ($calendarAction === 'save') {
+            [$eventId, $calendarWarning] = calendarSaveJob($auth['raw_token'], $updated);
+        } elseif ($calendarAction === 'delete') {
+            $calendarWarning = calendarDeleteJob($auth['raw_token'], $eventId);
+            if ($calendarWarning === null) $eventId = null;
+        } else {
+            $calendarWarning = calendarSetDone($auth['raw_token'], $eventId, $action !== 'undo_done');
+        }
+    } catch (Throwable $e) { $calendarWarning = 'Calendar: ' . $e->getMessage(); }
+    $pdo->prepare('UPDATE quote_requests SET calendar_event_id = ?, calendar_sync_error = ? WHERE id = ?')
+        ->execute([$eventId, $calendarWarning !== null ? mb_substr($calendarWarning, 0, 255) : null, $id]);
+}
+
+echo json_encode(['message' => 'Done', 'status' => $updated['status'], 'calendar_warning' => $calendarWarning]);

@@ -64,10 +64,10 @@ if ($method === 'GET') {
                                 WHERE rr.quote_request_id = q.id AND (cl.name LIKE ? OR cl.company LIKE ? OR cl.email LIKE ?)))";
         array_push($params, $q, $q, $q, $q, $q, $q, $q);
     }
-    // Closed requests (accepted/declined/cancelled) only when asked for, so
+    // Closed requests (accepted/declined/cancelled/invoiced) only when asked for, so
     // the board stays focused on open work.
     if (empty($_GET['status']) && empty($_GET['include_closed'])) {
-        $where[] = "q.status NOT IN ('accepted','declined','cancelled')";
+        $where[] = "q.status NOT IN ('accepted','declined','cancelled','invoiced')";
     }
     if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
     $sql .= ' ORDER BY q.updated_at DESC LIMIT 500';

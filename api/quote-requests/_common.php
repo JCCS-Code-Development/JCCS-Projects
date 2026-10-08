@@ -14,7 +14,13 @@ require_once __DIR__ . '/../services/notify.php';
 
 const QR_ROLES = ['admin', 'field'];
 
-const QR_STATUSES = ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating', 'sent', 'accepted', 'declined', 'cancelled'];
+const QR_STATUSES = ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating', 'sent', 'accepted', 'declined', 'cancelled',
+                     'scheduled', 'done', 'invoiced'];
+// With a PO the office writes an estimate (approve → estimate → sent →
+// accepted); without one the work is scheduled, done, then invoiced.
+const QR_BILLING = ['po', 'no_po'];
+// The PO choice can change until the job is committed to one path.
+const QR_BILLING_OPEN_STATUSES = ['draft', 'submitted', 'needs_info', 'in_review'];
 const QR_FIELD_EDITABLE_STATUSES = ['draft', 'needs_info'];
 const QR_ESTIMATE_TYPES = ['standard', 'addon', 'emergency', 'alternative', 'line_item'];
 const QR_SOURCES = ['email', 'text', 'phone', 'site_meeting', 'work_order', 'other'];
@@ -170,6 +176,10 @@ function qrCollectFields(PDO $pdo, array $body, array $auth, array &$sets, array
         if (!in_array($body['work_type'], ['new', 'addon'], true)) { http_response_code(422); exit(json_encode(['error' => 'Invalid work type'])); }
         $sets[] = 'work_type = ?'; $params[] = $body['work_type'];
     }
+    if (array_key_exists('billing', $body)) {
+        if (!in_array($body['billing'], QR_BILLING, true)) { http_response_code(422); exit(json_encode(['error' => 'Choose with PO or without PO'])); }
+        $sets[] = 'billing = ?'; $params[] = $body['billing'];
+    }
     if (array_key_exists('estimate_type', $body)) {
         if (!in_array($body['estimate_type'], QR_ESTIMATE_TYPES, true)) { http_response_code(422); exit(json_encode(['error' => 'Invalid estimate type'])); }
         $sets[] = 'estimate_type = ?'; $params[] = $body['estimate_type'];
@@ -293,27 +303,38 @@ const QR_ACTIONS = [
     'submit'        => ['roles' => ['admin', 'field'], 'from' => ['draft', 'needs_info'],             'to' => 'submitted'],
     'start_review'  => ['roles' => ['admin'],          'from' => ['draft', 'submitted'],              'to' => 'in_review'],
     'request_info'  => ['roles' => ['admin'],          'from' => ['submitted', 'in_review'],          'to' => 'needs_info'],
-    'approve'       => ['roles' => ['admin'],          'from' => ['submitted', 'in_review'],          'to' => 'approved'],
-    'reopen'        => ['roles' => ['admin'],          'from' => ['approved', 'estimating'],          'to' => 'in_review'],
-    'set_estimate'  => ['roles' => ['admin'],          'from' => ['approved', 'estimating', 'sent'],  'to' => null], // approved→estimating, else unchanged
-    'mark_sent'     => ['roles' => ['admin'],          'from' => ['approved', 'estimating'],          'to' => 'sent'],
-    'accept'        => ['roles' => ['admin'],          'from' => ['sent'],                            'to' => 'accepted'],
-    'decline'       => ['roles' => ['admin'],          'from' => ['sent'],                            'to' => 'declined'],
-    'undo_decision' => ['roles' => ['admin'],          'from' => ['accepted', 'declined'],            'to' => 'sent'],
-    'cancel'        => ['roles' => ['admin', 'field'], 'from' => ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating', 'sent'], 'to' => 'cancelled'],
+    // With a PO: estimate.
+    'approve'       => ['roles' => ['admin'],          'from' => ['submitted', 'in_review'],          'to' => 'approved',  'billing' => 'po'],
+    'reopen'        => ['roles' => ['admin'],          'from' => ['approved', 'estimating'],          'to' => 'in_review', 'billing' => 'po'],
+    'set_estimate'  => ['roles' => ['admin'],          'from' => ['approved', 'estimating', 'sent'],  'to' => null,        'billing' => 'po'], // approved→estimating, else unchanged
+    'mark_sent'     => ['roles' => ['admin'],          'from' => ['approved', 'estimating'],          'to' => 'sent',      'billing' => 'po'],
+    'accept'        => ['roles' => ['admin'],          'from' => ['sent'],                            'to' => 'accepted',  'billing' => 'po'],
+    'decline'       => ['roles' => ['admin'],          'from' => ['sent'],                            'to' => 'declined',  'billing' => 'po'],
+    'undo_decision' => ['roles' => ['admin'],          'from' => ['accepted', 'declined'],            'to' => 'sent',      'billing' => 'po'],
+    // Without a PO: schedule (also reschedules) → done → invoiced.
+    'schedule'      => ['roles' => ['admin'],          'from' => ['draft', 'submitted', 'in_review', 'scheduled'], 'to' => 'scheduled', 'billing' => 'no_po'],
+    'unschedule'    => ['roles' => ['admin'],          'from' => ['scheduled'],                       'to' => 'in_review', 'billing' => 'no_po'],
+    'mark_done'     => ['roles' => ['admin', 'field'], 'from' => ['scheduled'],                       'to' => 'done',      'billing' => 'no_po'],
+    'undo_done'     => ['roles' => ['admin'],          'from' => ['done'],                            'to' => 'scheduled', 'billing' => 'no_po'],
+    'mark_invoiced' => ['roles' => ['admin'],          'from' => ['done'],                            'to' => 'invoiced',  'billing' => 'no_po'],
+    'undo_invoiced' => ['roles' => ['admin'],          'from' => ['invoiced'],                        'to' => 'done',      'billing' => 'no_po'],
+    'cancel'        => ['roles' => ['admin', 'field'], 'from' => ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating', 'sent', 'scheduled', 'done'], 'to' => 'cancelled'],
     'restore'       => ['roles' => ['admin'],          'from' => ['cancelled'],                       'to' => 'draft'],
 ];
 
 // Statuses in which the scope is frozen (approved and everything after it).
-const QR_SCOPE_LOCKED = ['approved', 'estimating', 'sent', 'accepted', 'declined', 'cancelled'];
+const QR_SCOPE_LOCKED = ['approved', 'estimating', 'sent', 'accepted', 'declined', 'cancelled', 'scheduled', 'done', 'invoiced'];
 
 function qrActionAllowed(array $auth, array $row, string $action): bool {
     $def = QR_ACTIONS[$action] ?? null;
     if (!$def || !in_array($auth['role'], $def['roles'], true) || !in_array($row['status'], $def['from'], true)) return false;
+    if (isset($def['billing']) && ($row['billing'] ?? 'po') !== $def['billing']) return false;
     if (!qrIsAdmin($auth)) {
         if (!qrCanView($auth, $row)) return false;
         // A field manager can only withdraw their own draft.
         if ($action === 'cancel' && $row['status'] !== 'draft') return false;
+        // …and mark the work done on a job they're the field manager for.
+        if ($action === 'mark_done' && qrFieldUserId($row) !== $auth['user_id']) return false;
     }
     return true;
 }

@@ -79,6 +79,12 @@ if ($method === 'GET') {
         http_response_code(409); exit(json_encode(['error' => 'This request can no longer be edited']));
     }
 
+    // With PO / without PO can change until the job is committed to a path.
+    if (array_key_exists('billing', $body) && $body['billing'] !== ($row['billing'] ?? 'po')
+        && !in_array($row['status'], QR_BILLING_OPEN_STATUSES, true)) {
+        http_response_code(409); exit(json_encode(['error' => 'This job is already on its path — reopen it to switch with/without PO']));
+    }
+
     $sets = []; $params = [];
     qrCollectFields($pdo, $body, $auth, $sets, $params);
     $recipientIds = array_key_exists('recipient_ids', $body) ? qrCleanRecipientIds($pdo, $body['recipient_ids']) : null;

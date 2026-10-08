@@ -29,6 +29,10 @@ define('CLIENT_JWT_EXPIRY', 900); // 15 min, same as FieldClock's staff tokens
 // inventory's origin allowlist never needs to know about this app.
 define('INVENTORY_API_URL', 'https://inventory.jccs-services.com/api');
 
+// No-PO jobs are put on the Calendar app (services/calendar_client.php).
+// Optional — defaults to this URL when not defined.
+define('CALENDAR_API_URL', 'https://calendar.jccs-services.com/api');
+
 // Outbound email — new document/submittal/punch-item/daily-log/weekly-report
 // updates notify clients in-app AND by email (see services/notify.php).
 // services/mailer.php sends as noreply@jccs-services.com through the

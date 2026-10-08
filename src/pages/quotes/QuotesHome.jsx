@@ -137,7 +137,7 @@ export default function QuotesHome() {
   const activeItems = columns.find((c) => c.key === activeTab)?.items ?? []
 
   // Field managers: drafts and anything the office sent back first.
-  const fieldOrder = ['needs_info', 'draft', 'submitted', 'in_review', 'approved', 'estimating', 'sent', ...CLOSED_STATUSES]
+  const fieldOrder = ['needs_info', 'scheduled', 'draft', 'submitted', 'in_review', 'approved', 'estimating', 'sent', 'done', ...CLOSED_STATUSES]
   const fieldList = [...filtered].sort((a, b) => fieldOrder.indexOf(a.status) - fieldOrder.indexOf(b.status))
 
   return (

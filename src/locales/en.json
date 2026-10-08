@@ -408,7 +408,10 @@
       "sent": "Sent",
       "accepted": "Accepted",
       "declined": "Declined",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "scheduled": "Scheduled",
+      "done": "Done",
+      "invoiced": "Invoiced"
     },
     "workType": {
       "label": "Type of work",
@@ -464,7 +467,10 @@
       "recipients": "Estimate goes to",
       "recipientsSearch": "Add a client — search name, company or email",
       "recipientsNone": "No client matches. Add them under Users → Add user → Client.",
-      "recipientsHint": "Client users from the Users list. For an add-on, the project’s clients are added automatically."
+      "recipientsHint": "Client users from the Users list. For an add-on, the project’s clients are added automatically.",
+      "scheduled": "Scheduled",
+      "completed": "Done",
+      "invoiceNumber": "Invoice #"
     },
     "overdue": "Overdue",
     "dueSoon": "Due soon",
@@ -512,7 +518,14 @@
       "delete": "Delete permanently",
       "edit": "Edit details",
       "save": "Save",
-      "discard": "Discard"
+      "discard": "Discard",
+      "schedule": "Schedule",
+      "reschedule": "Reschedule",
+      "unschedule": "Unschedule",
+      "mark_done": "Mark done",
+      "undo_done": "Undo done",
+      "mark_invoiced": "Mark invoiced",
+      "undo_invoiced": "Undo invoiced"
     },
     "prompts": {
       "request_info": "What information is missing?",
@@ -524,7 +537,13 @@
       "approve": "Approve and lock this scope? You can reopen it later.",
       "estimateNumber": "InvoiceToGo Estimate #",
       "reopen": "Reopen for editing? The approved version stays in history.",
-      "noPhotos": "This site visit has no photos. Submit it anyway?"
+      "noPhotos": "This site visit has no photos. Submit it anyway?",
+      "unschedule": "Take this job off the schedule? It’s also removed from the Calendar.",
+      "markDone": "Mark the work as done? The office can then invoice it.",
+      "invoiceNumber": "InvoiceToGo Invoice #",
+      "scheduleStart": "Starts",
+      "scheduleEnd": "Ends (optional)",
+      "scheduleHint": "It’s also added to the Calendar app, assigned to the field manager."
     },
     "photos": {
       "add": "Add photos",
@@ -619,7 +638,8 @@
       "review": "Review",
       "estimating": "Estimating",
       "sent": "Sent",
-      "closed": "Closed"
+      "closed": "Closed",
+      "jobs": "No-PO jobs"
     },
     "manageLibrary": "Materials library",
     "addonShort": "Add-on",
@@ -867,7 +887,20 @@
         "cover": "Fill tiles",
         "contain": "Whole photos"
       }
-    }
+    },
+    "billing": {
+      "label": "Does this job have a PO?",
+      "po": "With PO",
+      "poHint": "The office writes an estimate first.",
+      "no_po": "No PO",
+      "no_poHint": "Schedule it, do the work, and invoice at the end.",
+      "locked": "Already on its path — the office can reopen it to switch."
+    },
+    "calendar": {
+      "retry": "Try the Calendar again",
+      "synced": "Added to the Calendar."
+    },
+    "noPo": "No PO"
   },
   "library": {
     "title": "Materials Library",

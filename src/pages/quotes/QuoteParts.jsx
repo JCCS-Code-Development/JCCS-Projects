@@ -115,7 +115,35 @@ export function RecipientsPicker({ clients, value, onChange }) {
   )
 }
 
-export function QuoteDetailsForm({ form, set, isAdmin, clients = [], projects = [], staff = [], mode = 'create' }) {
+// With PO → the office writes an estimate first. No PO → it gets scheduled,
+// done, and invoiced at the end. Big and first: it decides what happens next.
+function BillingChoice({ value, onChange, locked }) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-gray-700">{t('quotes.billing.label')}</label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {['po', 'no_po'].map((k) => {
+          const on = value === k
+          return (
+            <button key={k} type="button" disabled={locked && !on} onClick={() => !locked && onChange(k)} aria-pressed={on}
+              className={`rounded-2xl border-2 px-4 py-3 text-left transition-colors ${
+                on ? 'border-brand-500 bg-brand-100/50' : 'border-gray-200 bg-white active:bg-gray-50'} ${locked && !on ? 'opacity-40' : ''}`}>
+              <span className="flex items-center gap-2">
+                <span className={`w-4 h-4 shrink-0 rounded-full border-2 ${on ? 'border-brand-500 bg-brand-500 shadow-[inset_0_0_0_2px_white]' : 'border-gray-300'}`} />
+                <span className="text-sm font-bold text-gray-900">{t(`quotes.billing.${k}`)}</span>
+              </span>
+              <span className="block pl-6 text-xs text-gray-500">{t(`quotes.billing.${k}Hint`)}</span>
+            </button>
+          )
+        })}
+      </div>
+      {locked && <p className="text-xs text-gray-400">{t('quotes.billing.locked')}</p>}
+    </div>
+  )
+}
+
+export function QuoteDetailsForm({ form, set, isAdmin, clients = [], projects = [], staff = [], mode = 'create', billingLocked = false }) {
   const { t } = useTranslation()
 
   // Picking the project of an add-on pre-selects everyone who already has
@@ -139,6 +167,8 @@ export function QuoteDetailsForm({ form, set, isAdmin, clients = [], projects = 
 
   return (
     <div className="flex flex-col gap-4">
+      <BillingChoice value={form.billing ?? 'po'} onChange={(v) => set('billing', v)} locked={billingLocked} />
+
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-gray-700">{t('quotes.workType.label')}</label>
         <Segmented value={form.work_type} onChange={setWorkType}
