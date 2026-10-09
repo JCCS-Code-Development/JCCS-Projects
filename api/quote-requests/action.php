@@ -183,6 +183,10 @@ try {
 
         case 'accept':
             $granted = qrGrantRecipientsAccess($pdo, $updated);
+            // The visit's client is registered to the new project too.
+            if ($portal = qrRegisterCustomerToProject($pdo, $updated)) {
+                qrLogActivity($pdo, $id, $auth, 'client_registered', null, null, $portal);
+            }
             if ($granted) qrLogActivity($pdo, $id, $auth, 'portal_access', null, null, (string)$granted);
             qrNotifyUser($pdo, qrFieldUserId($updated), $updated, 'quote_accepted', 'Quote accepted: ' . $title, $updated['facility'], $auth['user_id']);
             if (!empty($updated['project_number'])) {
@@ -223,6 +227,20 @@ if ($acceptedProject !== null) {
     try {
         $result = inventoryResolveProject($auth['raw_token'], $acceptedProject);
         if ($result['status'] === 200 && !empty($result['data']['project_number'])) {
+            // Name the project after the visit's client (and title, if it only
+            // has the placeholder name) — kept in Inventory, the source of truth.
+            $p = $result['data'];
+            $customer = qrCustomer($pdo, !empty($updated['customer_id']) ? (int)$updated['customer_id'] : null);
+            $name = (string)$p['name'];
+            $clientName = $p['client_name'] ?? null;
+            if (preg_match('/^Estimate \d{4}$/', $name) && trim((string)$updated['title']) !== '') $name = mb_substr($updated['title'], 0, 150);
+            if (empty($clientName) && $customer) $clientName = $customer['name'];
+            if (($name !== $p['name'] || $clientName !== ($p['client_name'] ?? null)) && !empty($p['id'])) {
+                $put = inventoryRequest('PUT', '/projects/item.php?id=' . (int)$p['id'], $auth['raw_token'], [
+                    'name' => $name, 'client_name' => $clientName,
+                ]);
+                if ($put['status'] === 200) { $result['data']['name'] = $name; $result['data']['client_name'] = $clientName; }
+            }
             $pdo->prepare(
                 'INSERT INTO project_cache (project_number, name, client_name, client_address, updated_at)
                  VALUES (?, ?, ?, ?, NOW())

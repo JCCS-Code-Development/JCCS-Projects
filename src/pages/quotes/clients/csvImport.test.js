@@ -14,10 +14,7 @@ describe('parseCsv', () => {
 describe('clientsFromCsv', () => {
   it('reads a client list', () => {
     const { clients } = clientsFromCsv('Client Name,Contact,Email,Phone,Mobile,Address 1,City,State,Zip\nPrisma Health,Jane Doe,JANE@prisma.org,864-555-0100,864-555-0101,701 Grove Rd,Greenville,SC,29605\n')
-    expect(clients).toEqual([{
-      name: 'Prisma Health', contact_name: 'Jane Doe', email: 'jane@prisma.org', phone: '864-555-0100', mobile: '864-555-0101',
-      address: '701 Grove Rd\nGreenville, SC 29605',
-    }])
+    expect(clients).toEqual([{ name: 'Prisma Health', email: 'jane@prisma.org' }])
   })
   it('turns an InvoiceToGo documents export into one client per name', () => {
     const csv = 'DocumentNumber,Name,EmailRecipient,DocumentRecipientAddress,ShipAddress,Comment\n'
@@ -27,8 +24,8 @@ describe('clientsFromCsv', () => {
     const { clients, rows } = clientsFromCsv(csv)
     expect(rows).toBe(3)
     expect(clients).toEqual([
-      { name: 'Prisma Health', email: 'ap@prisma.org', address: '701 Grove Rd\nGreenville, SC 29605' },
-      { name: 'Bon Secours', email: 'ar@bsmh.org', ship_address: '1 Saint Francis Dr' },
+      { name: 'Prisma Health', email: 'ap@prisma.org' },
+      { name: 'Bon Secours', email: 'ar@bsmh.org' },
     ])
   })
   it('builds the name from first/last when there is no name column', () => {

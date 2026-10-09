@@ -410,3 +410,28 @@ function qrCustomer(PDO $pdo, ?int $customerId): ?array {
     $rows[0]['is_active'] = (int)$rows[0]['is_active'];
     return $rows[0];
 }
+
+// When a visit becomes a project, its client (from the client list) gets
+// client-portal access to it: their portal account is found by email, or
+// created — without sending anything; the office sends the invite from Users
+// when they want the client in. Returns the email registered, or null.
+function qrRegisterCustomerToProject(PDO $pdo, array $row): ?string {
+    if (empty($row['project_number']) || empty($row['customer_id'])) return null;
+    $customer = qrCustomer($pdo, (int)$row['customer_id']);
+    $email = strtolower(trim((string)($customer['email'] ?? '')));
+    if (!$customer || !filter_var($email, FILTER_VALIDATE_EMAIL)) return null;
+
+    $s = $pdo->prepare('SELECT id FROM clients WHERE email = ?');
+    $s->execute([$email]);
+    $clientId = $s->fetchColumn();
+    if (!$clientId) {
+        $pdo->prepare('INSERT INTO clients (email, password_hash, name, company) VALUES (?, ?, ?, ?)')->execute([
+            $email, password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT),
+            mb_substr($customer['name'], 0, 150), mb_substr($customer['name'], 0, 150),
+        ]);
+        $clientId = $pdo->lastInsertId();
+    }
+    $pdo->prepare('INSERT IGNORE INTO client_project_access (client_id, project_number) VALUES (?, ?)')
+        ->execute([(int)$clientId, $row['project_number']]);
+    return $email;
+}

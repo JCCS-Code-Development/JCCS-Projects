@@ -6,7 +6,7 @@ import { updateQuoteRequest } from '../../../api/quoteRequests'
 import { ClientPicker, ClientCard, ClientFormModal, useClientList } from './ClientPicker'
 
 // The site-visit screen's client chip: "+ Client" to pick or add one, or the
-// client's name — tap for their phone, email and address.
+// client's name — tap for their email.
 export default function ClientSheet({ quote, onChanged }) {
   const { t } = useTranslation()
   const toast = useToast()

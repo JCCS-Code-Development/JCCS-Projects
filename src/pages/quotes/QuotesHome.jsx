@@ -32,10 +32,14 @@ function QuoteCard({ q, showAssignees, cover = false }) {
         </span>
         <StatusPill status={q.status} />
       </div>
-      <p className="text-sm font-semibold text-gray-900 mt-1 line-clamp-2">{q.title}</p>
-      {(q.customer_name || q.recipients_label || q.facility) && (
-        <p className="text-xs text-gray-500 truncate">{[q.customer_name || q.recipients_label, q.facility].filter(Boolean).join(' · ')}</p>
+      {(q.customer_name || q.recipients_label) && (
+        <p className="mt-1 flex items-center gap-1 text-[13px] font-bold text-brand-700 min-w-0">
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <span className="truncate">{q.customer_name || q.recipients_label}</span>
+        </p>
       )}
+      <p className={`text-sm font-semibold text-gray-900 line-clamp-2 ${q.customer_name || q.recipients_label ? '' : 'mt-1'}`}>{q.title}</p>
+      {q.facility && <p className="text-xs text-gray-500 truncate">{q.facility}</p>}
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
         <FlagPills quote={q} />
         {q.needed_by && <span className="text-[11px] text-gray-400">{t('quotes.fields.neededBy')}: {fmtDate(q.needed_by, i18n.language)}</span>}
@@ -59,6 +63,11 @@ function QuoteCard({ q, showAssignees, cover = false }) {
       <Link to={`/quotes/${q.id}`} className={frame}>
         <div className="relative aspect-[16/9]">
           {q.cover_url ? <img src={q.cover_url} alt="" loading="lazy" className="w-full h-full object-cover" /> : <NoPhoto className="w-full h-full" />}
+          {(q.customer_name || q.recipients_label) && (
+            <span className="absolute bottom-1.5 left-1.5 max-w-[65%] truncate rounded-full bg-white/95 px-2.5 py-0.5 text-[12px] font-bold text-gray-900 shadow-sm">
+              {q.customer_name || q.recipients_label}
+            </span>
+          )}
           {photoCount}
         </div>
         <div className="px-4 py-3">{body}</div>

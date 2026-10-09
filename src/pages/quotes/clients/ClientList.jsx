@@ -129,7 +129,7 @@ function ImportModal({ existing, onClose }) {
     } finally { setBusy(false) }
   }
 
-  const found = parsed?.columns ? Object.keys(parsed.columns).filter((k) => !['first', 'last', 'street1', 'street2', 'city', 'state', 'zip'].includes(k)) : []
+  const found = parsed?.columns ? ['name', 'email'].filter((k) => parsed.columns[k] !== undefined || (k === 'name' && (parsed.columns.first !== undefined || parsed.columns.last !== undefined))) : []
 
   return (
     <Modal isOpen onClose={busy ? () => {} : onClose} title={t('quotes.clients.importTitle')} size="lg">
@@ -165,7 +165,7 @@ function ImportModal({ existing, onClose }) {
                       {c.name}
                       {known.has(c.name.toLowerCase()) && <span className="ml-1.5 text-[11px] font-semibold text-gray-400">{t('quotes.clients.onList')}</span>}
                     </span>
-                    <span className="block text-xs text-gray-400 truncate">{[c.contact_name, c.email, c.phone || c.mobile, c.address?.split('\n')[0]].filter(Boolean).join(' · ')}</span>
+                    {c.email && <span className="block text-xs text-gray-400 truncate">{c.email}</span>}
                   </li>
                 ))}
                 {parsed.clients.length > 50 && <li className="px-3 py-2 text-xs text-gray-400">{t('quotes.clients.andMore', { count: parsed.clients.length - 50 })}</li>}

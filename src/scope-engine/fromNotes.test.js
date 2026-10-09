@@ -75,3 +75,16 @@ describe('auto-fill from walk notes', () => {
     expect(notes.join(' ')).toMatch(/no scope recognized/)
   })
 })
+
+import { draftText } from './draft'
+import { normalizeForm } from './index'
+
+describe('draftText', () => {
+  it('follows the answers until edited, then keeps the edit', () => {
+    const f = normalizeForm({ title: 'Patch wall', cats: { painting: { on: true, mode: 'match' } } })
+    const generated = draftText(f)
+    expect(generated).toContain('Patch wall\nScope of Work')
+    expect(draftText({ ...f, draft: { edited: true, text: 'My words' } })).toBe('My words')
+    expect(draftText({ ...f, draft: { edited: false, text: 'stale' } })).toBe(generated)
+  })
+})

@@ -499,7 +499,8 @@
       "hint": "Texto simple: títulos de sección en su propia línea, viñetas que empiezan con \"• \". Esto es exactamente lo que se pega en InvoiceToGo.",
       "insertBullet": "Insertar •",
       "restore": "Cargar en el editor",
-      "viewVersion": "Ver"
+      "viewVersion": "Ver",
+      "fromDraft": "Cargado del borrador de la visita — revíselo y luego Guarde."
     },
     "actions": {
       "submit": "Enviar a la oficina",
@@ -618,7 +619,8 @@
       "assigned_field": "Supervisor de campo",
       "estimate_number": "Estimado #",
       "portal_access": "Acceso al portal otorgado a los destinatarios",
-      "ai_draft": "Borrador con IA generado"
+      "ai_draft": "Borrador con IA generado",
+      "client_registered": "Cliente registrado en el proyecto"
     },
     "versionKind": {
       "field_submission": "Envío de campo",
@@ -693,9 +695,9 @@
     },
     "unsaved": "Sin guardar",
     "est": {
-      "open": "Llenar formulario del estimado",
-      "openHint": "Responde las preguntas guiadas — el Alcance se escribe solo.",
-      "openHintStarted": "Empezado — continúa donde lo dejaste.",
+      "open": "Alcance del trabajo",
+      "openHint": "Se escribe solo a partir de las notas de la visita — solo revíselo.",
+      "openHintStarted": "Guardado — ábralo para revisar o seguir editando.",
       "title": "Formulario del estimado",
       "subtitle": "Las respuestas se guardan solas. El Alcance a la derecha se actualiza en vivo.",
       "readOnly": "Esta solicitud está bloqueada — se muestran las respuestas guardadas.",
@@ -849,7 +851,21 @@
         "replace": "¿Reemplazar las respuestas actuales con un borrador desde las notas?",
         "done": "Borrador listo desde las notas — revísalo contra las fotos.",
         "notesTitle": "Para revisar / confirmar"
-      }
+      },
+      "draftTitle": "Alcance del trabajo",
+      "draftHint": "Escrito a partir de las notas de la visita. Edite lo que quiera — se guarda mientras escribe.",
+      "draftEdited": "Sus cambios están guardados. Puede seguir editando hasta que se revise.",
+      "saving": "Guardando…",
+      "saved": "Guardado",
+      "staleHint": "Las respuestas de ajuste cambiaron después de que editó el texto.",
+      "useNewText": "Usar el texto actualizado (descarta sus cambios)",
+      "undoEdits": "Deshacer mis cambios",
+      "redo": "Reescribir desde las notas",
+      "redoConfirm": "¿Reescribir el alcance desde las notas de la visita? Sus cambios y respuestas de ajuste se reemplazarán.",
+      "fineTune": "Ajustar",
+      "fineTuneHint_one": "{{count}} tipo de trabajo encontrado — ábralo solo si hay que ajustar la redacción",
+      "fineTuneHint_other": "{{count}} tipos de trabajo encontrados — ábralo solo si hay que ajustar la redacción",
+      "fineTuneEdited": "Editó el texto a mano, así que los cambios aquí no lo reemplazan — se le ofrecerá el texto actualizado."
     },
     "voice": {
       "holdHint": "Mantén presionado para grabar, suelta para enviar",
@@ -904,8 +920,8 @@
     "clients": {
       "label": "Cliente",
       "title": "Clientes",
-      "subtitle": "Para quién son sus trabajos — los mismos datos que guarda InvoiceToGo.",
-      "search": "Buscar clientes — nombre, contacto, teléfono…",
+      "subtitle": "Para quién son sus trabajos. Solo nombre y correo.",
+      "search": "Buscar clientes por nombre o correo…",
       "new": "Nuevo cliente",
       "addNamed": "Agregar “{{name}}” como cliente nuevo",
       "addToVisit": "Cliente",
@@ -941,14 +957,14 @@
       "importStep1": "En InvoiceToGo en una computadora (app web), exporte sus clientes — o sus facturas/estimados — como archivo CSV.",
       "importStep2": "Elija ese archivo abajo.",
       "importStep3": "Revise lo encontrado y luego importe.",
-      "importHint": "Cualquier hoja de cálculo guardada como CSV también sirve, si tiene una columna Name (o Client / Company). Una exportación de facturas sirve: cada cliente se toma de sus facturas, una sola vez.",
+      "importHint": "Cualquier hoja de cálculo guardada como CSV también sirve, si tiene una columna Name (o Client / Company). Solo se guardan el nombre y el correo. Una exportación de facturas sirve: cada cliente se toma de sus facturas, una sola vez.",
       "pickFile": "Elegir archivo CSV",
       "pickOther": "Elegir otro archivo",
       "importFound_one": "Se encontró {{count}} cliente en {{file}}",
       "importFound_other": "Se encontraron {{count}} clientes en {{file}}",
       "importSplit": "{{fresh}} nuevos · {{known}} ya en la lista",
       "importColumns": "Leído",
-      "importSafe": "A los clientes que ya están en la lista solo se les llenan los campos vacíos — no se sobrescribe nada de lo que escribió aquí.",
+      "importSafe": "A los clientes que ya están en la lista solo se les completa el correo si falta — no se sobrescribe nada de lo que escribió aquí.",
       "importN_one": "Importar {{count}} cliente",
       "importN_other": "Importar {{count}} clientes",
       "importing": "Importando… {{done}} / {{count}}",
@@ -968,7 +984,9 @@
         "address": "dirección",
         "ship_address": "dirección de envío",
         "notes": "notas"
-      }
+      },
+      "noEmail": "Sin correo todavía",
+      "emailHint": "Se usa para darle acceso al proyecto cuando se gane."
     }
   },
   "library": {

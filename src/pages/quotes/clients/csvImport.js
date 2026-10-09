@@ -96,6 +96,7 @@ export function clientsFromCsv(text) {
     // Same client again (e.g. another invoice): fill whatever was missing.
     for (const [k, v] of Object.entries(c)) if (!prev[k] && v) prev[k] = v
   }
-  const clients = [...byName.values()].map((c) => Object.fromEntries(Object.entries(c).filter(([, v]) => v)))
+  // Only the name and email are kept — that's all a client needs here.
+  const clients = [...byName.values()].map((c) => (c.email ? { name: c.name, email: c.email } : { name: c.name }))
   return { clients, columns: col, rows: data.length }
 }

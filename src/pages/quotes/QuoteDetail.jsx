@@ -21,6 +21,8 @@ import EstimatePhotos from './photos/EstimatePhotos'
 import PhotoViewer from './photos/PhotoViewer'
 import { StatusPill, FlagPills, QuoteDetailsForm, TextArea, Select } from './QuoteParts'
 import { ClientCard } from './clients/ClientPicker'
+import { normalizeForm } from '../../scope-engine'
+import { draftText } from '../../scope-engine/draft'
 import { useQuotePickers } from './useQuotePickers'
 import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm, BILLING_OPEN_STATUSES } from './quoteUtils'
 
@@ -303,13 +305,15 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
 function ScopeCard({ quote, onSaved, loadIntoEditor }) {
   const { t } = useTranslation()
   const toast = useToast()
-  const [text, setText] = useState(quote.scope_text ?? '')
+  // Nothing saved yet → start from the site visit's (possibly edited) draft.
+  const fromDraft = !quote.scope_text && quote.form ? draftText(normalizeForm(quote.form), quote.estimate_type) : ''
+  const [text, setText] = useState(quote.scope_text || fromDraft)
   const [saving, setSaving] = useState(false)
   const ref = useRef(null)
   const dirty = text !== (quote.scope_text ?? '')
   const editable = quote.can_edit_scope
 
-  useEffect(() => { setText(quote.scope_text ?? '') }, [quote.scope_text])
+  useEffect(() => { setText(quote.scope_text || fromDraft) }, [quote.scope_text, fromDraft])
   useEffect(() => {
     if (loadIntoEditor?.text != null) setText(loadIntoEditor.text)
   }, [loadIntoEditor])
@@ -348,7 +352,7 @@ function ScopeCard({ quote, onSaved, loadIntoEditor }) {
           <textarea ref={ref} value={text} onChange={(e) => setText(e.target.value)} rows={18}
             placeholder={t('quotes.scope.placeholder')} spellCheck
             className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base lg:text-sm leading-relaxed font-mono outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
-          <p className="text-xs text-gray-500">{t('quotes.scope.hint')}</p>
+          <p className="text-xs text-gray-500">{fromDraft && !quote.scope_text ? t('quotes.scope.fromDraft') : t('quotes.scope.hint')}</p>
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
             <Button size="lg" onClick={save} loading={saving} disabled={!dirty}>{t('quotes.scope.save')}</Button>
             <Button size="lg" variant="secondary" onClick={insertBullet}>{t('quotes.scope.insertBullet')}</Button>

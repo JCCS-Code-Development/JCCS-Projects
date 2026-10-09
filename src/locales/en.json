@@ -499,7 +499,8 @@
       "hint": "Plain text: section headings on their own line, bullets starting with \"• \". This is exactly what gets pasted into InvoiceToGo.",
       "insertBullet": "Insert •",
       "restore": "Load into editor",
-      "viewVersion": "View"
+      "viewVersion": "View",
+      "fromDraft": "Loaded from the site visit's draft — review it, then Save."
     },
     "actions": {
       "submit": "Submit to office",
@@ -618,7 +619,8 @@
       "assigned_field": "Field manager",
       "estimate_number": "Estimate #",
       "portal_access": "Portal access granted to recipients",
-      "ai_draft": "AI draft generated"
+      "ai_draft": "AI draft generated",
+      "client_registered": "Client registered to the project"
     },
     "versionKind": {
       "field_submission": "Field submission",
@@ -693,9 +695,9 @@
     },
     "unsaved": "Unsaved",
     "est": {
-      "open": "Fill out estimate form",
-      "openHint": "Answer the guided questions — the Scope of Work writes itself.",
-      "openHintStarted": "Started — continue where you left off.",
+      "open": "Scope of Work",
+      "openHint": "Written for you from the site-visit notes — just check it.",
+      "openHintStarted": "Saved — open to check or keep editing.",
       "title": "Estimate form",
       "subtitle": "Answers save as you go. The Scope of Work on the right updates live.",
       "readOnly": "This request is locked — showing the saved answers.",
@@ -849,7 +851,21 @@
         "replace": "Replace the current answers with a draft from the visit notes?",
         "done": "Draft filled from the notes — check it against the photos.",
         "notesTitle": "To check / confirm"
-      }
+      },
+      "draftTitle": "Scope of Work",
+      "draftHint": "Written from the site-visit notes. Edit anything — it saves as you type.",
+      "draftEdited": "Your edits are saved. You can keep editing until it's reviewed.",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "staleHint": "Fine-tune answers changed since you edited the text.",
+      "useNewText": "Use the updated text (drops your edits)",
+      "undoEdits": "Undo my edits",
+      "redo": "Rewrite from notes",
+      "redoConfirm": "Rewrite the Scope of Work from the site-visit notes? Your edits and fine-tune answers will be replaced.",
+      "fineTune": "Fine-tune",
+      "fineTuneHint_one": "{{count}} kind of work found — open only if the wording needs steering",
+      "fineTuneHint_other": "{{count}} kinds of work found — open only if the wording needs steering",
+      "fineTuneEdited": "You've edited the text by hand, so changes here won't replace it — you'll be offered the updated text instead."
     },
     "voice": {
       "holdHint": "Hold to record, release to send",
@@ -904,8 +920,8 @@
     "clients": {
       "label": "Client",
       "title": "Clients",
-      "subtitle": "Who your jobs are for — the same details InvoiceToGo keeps.",
-      "search": "Search clients — name, contact, phone…",
+      "subtitle": "Who your jobs are for. Just a name and an email.",
+      "search": "Search clients by name or email…",
       "new": "New client",
       "addNamed": "Add “{{name}}” as a new client",
       "addToVisit": "Client",
@@ -941,14 +957,14 @@
       "importStep1": "In InvoiceToGo on a computer (web app), export your clients — or your invoices/estimates — as a CSV file.",
       "importStep2": "Choose that file below.",
       "importStep3": "Check what was found, then import.",
-      "importHint": "Any spreadsheet saved as CSV works too, as long as it has a Name (or Client / Company) column. An invoices export works: each client is taken from its invoices, once.",
+      "importHint": "Any spreadsheet saved as CSV works too, as long as it has a Name (or Client / Company) column. Only the name and email are kept. An invoices export works: each client is taken from its invoices, once.",
       "pickFile": "Choose CSV file",
       "pickOther": "Choose a different file",
       "importFound_one": "Found {{count}} client in {{file}}",
       "importFound_other": "Found {{count}} clients in {{file}}",
       "importSplit": "{{fresh}} new · {{known}} already on the list",
       "importColumns": "Read",
-      "importSafe": "Clients already on the list only get their empty fields filled in — nothing you typed here is overwritten.",
+      "importSafe": "Clients already on the list only get a missing email filled in — nothing you typed here is overwritten.",
       "importN_one": "Import {{count}} client",
       "importN_other": "Import {{count}} clients",
       "importing": "Importing… {{done}} / {{count}}",
@@ -968,7 +984,9 @@
         "address": "address",
         "ship_address": "shipping address",
         "notes": "notes"
-      }
+      },
+      "noEmail": "No email yet",
+      "emailHint": "Used to give them access to the project once it's won."
     }
   },
   "library": {
