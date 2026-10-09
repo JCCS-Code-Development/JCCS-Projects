@@ -13,6 +13,7 @@ import WalkNotesSheet from './photos/WalkNotesSheet'
 import VoiceRecorder from './voice/VoiceRecorder'
 import { useVoiceMemos } from './voice/useVoiceMemos'
 import PhotoViewer from './photos/PhotoViewer'
+import ClientSheet from './clients/ClientSheet'
 
 function useMediaQuery(query) {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
@@ -221,6 +222,9 @@ export default function QuoteCapture() {
           <span className="hidden sm:inline">{t('quotes.walk.next')}</span> →
         </button>
       </div>
+
+      {/* Who the job is for — pick, add, or look up their details mid-walk. */}
+      <ClientSheet quote={quote} onChanged={load} />
 
       {(uploading > 0 || failed > 0) && (
         <p className="shrink-0 text-center text-xs text-gray-500">

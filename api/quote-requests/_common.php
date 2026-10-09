@@ -198,6 +198,15 @@ function qrCollectFields(PDO $pdo, array $body, array $auth, array &$sets, array
         if ($pn !== '' && !preg_match('/^\d{4}$/', $pn)) { http_response_code(422); exit(json_encode(['error' => 'Estimate # must be exactly 4 digits'])); }
         $sets[] = 'project_number = ?'; $params[] = $pn === '' ? null : $pn;
     }
+    if (array_key_exists('customer_id', $body)) {
+        $cid = $body['customer_id'] ? (int)$body['customer_id'] : null;
+        if ($cid) {
+            $c = $pdo->prepare('SELECT id FROM customers WHERE id = ?');
+            $c->execute([$cid]);
+            if (!$c->fetch()) { http_response_code(422); exit(json_encode(['error' => 'That client is no longer on the list'])); }
+        }
+        $sets[] = 'customer_id = ?'; $params[] = $cid;
+    }
     $str('facility', 200);
     $str('location_detail', 255);
     $str('original_estimate_no', 20);
@@ -389,4 +398,15 @@ function qrGrantRecipientsAccess(PDO $pdo, array $row): int {
     );
     $stmt->execute([$row['project_number'], $row['id']]);
     return $stmt->rowCount();
+}
+
+// The job's client (from the client list), with the details the field
+// manager may need on site.
+function qrCustomer(PDO $pdo, ?int $customerId): ?array {
+    if (!$customerId) return null;
+    $rows = qrOptionalRows($pdo, 'SELECT id, name, contact_name, email, phone, mobile, address, ship_address, notes, is_active FROM customers WHERE id = ?', [$customerId]);
+    if (!$rows) return null;
+    $rows[0]['id'] = (int)$rows[0]['id'];
+    $rows[0]['is_active'] = (int)$rows[0]['is_active'];
+    return $rows[0];
 }

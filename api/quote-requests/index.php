@@ -20,7 +20,8 @@ if ($method === 'GET') {
     $sql = "SELECT q.id, q.quote_number, q.status, q.work_type, q.estimate_type, q.title, q.facility, q.location_detail,
                    q.project_number, q.estimate_number, q.priority, q.needed_by, q.site_visit_date, q.site_visit_at,
                    q.field_manager_id, q.field_manager_name, q.assigned_to, q.assigned_to_name,
-                   q.follow_up_days, q.decline_reason,
+                   q.follow_up_days, q.decline_reason, q.customer_id,
+                   (SELECT cu.name FROM customers cu WHERE cu.id = q.customer_id) AS customer_name,
                    (SELECT GROUP_CONCAT(DISTINCT COALESCE(NULLIF(cl.company, ''), cl.name) ORDER BY cl.name SEPARATOR ', ')
                       FROM quote_request_recipients rr JOIN clients cl ON cl.id = rr.client_id
                      WHERE rr.quote_request_id = q.id) AS recipients_label,
@@ -60,9 +61,10 @@ if ($method === 'GET') {
     if (isset($_GET['q']) && trim((string)$_GET['q']) !== '') {
         $q = '%' . trim((string)$_GET['q']) . '%';
         $where[] = "(q.title LIKE ? OR q.facility LIKE ? OR q.estimate_number LIKE ? OR q.project_number LIKE ?
+                     OR EXISTS (SELECT 1 FROM customers cu WHERE cu.id = q.customer_id AND (cu.name LIKE ? OR cu.contact_name LIKE ?))
                      OR EXISTS (SELECT 1 FROM quote_request_recipients rr JOIN clients cl ON cl.id = rr.client_id
                                 WHERE rr.quote_request_id = q.id AND (cl.name LIKE ? OR cl.company LIKE ? OR cl.email LIKE ?)))";
-        array_push($params, $q, $q, $q, $q, $q, $q, $q);
+        array_push($params, $q, $q, $q, $q, $q, $q, $q, $q, $q);
     }
     // Closed requests (accepted/declined/cancelled/invoiced) only when asked for, so
     // the board stays focused on open work.

@@ -20,6 +20,7 @@ import VoiceMemoStack from './voice/VoiceMemoStack'
 import EstimatePhotos from './photos/EstimatePhotos'
 import PhotoViewer from './photos/PhotoViewer'
 import { StatusPill, FlagPills, QuoteDetailsForm, TextArea, Select } from './QuoteParts'
+import { ClientCard } from './clients/ClientPicker'
 import { useQuotePickers } from './useQuotePickers'
 import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm, BILLING_OPEN_STATUSES } from './quoteUtils'
 
@@ -265,6 +266,9 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
             {t(`quotes.workType.${quote.work_type}`)}{quote.project_number ? ` — #${quote.project_number}` : ''}
           </DetailRow>
           <DetailRow label={t('quotes.estimateType.label')}>{t(`quotes.estimateType.${quote.estimate_type}`)}</DetailRow>
+          <DetailRow label={t('quotes.clients.label')}>
+            {quote.customer ? <ClientCard client={quote.customer} /> : null}
+          </DetailRow>
           <DetailRow label={t('quotes.fields.recipients')}>
             {quote.recipients?.length ? (
               <span className="flex flex-col gap-0.5">
@@ -620,8 +624,8 @@ export default function QuoteDetail() {
           <FlagPills quote={quote} />
         </div>
         <h1 className="text-xl font-bold text-gray-900">{quote.title}</h1>
-        {(quote.recipients?.length > 0 || quote.facility) && (
-          <p className="text-sm text-gray-500">{[recipientsLabel(quote.recipients), quote.facility].filter(Boolean).join(' · ')}</p>
+        {(quote.customer || quote.recipients?.length > 0 || quote.facility) && (
+          <p className="text-sm text-gray-500">{[quote.customer?.name ?? recipientsLabel(quote.recipients), quote.facility].filter(Boolean).join(' · ')}</p>
         )}
       </div>
 

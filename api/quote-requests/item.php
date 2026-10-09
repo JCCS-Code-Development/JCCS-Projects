@@ -23,6 +23,7 @@ if ($method === 'GET') {
     $out = qrPresent($row, $auth);
 
     $out['recipients'] = qrRecipients($pdo, $id);
+    $out['customer'] = qrCustomer($pdo, $out['customer_id'] ?? null);
 
     $s = $pdo->prepare('SELECT * FROM quote_request_photos WHERE quote_request_id = ? ORDER BY id');
     $s->execute([$id]);

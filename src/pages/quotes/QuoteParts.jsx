@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { listProjectClientIds } from '../../api/quoteRequests'
 import Input from '../../components/ui/Input'
 import { STATUS_STYLES, FLAG_STYLES, quoteFlags, ESTIMATE_TYPES, SOURCES, PRIORITIES } from './quoteUtils'
+import { ClientPicker } from './clients/ClientPicker'
 
 export function StatusPill({ status, className = '' }) {
   const { t } = useTranslation()
@@ -190,6 +191,8 @@ export function QuoteDetailsForm({ form, set, isAdmin, clients = [], projects = 
 
       <Input label={t('quotes.fields.title')} placeholder={t('quotes.fields.titlePlaceholder')} value={form.title}
         onChange={(e) => set('title', e.target.value)} />
+
+      <ClientPicker value={form.customer_id} onChange={(id) => set('customer_id', id)} />
 
       <RecipientsPicker clients={clients} value={form.recipient_ids ?? []} onChange={(ids) => set('recipient_ids', ids)} />
 
