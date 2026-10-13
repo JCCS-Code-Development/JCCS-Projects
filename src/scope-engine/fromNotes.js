@@ -8,7 +8,7 @@
 // so the wording is always the office's.
 
 import { emptyForm } from './index'
-import { list, uniq } from './text'
+import { list, uniq, titleCase } from './text'
 
 // Lower-case and strip accents so "zócalo" / "zocalo" / "ZÓCALO" all match.
 const fold = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -42,6 +42,8 @@ const W = {
   cap:         [/\bcap\b/, /cap (off|it)/, /capped/, /tapon/, /taponar/, /sellar (la )?(tuberia|plomeria)/],
   plumbingAny: [/plumb/, /plomer/, /tuberia/, /supply line/, /\bdrain\b/, /desague/],
   reconnect:   [/reconnect/, /reconectar/],
+  wallProt:    [/wall protection/, /wall ?guards?/, /crash ?rails?/, /bumper ?(rail|guard)/, /corner ?guards?/, /hand ?rails?/, /wall panels?/,
+                /\bi[nm]pro\b/, /acrovyn/, /proteccion (de|para) (la |las )?pared/, /protector(es)? de pared/, /esquineros?/, /pasamanos/],
 }
 
 const ITEMS = [
@@ -71,10 +73,35 @@ function findSize(text) {
 }
 
 // Square feet / linear feet mentioned, for the estimator's checklist.
+// "1,280 linear ft", "1280 LF", "~40 sq ft", "200 pies lineales".
+const QTY = /~?\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?\s*(sf|sq\.? ?(?:ft|feet)|square (?:ft|feet)|pies cuadrados|lf|lin(?:ear|eal)\.? ?(?:ft|feet)|pies lineales)\b/gi
 function findQuantities(raw) {
-  const out = []
-  for (const m of raw.matchAll(/~?\s*(\d+(?:\.\d+)?)\s*(sf|sq\.? ?ft|square feet|pies cuadrados|lf|linear feet|pies lineales)\b/gi)) out.push(`${m[1]} ${m[2]}`)
-  return uniq(out)
+  return uniq([...raw.matchAll(QTY)].map((m) => `${m[1]} ${m[2]}`))
+}
+// The first linear-feet amount, written with a thousands comma: "1,280".
+function findLinearFeet(raw) {
+  for (const m of raw.matchAll(QTY)) {
+    if (/^(lf|lin|pies lineales)/i.test(m[2])) return Number(m[1].replace(/,/g, '')).toLocaleString('en-US')
+  }
+  return ''
+}
+
+// "throughout the hallways on hospital side" → "throughout the hallways on the hospital side"
+function findWhere(raw) {
+  const m = raw.match(/\b(throughout|along)\s+([^,.;\n]+)/i)
+  if (m) return `${m[1].toLowerCase()} ${m[2].trim().replace(/\bon (?!the\b)([\w-]+ side)\b/i, 'on the $1')}`
+  if (/pasillos?/i.test(raw)) return 'throughout the hallways'
+  return ''
+}
+
+// "excluding the ER side" / "except room 4" → "the ER side". Spanish
+// exclusions are left for the estimator (the scope is written in English).
+function findExclusion(raw) {
+  const m = raw.match(/\b(?:excluding|except(?: for)?|not including|excepto|sin incluir|menos)\s+([^,.;\n]+)/i)
+  if (!m) return { text: '', raw: '' }
+  const x = m[1].trim()
+  if (/\b(el|la|los|las|del|lado)\b/i.test(x)) return { text: '', raw: m[0].trim() }
+  return { text: /^(the|a|an|all|any)\b/i.test(x) ? x : `the ${x}`, raw: m[0].trim() }
 }
 
 // A saved material named in the notes (e.g. "Canvas Tan", "Moon Rock").
@@ -177,12 +204,36 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
     remarks.push(`confirm what happens to the ${c.itemRemoval.item}’s plumbing (cap off / reconnect)`)
   }
 
+  // ── Wall protection ──
+  const exclusion = findExclusion(raw)
+  const along = findWhere(raw)
+  if (has(t, ...W.wallProt)) {
+    const product = /crash ?rail|bumper/.test(t) ? 'crash rails' : /hand ?rail|pasamanos/.test(t) ? 'handrails'
+      : /corner ?guard|esquinero/.test(t) && !/wall protection|proteccion/.test(t) ? 'corner guards'
+      : /wall panel/.test(t) ? 'wall panels' : 'wall protection'
+    Object.assign(c.wallProtection, {
+      on: true,
+      brand: /\bi[nm]pro\b/.test(t) ? 'Inpro' : /acrovyn/.test(t) ? 'Acrovyn' : '',
+      product, qty: findLinearFeet(raw), unit: 'LF', where: along, exclude: exclusion.text,
+    })
+    if (!c.wallProtection.qty) remarks.push('no linear footage found in the notes — add the quantity')
+    remarks.push('confirm the wall protection product, profile, color, and mounting height')
+  }
+  if (along && !rooms) {
+    f.area = `work areas ${along}`
+    f.leaveArea = 'the affected areas'
+  }
+  if (exclusion.raw && !exclusion.text) remarks.push(`exclusion in the notes, add it in English: “${exclusion.raw}”`)
+  if (exclusion.text && !c.wallProtection.on) remarks.push(`exclusion in the notes: “${exclusion.raw}” — check it’s in the scope`)
+
   // ── Infection control ──
   if (has(t, ...W.ic)) f.ic = 'required'
   else if (has(t, ...W.clinical) && (c.demo.on || c.drywall.on || c.ceiling.on)) {
     f.ic = 'required'
     remarks.push('infection control set to Required because it’s demolition in a clinical area — confirm with the facility')
   } else if (has(t, ...W.dust)) f.ic = 'limited'
+  // Work in a hospital or clinic: coordinate around patients and staff.
+  if (has(t, ...W.clinical)) f.occupied = true
 
   // ── Protect / verify ──
   f.protect = uniq([
@@ -197,8 +248,9 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
     c.windowFilm.on && 'window dimensions', c.windowFilm.on && 'glazing conditions',
     c.window.on && 'the opening dimensions', c.window.on && 'wall construction', c.window.on && 'mounting conditions',
     c.plumbing.on && 'existing plumbing locations',
+    c.wallProtection.on && 'wall dimensions', c.wallProtection.on && 'mounting conditions',
     (water || mold) && 'the extent of affected materials',
-    !c.window.on && !c.windowFilm.on && 'dimensions',
+    !c.window.on && !c.windowFilm.on && !c.wallProtection.on && 'dimensions',
     'existing conditions',
   ])
 
@@ -210,6 +262,7 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
     c.coveBase.on && 'Cove Base',
     c.ceiling.on && 'Hard-Ceiling',
     c.windowFilm.on && `${c.windowFilm.film === 'tinted' ? 'Tinted' : 'Frosted'} Window Film`,
+    c.wallProtection.on && titleCase([c.wallProtection.brand, c.wallProtection.product].filter(Boolean).join(' ')),
     c.window.on && `${c.window.glazing ? `${c.window.glazing[0].toUpperCase()}${c.window.glazing.slice(1)} ` : ''}${c.window.kind === 'fixed' ? 'Fixed' : 'Sliding'} Window`,
   ])
   const repair = c.drywall.on && c.drywall.mode === 'replace'

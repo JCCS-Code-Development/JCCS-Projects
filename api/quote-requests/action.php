@@ -49,10 +49,12 @@ try {
     switch ($action) {
         case 'submit':
             if (trim((string)$row['title']) === '') $fail('Add a title before submitting');
-            if (trim((string)$row['facility']) === '' && !$row['customer_id']) $fail('Add the facility or customer before submitting');
+            // A message or photos is enough — the office fills in the rest.
             $nc = $pdo->prepare("SELECT COUNT(*) FROM quote_request_notes WHERE quote_request_id = ? AND body IS NOT NULL AND body <> ''");
             $nc->execute([$id]);
-            if (trim((string)$row['description']) === '' && !$row['form_json'] && !(int)$nc->fetchColumn()) $fail('Describe the work before submitting');
+            $pc = $pdo->prepare('SELECT COUNT(*) FROM quote_request_photos WHERE quote_request_id = ?');
+            $pc->execute([$id]);
+            if (trim((string)$row['description']) === '' && !$row['form_json'] && !(int)$nc->fetchColumn() && !(int)$pc->fetchColumn()) $fail('Add a photo or write what the job is before sending');
             if ($row['work_type'] === 'addon' && !$row['project_number']) $fail('Pick the project this add-on belongs to');
             $sets[] = 'submitted_at = NOW()';
             qrAssignNumber($pdo, $id); // submitting always saves

@@ -8,7 +8,7 @@ import { useAutosave } from './useAutosave'
 import VoiceMemoStack from '../voice/VoiceMemoStack'
 import { MarkedImage } from './AnnotationLayer'
 
-function Thumb({ src, shapes, onClick, pending, error, onRetry }) {
+export function Thumb({ src, shapes, onClick, pending, error, onRetry }) {
   return (
     <button type="button" onClick={onClick} className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
       <MarkedImage src={src} shapes={shapes} className="w-full h-full" imgClassName={pending ? 'opacity-60' : ''} />

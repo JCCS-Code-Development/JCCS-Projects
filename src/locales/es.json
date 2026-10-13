@@ -756,7 +756,12 @@
         "exteriorDoor": "También pintar la puerta exterior",
         "sectionHeading": "Título de sección",
         "sectionBullets": "Viñetas (una por línea)",
-        "addSection": "Agregar sección"
+        "addSection": "Agregar sección",
+        "brand": "Marca",
+        "product": "Producto",
+        "linearFeet": "Pies lineales (aprox.)",
+        "where": "Dónde",
+        "exclude": "Excluir"
       },
       "cat": {
         "itemRemoval": "Remover objeto",
@@ -770,6 +775,7 @@
         "window": "Ventana nueva",
         "painting": "Pintura",
         "coveBase": "Zócalo",
+        "wallProtection": "Protección de paredes",
         "other": "Otro"
       },
       "opt": {
@@ -987,6 +993,33 @@
       },
       "noEmail": "Sin correo todavía",
       "emailHint": "Se usa para darle acceso al proyecto cuando se gane."
+    },
+    "quick": {
+      "newVisit": "Nueva visita",
+      "takePhotos": "Cámara",
+      "fromLibrary": "Fotos",
+      "done": "Listo",
+      "photoCount_zero": "Sin fotos todavía",
+      "photoCount_one": "{{count}} foto",
+      "photoCount_other": "{{count}} fotos",
+      "messageLabel": "¿Cuál es el trabajo?",
+      "messagePlaceholder": "Escríbelo como un mensaje de WhatsApp — dónde, qué, cuánto, para quién.\nej. Estimado para Prisma North Greenville Hospital, instalar wall protection Inpro en los pasillos, excepto el lado de ER, aprox 1,280 LF, para Mr Bobby",
+      "messageHint": "En inglés o español. Toca el 🎤 del teclado para hablar en vez de escribir.",
+      "voiceHint": "O mantén presionado para grabar una nota de voz para la oficina",
+      "gotIt": "Entendido — toca lo que esté mal",
+      "work": "Trabajo",
+      "workUnknown": "La oficina lo redactará",
+      "place": "Lugar",
+      "client": "Cliente",
+      "newClient": "nuevo — se agregará",
+      "noClient": "No se mencionó — toca para elegir",
+      "billing": "Tipo",
+      "billing_po": "Estimado (PO)",
+      "billing_no_po": "Sin PO",
+      "send": "Enviar a la oficina",
+      "save": "Guardar",
+      "sent": "Enviado a la oficina",
+      "needSomething": "Primero agrega una foto o escribe cuál es el trabajo."
     }
   },
   "library": {

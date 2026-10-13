@@ -147,6 +147,15 @@ function CategoryFields({ k, c, set, disabled, t, library }) {
         <datalist id="lib-cove">{library.filter((l) => l.kind === 'cove_base').map((l) => <option key={l.id} value={l.label} />)}</datalist>
       </>)}
     </>)
+    case 'wallProtection': return (<>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label={t('quotes.est.f.brand')}><Text value={c.brand} onChange={s('brand')} disabled={disabled} placeholder="Inpro" /></Field>
+        <Field label={t('quotes.est.f.product')}><Text value={c.product} onChange={s('product')} disabled={disabled} placeholder="wall protection" /></Field>
+      </div>
+      <Field label={t('quotes.est.f.linearFeet')}><Text value={c.qty} onChange={s('qty')} disabled={disabled} placeholder="1,280" /></Field>
+      <Field label={t('quotes.est.f.where')}><Text value={c.where} onChange={s('where')} disabled={disabled} placeholder="throughout the hallways" /></Field>
+      <Field label={t('quotes.est.f.exclude')}><Text value={c.exclude} onChange={s('exclude')} disabled={disabled} placeholder="the ER side" /></Field>
+    </>)
     case 'other': {
       const sections = c.sections?.length ? c.sections : [{ heading: '', bullets: [] }]
       const setSec = (i, patch) => set({ ...c, sections: sections.map((x, j) => (j === i ? { ...x, ...patch } : x)) })
@@ -176,6 +185,7 @@ const CATEGORY_DEFAULTS = {
   window: { kind: 'sliding', qty: 1, approx: true, touchUp: true },
   painting: { mode: 'match' },
   coveBase: { mode: 'match' },
+  wallProtection: { product: 'wall protection', unit: 'LF' },
 }
 
 // ── Page ────────────────────────────────────────────────────────────────

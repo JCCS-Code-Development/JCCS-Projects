@@ -318,6 +318,35 @@ export function coveBase(f) {
   ] }] }
 }
 
+// ── Wall protection (crash rails, wall guards, corner guards, panels) ────
+//  brand    e.g. "Inpro" (optional)   product  e.g. "wall protection"
+//  qty/unit e.g. 1,280 LF (optional)  where    e.g. "the hospital-side hallways"
+//  exclude  e.g. "the ER side" → written as the section's last bullet
+export function wallProtection(f) {
+  const c = f.cats.wallProtection
+  if (!on(c)) return null
+  const product = [c.brand, (c.product || 'wall protection')].filter(Boolean).join(' ').trim()
+  const qty = String(c.qty ?? '').trim()
+  const unit = (c.unit || 'LF') === 'LF' ? 'linear feet' : c.unit
+  const amount = qty ? `approximately ${qty} ${unit} of ` : ''
+  const where = (c.where ?? '').trim()
+  const bullets = [
+    `Provide and install ${amount}${product}${where ? ` ${/^(throughout|along|in|at|on|within)\b/i.test(where) ? where : `throughout ${where}`}` : ' throughout the designated areas'}.`,
+    'Coordinate the approved product, profile, color, and mounting height before installation.',
+    'Prepare the existing wall surfaces to receive the new wall protection.',
+    'Install and securely fasten the wall protection according to manufacturer recommendations.',
+    'Cut and fit the wall protection neatly around corners, door frames, and transitions.',
+    'Provide clean joints, end caps, and terminations.',
+  ]
+  const exclude = (c.exclude ?? '').trim()
+  if (exclude) bullets.push(`Exclude ${exclude} unless otherwise specified.`)
+  return {
+    sections: [{ heading: 'Wall Protection Installation', bullets }],
+    checks: ['Verify the wall protection is level, properly aligned, and securely fastened.'],
+    defects: ['scratches'],
+  }
+}
+
 // ── Anything else: free-form sections the user writes ──────────────────────
 export function other(f) {
   const c = f.cats.other
@@ -329,7 +358,7 @@ export function other(f) {
 }
 
 // Construction order of the trade sections.
-export const ORDER = [itemRemoval, demo, plumbing, framing, antimicrobial, drywall, ceiling, windowFilm, window, painting, coveBase, other]
+export const ORDER = [itemRemoval, demo, plumbing, framing, antimicrobial, drywall, ceiling, windowFilm, window, painting, coveBase, wallProtection, other]
 
 // Fit & Finish checks that depend on several categories at once.
 export function structuralChecks(f) {

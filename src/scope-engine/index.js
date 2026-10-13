@@ -19,7 +19,7 @@
 import { ORDER, structuralChecks } from './categories'
 import { list, uniq } from './text'
 
-export const CATEGORY_KEYS = ['itemRemoval', 'demo', 'plumbing', 'framing', 'antimicrobial', 'drywall', 'ceiling', 'windowFilm', 'window', 'painting', 'coveBase', 'other']
+export const CATEGORY_KEYS = ['itemRemoval', 'demo', 'plumbing', 'framing', 'antimicrobial', 'drywall', 'ceiling', 'windowFilm', 'window', 'painting', 'coveBase', 'wallProtection', 'other']
 
 // Defect words always appear in this order in the "free of visible …" bullet.
 const DEFECT_ORDER = ['bubbles', 'wrinkles', 'peeling edges', 'paint drips', 'sanding marks', 'sharp edges', 'scratches']
@@ -68,7 +68,7 @@ function prep(f) {
   const ic = f.ic
   const occupied = f.occupied ?? (ic === 'required')
   const verifyWhen = f.verifyWhen
-    || (f.cats.windowFilm.on ? 'ordering and installation' : f.cats.window.on ? 'fabrication and installation' : 'beginning work')
+    || (f.cats.windowFilm.on || f.cats.wallProtection.on ? 'ordering and installation' : f.cats.window.on ? 'fabrication and installation' : 'beginning work')
   const bullets = [`Prepare the designated ${(f.area || 'work area').trim()}.`]
   if (ic === 'required') {
     bullets.push('Provide and install temporary infection control barriers around the active work area.')
@@ -94,6 +94,7 @@ function fitAndFinish(f, results) {
   if (s.blendRepair) checks.push('Ensure repaired and painted surfaces blend with adjacent existing conditions as closely as possible.')
   if (s.coveRepairTransitions) checks.push(s.coveRepairTransitions)
   checks.push(...(byKey.coveBase?.checks ?? []))
+  checks.push(...(byKey.wallProtection?.checks ?? []))
   if (s.blendFull) checks.push('Ensure completed work blends with adjacent existing conditions as closely as possible.')
   checks.push(...(byKey.window?.checks ?? []))
   checks.push(...(byKey.windowFilm?.checks ?? []))

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { formFromNotes } from './fromNotes'
-import { generateScope } from './index'
+import { generateScope, toInvoiceToGoText } from './index'
+import { readVisitMessage } from './fromMessage'
 
 const library = [
   { kind: 'paint_color', label: 'Canvas Tan' },
@@ -86,5 +87,32 @@ describe('draftText', () => {
     expect(generated).toContain('Patch wall\nScope of Work')
     expect(draftText({ ...f, draft: { edited: true, text: 'My words' } })).toBe('My words')
     expect(draftText({ ...f, draft: { edited: false, text: 'stale' } })).toBe(generated)
+  })
+})
+
+describe('readVisitMessage — one WhatsApp-style message', () => {
+  const msg = 'Estimado para Prisma north green hospital, instalar wall protection impro throughout the hallways on hospital side, excluding the ER side, approximately 1,280 linear ft of impro wall protection, for Mr Bobby'
+  const clients = [{ id: 1, name: 'Bobby Jones', email: 'bj@x.com' }, { id: 2, name: 'Prisma Health', email: '' }]
+
+  it('pulls out the place, the client, PO and the work', () => {
+    const r = readVisitMessage(msg, { clients })
+    expect(r.billing).toBe('po')
+    expect(r.facility).toBe('Prisma North Green Hospital')
+    expect(r.clientName).toBe('Mr Bobby')
+    expect(r.client?.id).toBe(1)
+    expect(r.title).toBe('Inpro Wall Protection Installation')
+    const text = toInvoiceToGoText(generateScope(r.form))
+    expect(text).toContain('• Prepare the designated work areas throughout the hallways on the hospital side.')
+    expect(text).toContain('• Provide and install approximately 1,280 linear feet of Inpro wall protection throughout the hallways on the hospital side.')
+    expect(text).toContain('• Exclude the ER side unless otherwise specified.')
+    expect(text).toContain('• Coordinate work to minimize disruption to patients, staff, and facility operations.')
+  })
+
+  it('no PO, and a client that is not on the list', () => {
+    const r = readVisitMessage('sin PO, cambiar zocalo en el pasillo para Sr Pedro', { clients })
+    expect(r.billing).toBe('no_po')
+    expect(r.clientName).toBe('Sr Pedro')
+    expect(readVisitMessage('cambiar zocalo en el pasillo del Greenville Medical Center').facility).toBe('Greenville Medical Center')
+    expect(r.client).toBeNull()
   })
 })

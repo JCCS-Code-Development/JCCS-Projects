@@ -756,7 +756,12 @@
         "exteriorDoor": "Also paint the exterior door",
         "sectionHeading": "Section heading",
         "sectionBullets": "Bullets (one per line)",
-        "addSection": "Add section"
+        "addSection": "Add section",
+        "brand": "Brand",
+        "product": "Product",
+        "linearFeet": "Linear feet (approx.)",
+        "where": "Where",
+        "exclude": "Exclude"
       },
       "cat": {
         "itemRemoval": "Item removal",
@@ -770,6 +775,7 @@
         "window": "New window",
         "painting": "Painting",
         "coveBase": "Cove base",
+        "wallProtection": "Wall protection",
         "other": "Other"
       },
       "opt": {
@@ -987,6 +993,33 @@
       },
       "noEmail": "No email yet",
       "emailHint": "Used to give them access to the project once it's won."
+    },
+    "quick": {
+      "newVisit": "New site visit",
+      "takePhotos": "Camera",
+      "fromLibrary": "Photos",
+      "done": "Done",
+      "photoCount_zero": "No photos yet",
+      "photoCount_one": "{{count}} photo",
+      "photoCount_other": "{{count}} photos",
+      "messageLabel": "What's the job?",
+      "messagePlaceholder": "Write it like a WhatsApp message — where, what, how much, for who.\ne.g. Estimate for Prisma North Greenville Hospital, install Inpro wall protection throughout the hallways, excluding the ER side, approx 1,280 LF, for Mr Bobby",
+      "messageHint": "English or Spanish. Tap the 🎤 on the keyboard to talk instead of type.",
+      "voiceHint": "Or hold to record a voice memo for the office",
+      "gotIt": "Got it — tap anything that's wrong",
+      "work": "Work",
+      "workUnknown": "The office will write it up",
+      "place": "Place",
+      "client": "Client",
+      "newClient": "new — will be added",
+      "noClient": "Not mentioned — tap to pick",
+      "billing": "Type",
+      "billing_po": "Estimate (PO)",
+      "billing_no_po": "No PO",
+      "send": "Send to office",
+      "save": "Save",
+      "sent": "Sent to the office",
+      "needSomething": "Add a photo or write what the job is first."
     }
   },
   "library": {
