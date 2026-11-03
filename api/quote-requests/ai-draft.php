@@ -17,7 +17,9 @@ require_once __DIR__ . '/_common.php';
 // office's JCCS wording and its guards still apply. Nothing is saved here:
 // the app shows the answers in the form, editable, and autosaves from there.
 //
-// POST {id}  →  {form, office_notes}
+// POST {id, prompt?, key_photo_id?}  →  {form, office_notes}
+// With a prompt (the office's summary of the visit) and a key photo, Claude
+// works from just those two; without them, from the whole walk.
 //
 // Needs ANTHROPIC_API_KEY in config.php. The SDK (api/vendor, PHP ≥ 8.1) is
 // loaded only by this endpoint, so nothing else depends on it.
@@ -82,6 +84,12 @@ function qrAiImage(string $path): ?array {
 // Photos filed under notes first (they carry the most context), then the rest.
 usort($photos, fn($a, $b) => [($a['note_id'] ? 0 : 1), (int)$a['id']] <=> [($b['note_id'] ? 0 : 1), (int)$b['id']]);
 $photos = array_slice($photos, 0, QR_AI_MAX_PHOTOS);
+$prompt = trim((string)($body['prompt'] ?? ''));
+$keyId  = (int)($body['key_photo_id'] ?? 0);
+if ($keyId) {
+    $key = array_values(array_filter($photos, fn($p) => (int)$p['id'] === $keyId));
+    if ($key) $photos = $key;
+}
 
 $content = [];
 $photoCount = 0;
@@ -103,6 +111,13 @@ $lib = $pdo->query("SELECT kind, label FROM quote_library WHERE is_active = 1 OR
 $libText = implode('; ', array_map(fn($l) => "{$l['kind']}: {$l['label']}", $lib));
 
 $lines = [];
+if ($prompt !== '') {
+    $lines[] = "The estimator's summary of this site visit (work from this; it is the most up-to-date description):";
+    $lines[] = mb_substr($prompt, 0, 8000);
+    $lines[] = '';
+    if ($keyId) $lines[] = 'The photo below is the key photo the estimator picked as the visual guide.';
+    $lines[] = '';
+}
 $lines[] = 'Request title: ' . $row['title'];
 if ($row['facility'])        $lines[] = 'Facility: ' . $row['facility'];
 if ($row['location_detail']) $lines[] = 'Building / floor / suite: ' . $row['location_detail'];

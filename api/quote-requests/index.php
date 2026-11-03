@@ -20,15 +20,17 @@ if ($method === 'GET') {
     $sql = "SELECT q.id, q.quote_number, q.status, q.work_type, q.estimate_type, q.title, q.facility, q.location_detail,
                    q.project_number, q.estimate_number, q.priority, q.needed_by, q.site_visit_date, q.site_visit_at,
                    q.field_manager_id, q.field_manager_name, q.assigned_to, q.assigned_to_name,
-                   q.follow_up_days, q.decline_reason, q.customer_id,
+                   q.follow_up_days, q.decline_reason, q.customer_id, q.contact_id,
                    (SELECT cu.name FROM customers cu WHERE cu.id = q.customer_id) AS customer_name,
+                   (SELECT e.name FROM customer_contacts e WHERE e.id = q.contact_id) AS engineer_name,
                    (SELECT GROUP_CONCAT(DISTINCT COALESCE(NULLIF(cl.company, ''), cl.name) ORDER BY cl.name SEPARATOR ', ')
                       FROM quote_request_recipients rr JOIN clients cl ON cl.id = rr.client_id
                      WHERE rr.quote_request_id = q.id) AS recipients_label,
                    q.created_by, q.created_by_name, q.submitted_at, q.approved_at, q.sent_at, q.decided_at,
                    q.created_at, q.updated_at,
                    (SELECT COUNT(*) FROM quote_request_photos p WHERE p.quote_request_id = q.id) AS photo_count,
-                   (SELECT p2.file_path FROM quote_request_photos p2 WHERE p2.quote_request_id = q.id ORDER BY p2.id LIMIT 1) AS cover_path,
+                   (SELECT SUBSTRING_INDEX(GROUP_CONCAT(p2.file_path ORDER BY p2.id SEPARATOR '|'), '|', 4)
+                      FROM quote_request_photos p2 WHERE p2.quote_request_id = q.id) AS thumb_paths,
                    (SELECT c2.kind FROM quote_request_comments c2 WHERE c2.quote_request_id = q.id ORDER BY c2.id DESC LIMIT 1) AS last_comment_kind
             FROM quote_requests q";
     $where = []; $params = [];
@@ -62,9 +64,10 @@ if ($method === 'GET') {
         $q = '%' . trim((string)$_GET['q']) . '%';
         $where[] = "(q.title LIKE ? OR q.facility LIKE ? OR q.estimate_number LIKE ? OR q.project_number LIKE ?
                      OR EXISTS (SELECT 1 FROM customers cu WHERE cu.id = q.customer_id AND (cu.name LIKE ? OR cu.contact_name LIKE ?))
+                     OR EXISTS (SELECT 1 FROM customer_contacts e WHERE e.id = q.contact_id AND e.name LIKE ?)
                      OR EXISTS (SELECT 1 FROM quote_request_recipients rr JOIN clients cl ON cl.id = rr.client_id
                                 WHERE rr.quote_request_id = q.id AND (cl.name LIKE ? OR cl.company LIKE ? OR cl.email LIKE ?)))";
-        array_push($params, $q, $q, $q, $q, $q, $q, $q, $q, $q);
+        array_push($params, $q, $q, $q, $q, $q, $q, $q, $q, $q, $q);
     }
     // Closed requests (accepted/declined/cancelled/invoiced) only when asked for, so
     // the board stays focused on open work.
@@ -80,8 +83,10 @@ if ($method === 'GET') {
         $r['form_json'] = null;
         $out = qrPresent($r, $auth);
         $out['photo_count'] = (int)$r['photo_count'];
-        $out['cover_url'] = $r['cover_path'] ? qrFileUrl($r['cover_path']) : null;
-        unset($out['cover_path']);
+        // The first few photos, for the card's thumbnail strip.
+        $out['thumb_urls'] = $r['thumb_paths'] ? array_map('qrFileUrl', explode('|', $r['thumb_paths'])) : [];
+        $out['cover_url'] = $out['thumb_urls'][0] ?? null;
+        unset($out['thumb_paths']);
         unset($out['form']);
         return $out;
     }, $stmt->fetchAll());

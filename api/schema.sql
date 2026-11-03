@@ -372,17 +372,23 @@ CREATE TABLE customers (
   INDEX idx_customers_name (name)
 );
 
+-- The engineer list (migrations/2026-11-03_engineers.sql): the person a
+-- quote is for, the company they work for and where they work.
 CREATE TABLE customer_contacts (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  customer_id INT UNSIGNED NOT NULL,
+  customer_id INT UNSIGNED NULL,               -- company (customers.id)
   name VARCHAR(150) NOT NULL,
   title VARCHAR(100) NULL,
+  location VARCHAR(200) NULL,                  -- facility they work at
   email VARCHAR(190) NULL,
   phone VARCHAR(30) NULL,
   address VARCHAR(255) NULL,
   is_active TINYINT(1) DEFAULT 1,
+  created_by_name VARCHAR(150) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_contacts_customer (customer_id)
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_contacts_customer (customer_id),
+  INDEX idx_contacts_name (name)
 );
 
 -- One row per quote request / site walk. request # shown as Q-0001 from
@@ -394,13 +400,16 @@ CREATE TABLE quote_requests (
   -- Q-number, assigned only once the request is saved (NULL = unsaved site
   -- walk still being captured). migrations/2026-10-08b_quote_numbers.sql
   quote_number INT UNSIGNED NULL UNIQUE,
-  status ENUM('draft','submitted','needs_info','in_review','approved','estimating','sent','accepted','declined','cancelled')
+  -- PO: draft → pending_review → estimate_created → sent → accepted/declined.
+  -- No PO: → scheduled → done → invoiced (migrations/2026-11-03b_quote_statuses.sql)
+  status ENUM('draft','pending_review','needs_info','estimate_created','sent','accepted','declined','cancelled',
+              'scheduled','done','invoiced')
          NOT NULL DEFAULT 'draft',
   work_type ENUM('new','addon') NOT NULL DEFAULT 'new',
   estimate_type VARCHAR(20) NOT NULL DEFAULT 'standard', -- standard|addon|emergency|alternative|line_item
   title VARCHAR(200) NOT NULL,
   customer_id INT UNSIGNED NULL,
-  contact_id INT UNSIGNED NULL,
+  contact_id INT UNSIGNED NULL,                -- engineer (customer_contacts.id)
   facility VARCHAR(200) NULL,
   location_detail VARCHAR(255) NULL,           -- building / floor / department / suite
   project_number VARCHAR(4) NULL,              -- add-ons: the existing project
@@ -549,8 +558,7 @@ INSERT INTO quote_library (kind, label, manufacturer) VALUES
   ('flooring',      'Eternal Pebble Stucco',  'Forbo');
 
 -- Estimate recipients: the client users a quote request is for
--- (migrations/2026-10-06_quote_recipients.sql). Replaced customers /
--- customer_contacts above, which are kept but no longer used.
+-- (migrations/2026-10-06_quote_recipients.sql).
 CREATE TABLE quote_request_recipients (
   quote_request_id INT UNSIGNED NOT NULL,
   client_id INT UNSIGNED NOT NULL,

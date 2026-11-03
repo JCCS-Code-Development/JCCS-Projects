@@ -66,26 +66,23 @@ try {
             if (!qrFieldUserId($row)) $fail('Assign a field manager first — there is no one to ask');
             break;
 
-        case 'approve':
-            if (trim((string)$row['scope_text']) === '') $fail('Write or generate the Scope of Work before approving');
-            $sets[] = 'approved_at = NOW()';
-            $sets[] = 'approved_by_name = ?'; $params[] = $auth['name'];
-            break;
-
+        // The office made the estimate in InvoiceToGo: its number ties this
+        // site visit to it. "Sent" follows by itself once the PDF with that
+        // number is in the depot (checked right after, and on every new PDF).
         case 'set_estimate':
             $en = trim((string)($body['estimate_number'] ?? ''));
             if (!preg_match('/^[A-Za-z0-9-]{1,20}$/', $en)) $fail('Enter the InvoiceToGo Estimate #');
+            $taken = $pdo->prepare("SELECT quote_number FROM quote_requests WHERE estimate_number = ? AND id <> ? AND status <> 'cancelled' LIMIT 1");
+            $taken->execute([$en, $id]);
+            if (($other = $taken->fetchColumn()) !== false) $fail("Estimate #{$en} is already on " . (qrRequestNo($other) ?? 'another site visit'));
             $sets[] = 'estimate_number = ?'; $params[] = $en;
-            $to = $from === 'approved' ? 'estimating' : $from;
+            $sets[] = 'approved_at = COALESCE(approved_at, NOW())';
+            $sets[] = 'approved_by_name = COALESCE(approved_by_name, ?)'; $params[] = $auth['name'];
             $note = $note !== '' ? $note : "Estimate #{$en}";
             break;
 
-        case 'mark_sent':
-            $en = trim((string)($body['estimate_number'] ?? $row['estimate_number'] ?? ''));
-            if (!preg_match('/^[A-Za-z0-9-]{1,20}$/', $en)) $fail('Enter the InvoiceToGo Estimate # before marking it sent');
-            $sets[] = 'estimate_number = ?'; $params[] = $en;
-            $sets[] = 'sent_at = NOW()';
-            $sets[] = 'last_reminded_at = NULL';
+        case 'clear_estimate':
+            $sets[] = 'estimate_number = NULL';
             break;
 
         case 'accept':
@@ -168,7 +165,7 @@ try {
                     ->execute([$id, $note, $auth['user_id'], $auth['name']]);
             }
             qrNotifyOffice($pdo, $updated, $from === 'needs_info' ? 'quote_info_provided' : 'quote_submitted',
-                ($from === 'needs_info' ? 'Info added: ' : 'New site walk: ') . $title,
+                ($from === 'needs_info' ? 'Info added: ' : 'Pending review: ') . $title,
                 $updated['facility'] ?: $auth['name'], $auth['user_id']);
             break;
 
@@ -178,12 +175,24 @@ try {
             qrNotifyUser($pdo, qrFieldUserId($updated), $updated, 'quote_needs_info', 'More info needed: ' . $title, $note, $auth['user_id']);
             break;
 
-        case 'approve':
+        case 'set_estimate':
             qrSnapshot($pdo, $updated, $auth, 'approved', $note !== '' ? mb_substr($note, 0, 255) : null);
-            qrNotifyUser($pdo, qrFieldUserId($updated), $updated, 'quote_approved', 'Scope approved: ' . $title, null, $auth['user_id']);
+            // Already sent through the depot before the number was typed in?
+            if ($docId = qrFindEstimateDoc($pdo, (string)$updated['estimate_number'])) {
+                qrMarkEstimateSent($pdo, $updated, $docId, $auth);
+                $stmt->execute([$id]);
+                $updated = $stmt->fetch();
+            } else {
+                qrNotifyUser($pdo, qrFieldUserId($updated), $updated, 'quote_estimate_created', 'Estimate created: ' . $title, 'Estimate #' . $updated['estimate_number'], $auth['user_id']);
+            }
             break;
 
         case 'accept':
+            // Its estimate PDF came in before the project existed: file it there now.
+            if (!empty($updated['document_id']) && !empty($updated['project_number'])) {
+                $pdo->prepare("UPDATE documents SET project_number = ?, match_confidence = 'high' WHERE id = ? AND project_number = '0000'")
+                    ->execute([$updated['project_number'], $updated['document_id']]);
+            }
             $granted = qrGrantRecipientsAccess($pdo, $updated);
             // The visit's client is registered to the new project too.
             if ($portal = qrRegisterCustomerToProject($pdo, $updated)) {

@@ -2,13 +2,11 @@
 // column grouping, and the overdue / follow-up flags.
 
 export const STATUS_STYLES = {
-  draft:      'bg-gray-100 text-gray-600',
-  submitted:  'bg-sky-100 text-sky-800',
-  needs_info: 'bg-amber-100 text-amber-800',
-  in_review:  'bg-indigo-100 text-indigo-800',
-  approved:   'bg-teal-100 text-teal-800',
-  estimating: 'bg-violet-100 text-violet-800',
-  sent:       'bg-blue-100 text-blue-800',
+  draft:            'bg-gray-100 text-gray-600',
+  pending_review:   'bg-sky-100 text-sky-800',
+  needs_info:       'bg-amber-100 text-amber-800',
+  estimate_created: 'bg-violet-100 text-violet-800',
+  sent:             'bg-blue-100 text-blue-800',
   accepted:   'bg-green-100 text-green-800',
   declined:   'bg-red-100 text-red-700',
   cancelled:  'bg-gray-100 text-gray-400',
@@ -17,21 +15,26 @@ export const STATUS_STYLES = {
   invoiced:   'bg-emerald-100 text-emerald-800',
 }
 
-// With a PO the office writes an estimate; without one the job is scheduled,
-// done, then invoiced. The choice stays open until the job is on a path.
-export const BILLING_OPEN_STATUSES = ['draft', 'submitted', 'needs_info', 'in_review']
+// With a PO: pending review → estimate created (Estimate # typed in) → sent
+// (its PDF came through the depot). Without one the job is scheduled, done,
+// then invoiced. The choice stays open until the job is on a path.
+export const BILLING_OPEN_STATUSES = ['draft', 'pending_review', 'needs_info']
+
+// The PO path in order — the stepper on a quote's page.
+export const PO_STEPS = ['pending_review', 'estimate_created', 'sent', 'accepted']
+export const NO_PO_STEPS = ['pending_review', 'scheduled', 'done', 'invoiced']
 
 export const BOARD_COLUMNS = [
-  { key: 'intake',     statuses: ['draft', 'submitted', 'needs_info'] },
-  { key: 'review',     statuses: ['in_review', 'approved'] },
-  { key: 'estimating', statuses: ['estimating'] },
-  { key: 'sent',       statuses: ['sent'] },
-  { key: 'jobs',       statuses: ['scheduled', 'done'] }, // no PO
-  { key: 'closed',     statuses: ['accepted', 'declined', 'cancelled', 'invoiced'] },
+  { key: 'drafts',   statuses: ['draft'] },
+  { key: 'pending',  statuses: ['pending_review', 'needs_info'] },
+  { key: 'created',  statuses: ['estimate_created'] },
+  { key: 'sent',     statuses: ['sent'] },
+  { key: 'jobs',     statuses: ['scheduled', 'done'] }, // no PO
+  { key: 'closed',   statuses: ['accepted', 'declined', 'cancelled', 'invoiced'] },
 ]
 
 export const CLOSED_STATUSES = ['accepted', 'declined', 'cancelled', 'invoiced']
-const PRE_SEND = ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating']
+const PRE_SEND = ['draft', 'pending_review', 'needs_info', 'estimate_created']
 
 const DAY = 24 * 60 * 60 * 1000
 const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d }
@@ -105,7 +108,7 @@ export const FILE_KINDS = ['plan', 'sketch', 'product_data', 'finish_selection',
 
 // ── Request form state ⇄ API payload ──
 export const EMPTY_QUOTE_FORM = {
-  billing: 'po', work_type: 'new', estimate_type: 'standard', title: '', customer_id: null, recipient_ids: [],
+  billing: 'po', work_type: 'new', estimate_type: 'standard', title: '', customer_id: null, contact_id: null, recipient_ids: [],
   facility: '', location_detail: '', project_number: '', original_estimate_no: '', related_ref: '',
   description: '', needed_by: '', site_visit_date: '', priority: 'normal', request_source: '',
   field_manager_id: '', assigned_to: '', follow_up_days: 7, site_visit_at: '',

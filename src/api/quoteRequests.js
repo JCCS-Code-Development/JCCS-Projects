@@ -15,8 +15,9 @@ export const updateQuoteRequest = (id, payload) =>
 export const deleteQuoteRequest = (id) =>
   client.delete(`/quote-requests/item.php?id=${id}`).then((r) => r.data)
 
-// action: submit | start_review | request_info | approve | reopen | set_estimate
-//         | mark_sent | accept | decline | undo_decision | cancel | restore
+// action: submit | request_info | set_estimate | clear_estimate | accept
+//         | decline | undo_decision | schedule | unschedule | mark_done
+//         | undo_done | mark_invoiced | undo_invoiced | cancel | restore
 export const quoteAction = (id, action, extra = {}) =>
   client.post('/quote-requests/action.php', { id, action, ...extra }).then((r) => r.data)
 
@@ -75,8 +76,9 @@ export const deleteQuoteNote = (noteId) =>
 
 // Claude reads the walk (notes + photos) and returns draft form answers.
 // Can take a minute with many photos.
-export const aiDraftEstimate = (quoteRequestId) =>
-  client.post('/quote-requests/ai-draft.php', { id: quoteRequestId }, { timeout: 240000 }).then((r) => r.data)
+// extra: { prompt, key_photo_id } — the office's estimate prompt and key photo.
+export const aiDraftEstimate = (quoteRequestId, extra = {}) =>
+  client.post('/quote-requests/ai-draft.php', { id: quoteRequestId, ...extra }, { timeout: 240000 }).then((r) => r.data)
 
 // Voice memos (WhatsApp-style clips) on a request or a walk note.
 export const uploadQuoteAudio = (quoteRequestId, blob, { mime, duration, peaks, noteId, clientUid } = {}) => {

@@ -18,6 +18,7 @@ import QuoteDetail from './pages/quotes/QuoteDetail'
 import QuoteCapture from './pages/quotes/QuoteCapture'
 import EstimateForm from './pages/quotes/EstimateForm'
 import ClientList from './pages/quotes/clients/ClientList'
+import EngineerList from './pages/quotes/engineers/EngineerList'
 import MaterialsLibrary from './pages/MaterialsLibrary'
 
 import PortalHome from './pages/portal/PortalHome'
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/quotes/:id/capture" element={<QuoteCapture />} />
             <Route path="/quotes/:id/estimate" element={<EstimateForm />} />
             <Route path="/quotes/clients" element={<ClientList />} />
+            <Route path="/quotes/engineers" element={<EngineerList />} />
           </Route>
 
           {/* Admin only */}

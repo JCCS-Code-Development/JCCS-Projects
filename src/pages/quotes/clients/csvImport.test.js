@@ -31,6 +31,15 @@ describe('clientsFromCsv', () => {
   it('builds the name from first/last when there is no name column', () => {
     expect(clientsFromCsv('First Name,Last Name\nAna,Lopez\n').clients).toEqual([{ name: 'Ana Lopez' }])
   })
+  it("reads InvoiceToGo's client export (BillingName / ContactName)", () => {
+    const csv = '\uFEFFId,AccountId,LastUpdated,ContactName,BillingName,BillingAddress,ShippingAddress,Email,Phone,Mobile,Website,Terms,Notes,Taxnumber\n'
+      + '1,9,2026-01-01,Bobby Smith,Prisma Health,"1 Main St\nGreenville",,BOBBY@prisma.org,,,,,,\n'
+      + '2,9,2026-01-01,,Ana Lopez,,,ana@example.com,,,,,,\n'
+    expect(clientsFromCsv(csv).clients).toEqual([
+      { name: 'Prisma Health', email: 'bobby@prisma.org' },
+      { name: 'Ana Lopez', email: 'ana@example.com' },
+    ])
+  })
   it('reports a file with no name column', () => {
     expect(clientsFromCsv('Foo,Bar\n1,2\n').error).toBe('noName')
   })

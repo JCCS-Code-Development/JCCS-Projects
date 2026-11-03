@@ -388,7 +388,7 @@
   },
   "quotes": {
     "title": "Solicitudes de Cotización",
-    "subtitle": "Visitas a obra y solicitudes de estimado, desde la entrada hasta la aceptación.",
+    "subtitle": "Visitas, desde pendiente de revisión hasta estimado enviado.",
     "fieldTitle": "Mis Visitas",
     "fieldSubtitle": "Documenta el trabajo — la oficina lo convierte en el estimado.",
     "newRequest": "Nueva solicitud",
@@ -400,15 +400,13 @@
     "noResults": "Nada coincide con la búsqueda.",
     "status": {
       "draft": "Borrador",
-      "submitted": "Enviada",
+      "pending_review": "Pendiente de revisión",
       "needs_info": "Falta información",
-      "in_review": "En revisión",
-      "approved": "Aprobada",
-      "estimating": "Estimando",
-      "sent": "Enviada al cliente",
-      "accepted": "Aceptada",
-      "declined": "Rechazada",
-      "cancelled": "Cancelada",
+      "estimate_created": "Creado — sin enviar",
+      "sent": "Estimado enviado",
+      "accepted": "Aceptado",
+      "declined": "Rechazado",
+      "cancelled": "Cancelado",
       "scheduled": "Programado",
       "done": "Terminado",
       "invoiced": "Facturado"
@@ -480,7 +478,7 @@
     "infoRequested": "Información solicitada",
     "sections": {
       "details": "Detalles",
-      "scope": "Alcance del trabajo",
+      "scope": "Texto del estimado",
       "photos": "Fotos",
       "files": "Documentos",
       "thread": "Comentarios",
@@ -495,7 +493,7 @@
       "unsaved": "Cambios sin guardar",
       "copy": "Copiar para InvoiceToGo",
       "copied": "Copiado — pégalo en la descripción de la partida en InvoiceToGo.",
-      "locked": "Bloqueado — alcance aprobado. Reabre la solicitud para cambiarlo.",
+      "locked": "Cerrado — este es el estimado que se envió.",
       "hint": "Texto simple: títulos de sección en su propia línea, viñetas que empiezan con \"• \". Esto es exactamente lo que se pega en InvoiceToGo.",
       "insertBullet": "Insertar •",
       "restore": "Cargar en el editor",
@@ -505,12 +503,7 @@
     "actions": {
       "submit": "Enviar a la oficina",
       "resubmit": "Enviar actualización",
-      "start_review": "Iniciar revisión",
       "request_info": "Pedir información",
-      "approve": "Aprobar alcance",
-      "reopen": "Reabrir",
-      "set_estimate": "Ingresar Estimado #",
-      "mark_sent": "Marcar enviada",
       "accept": "Marcar aceptada",
       "decline": "Marcar rechazada",
       "undo_decision": "Deshacer decisión",
@@ -526,7 +519,8 @@
       "mark_done": "Marcar terminado",
       "undo_done": "Deshacer terminado",
       "mark_invoiced": "Marcar facturado",
-      "undo_invoiced": "Deshacer facturado"
+      "undo_invoiced": "Deshacer facturado",
+      "clear_estimate": "Quitar Estimado #"
     },
     "prompts": {
       "request_info": "¿Qué información falta?",
@@ -535,16 +529,14 @@
       "cancel": "¿Cancelar esta solicitud? Queda en el historial.",
       "cancelDraft": "¿Retirar este borrador?",
       "delete": "¿Eliminar permanentemente esta solicitud, sus fotos e historial? No se puede deshacer.",
-      "approve": "¿Aprobar y bloquear este alcance? Puedes reabrirlo después.",
-      "estimateNumber": "Estimado # de InvoiceToGo",
-      "reopen": "¿Reabrir para editar? La versión aprobada queda en el historial.",
       "noPhotos": "Esta visita no tiene fotos. ¿Enviarla de todos modos?",
       "unschedule": "¿Quitar este trabajo de la programación? También se quita del Calendario.",
       "markDone": "¿Marcar el trabajo como terminado? Así la oficina lo puede facturar.",
       "invoiceNumber": "# de factura de InvoiceToGo",
       "scheduleStart": "Empieza",
       "scheduleEnd": "Termina (opcional)",
-      "scheduleHint": "También se agrega a la app de Calendario, asignado al supervisor de campo."
+      "scheduleHint": "También se agrega a la app de Calendario, asignado al supervisor de campo.",
+      "clearEstimate": "¿Quitar el Estimado # de esta visita? Vuelve a Pendiente de revisión."
     },
     "photos": {
       "add": "Agregar fotos",
@@ -603,12 +595,12 @@
     },
     "activity": {
       "created": "Creada",
-      "submit": "Enviada",
+      "submit": "Enviado a revisión",
       "start_review": "Revisión iniciada",
       "request_info": "Pidió información",
       "approve": "Aprobada",
       "reopen": "Reabierta",
-      "set_estimate": "Estimado # ingresado",
+      "set_estimate": "Estimado creado en InvoiceToGo",
       "mark_sent": "Marcada enviada",
       "accept": "Aceptada",
       "decline": "Rechazada",
@@ -620,15 +612,17 @@
       "estimate_number": "Estimado #",
       "portal_access": "Acceso al portal otorgado a los destinatarios",
       "ai_draft": "Borrador con IA generado",
-      "client_registered": "Cliente registrado en el proyecto"
+      "client_registered": "Cliente registrado en el proyecto",
+      "clear_estimate": "Estimado # quitado",
+      "estimate_sent": "Estimado enviado — PDF recibido en el depósito"
     },
     "versionKind": {
       "field_submission": "Envío de campo",
       "scope_edit": "Edición de alcance",
-      "approved": "Aprobado"
+      "approved": "Estimado creado"
     },
-    "submitHint": "Una vez enviada, la oficina la revisa. Aún puedes agregar comentarios.",
-    "readOnlyField": "Enviada — la oficina la tiene ahora. Agrega un comentario si algo cambió.",
+    "submitHint": "Al enviarlo, queda pendiente de revisión por la oficina. Aún puedes agregar comentarios.",
+    "readOnlyField": "Enviado — la oficina ya lo tiene. Agrega un comentario si algo cambió.",
     "needsInfoBanner": "La oficina necesita más información — ve los Comentarios, actualiza los detalles y envía la actualización.",
     "filters": {
       "all": "Todas abiertas",
@@ -636,12 +630,12 @@
       "unassigned": "Sin asignar"
     },
     "board": {
-      "intake": "Entrada",
-      "review": "Revisión",
-      "estimating": "Estimando",
-      "sent": "Enviadas",
-      "closed": "Cerradas",
-      "jobs": "Trabajos sin PO"
+      "drafts": "Borradores",
+      "pending": "Pendiente de revisión",
+      "created": "Creado — sin enviar",
+      "sent": "Estimado enviado",
+      "jobs": "Trabajos sin PO",
+      "closed": "Cerrados"
     },
     "manageLibrary": "Biblioteca de materiales",
     "addonShort": "Adicional",
@@ -695,12 +689,12 @@
     },
     "unsaved": "Sin guardar",
     "est": {
-      "open": "Alcance del trabajo",
-      "openHint": "Se escribe solo a partir de las notas de la visita — solo revíselo.",
-      "openHintStarted": "Guardado — ábralo para revisar o seguir editando.",
+      "open": "Texto del estimado",
+      "openHint": "Resumen de las notas + una foto clave → el texto del estimado para InvoiceToGo.",
+      "openHintStarted": "Guardado — ábrelo para revisar, editar o copiar.",
       "title": "Formulario del estimado",
       "subtitle": "Las respuestas se guardan solas. El Alcance a la derecha se actualiza en vivo.",
-      "readOnly": "Esta solicitud está bloqueada — se muestran las respuestas guardadas.",
+      "readOnly": "Esta cotización está cerrada — se muestra el estimado guardado.",
       "general": "General",
       "scope": "Alcance del trabajo",
       "preview": "Alcance (vista previa)",
@@ -709,126 +703,11 @@
         "form": "Formulario",
         "preview": "Vista previa"
       },
-      "ic": {
-        "none": "Sin control",
-        "limited": "Control de polvo",
-        "required": "Control de infecciones"
-      },
       "copied": "Copiado — pégalo en InvoiceToGo.",
       "copyTitle": "Copiar título",
       "copyDescription": "Copiar descripción",
-      "useAsScope": "Usar como Alcance",
+      "useAsScope": "Guardar como el estimado",
       "replaceScope": "¿Reemplazar el Alcance actual con este?",
-      "f": {
-        "title": "Título del estimado",
-        "area": "Área de trabajo",
-        "areaHint": "Completa la frase \"Prepare the designated …\"",
-        "locations": "Cuartos / ubicaciones",
-        "ic": "Control de infecciones",
-        "protect": "Proteger lo adyacente…",
-        "verify": "Verificar en campo…",
-        "addOther": "Agregar otro…",
-        "allRooms": "Frase \"Throughout …\"",
-        "allRoomsHint": "Para trabajo en varios cuartos, ej. \"all four exam rooms\"",
-        "leaveArea": "Dejar … limpio, seguro y listo",
-        "item": "Objeto a remover",
-        "disconnectPlumbing": "Desconectarlo de la plomería primero",
-        "wallDrywall": "Drywall de pared",
-        "insulation": "Aislamiento",
-        "coveBase": "Zócalo",
-        "solidCeiling": "Drywall de techo sólido",
-        "otherMaterial": "Otro material (opcional)",
-        "framingArea": "Qué se enmarca",
-        "framingPurpose": "Para crear un…",
-        "antimicrobialNote": "Siempre incluye la exclusión de pruebas de moho, laboratorio y remediación certificada.",
-        "drywallType": "Tipo de drywall",
-        "newInsulation": "Aislamiento nuevo en las cavidades",
-        "level5": "Acabado Nivel 5",
-        "ceilingNote": "Reparación de techo sólido de drywall — nunca menciona plafón ni rejilla.",
-        "qty": "Cant.",
-        "width": "Ancho (in)",
-        "height": "Alto (in)",
-        "glazing": "Vidrio",
-        "approx": "Medidas aproximadas",
-        "touchUp": "Resanar y retocar pintura alrededor",
-        "color": "Color",
-        "colorHint": "Vacío = \"the approved color\"",
-        "exteriorDoor": "También pintar la puerta exterior",
-        "sectionHeading": "Título de sección",
-        "sectionBullets": "Viñetas (una por línea)",
-        "addSection": "Agregar sección",
-        "brand": "Marca",
-        "product": "Producto",
-        "linearFeet": "Pies lineales (aprox.)",
-        "where": "Dónde",
-        "exclude": "Excluir"
-      },
-      "cat": {
-        "itemRemoval": "Remover objeto",
-        "demo": "Demolición",
-        "plumbing": "Plomería",
-        "framing": "Estructura",
-        "antimicrobial": "Antimicrobiano",
-        "drywall": "Drywall",
-        "ceiling": "Techo sólido",
-        "windowFilm": "Película",
-        "window": "Ventana nueva",
-        "painting": "Pintura",
-        "coveBase": "Zócalo",
-        "wallProtection": "Protección de paredes",
-        "other": "Otro"
-      },
-      "opt": {
-        "demo": {
-          "mode": {
-            "affected": "Materiales afectados",
-            "wallboard": "Todo el panel"
-          }
-        },
-        "plumbing": {
-          "work": {
-            "cap": "Taponar",
-            "reconnect": "Desconectar y reconectar"
-          }
-        },
-        "drywall": {
-          "mode": {
-            "new": "Sobre estructura nueva",
-            "replace": "Reemplazar afectado",
-            "full": "Paredes nuevas"
-          },
-          "type": {
-            "standard": "Estándar",
-            "mold-resistant": "Resistente al moho",
-            "moisture-resistant": "Resistente a humedad",
-            "fire-rated": "Contra fuego"
-          }
-        },
-        "windowFilm": {
-          "film": {
-            "frosted": "Esmerilada",
-            "tinted": "Polarizada"
-          }
-        },
-        "window": {
-          "kind": {
-            "sliding": "Corrediza",
-            "fixed": "Fija"
-          }
-        },
-        "painting": {
-          "mode": {
-            "match": "Igualar existente",
-            "full": "Acabado nuevo"
-          }
-        },
-        "coveBase": {
-          "mode": {
-            "match": "Igualar existente",
-            "new": "Color nuevo"
-          }
-        }
-      },
       "missing": {
         "scope": "Elige al menos una categoría.",
         "title": "Agrega un título."
@@ -843,7 +722,7 @@
         "title": "Estimado provisional desde la visita",
         "hint": "Claude lee las notas y fotos de la visita y llena este formulario. Tú revisas y editas todo.",
         "working": "Leyendo las notas y fotos… puede tardar hasta un minuto.",
-        "button": "Borrador con IA (lee fotos)",
+        "button": "Borrador con IA (resumen + foto clave)",
         "replace": "¿Reemplazar las respuestas actuales con un nuevo borrador desde la visita?",
         "done_one": "Borrador listo con las notas y {{count}} foto — revísalo y edítalo.",
         "done_other": "Borrador listo con las notas y {{count}} fotos — revísalo y edítalo.",
@@ -855,23 +734,31 @@
         "hint": "Llena el formulario con lo que escribió el supervisor — luego revisa y edita todo.",
         "button": "Llenar con las notas de la visita",
         "replace": "¿Reemplazar las respuestas actuales con un borrador desde las notas?",
-        "done": "Borrador listo desde las notas — revísalo contra las fotos.",
+        "done": "Texto del estimado escrito desde el resumen — revísalo con la foto clave.",
         "notesTitle": "Para revisar / confirmar"
       },
-      "draftTitle": "Alcance del trabajo",
-      "draftHint": "Escrito a partir de las notas de la visita. Edite lo que quiera — se guarda mientras escribe.",
+      "draftTitle": "Texto del estimado",
+      "draftHint": "Escrito a partir del resumen de arriba. Edita lo que quieras — se guarda solo, en cualquier momento.",
       "draftEdited": "Sus cambios están guardados. Puede seguir editando hasta que se revise.",
       "saving": "Guardando…",
       "saved": "Guardado",
-      "staleHint": "Las respuestas de ajuste cambiaron después de que editó el texto.",
-      "useNewText": "Usar el texto actualizado (descarta sus cambios)",
       "undoEdits": "Deshacer mis cambios",
       "redo": "Reescribir desde las notas",
-      "redoConfirm": "¿Reescribir el alcance desde las notas de la visita? Sus cambios y respuestas de ajuste se reemplazarán.",
-      "fineTune": "Ajustar",
-      "fineTuneHint_one": "{{count}} tipo de trabajo encontrado — ábralo solo si hay que ajustar la redacción",
-      "fineTuneHint_other": "{{count}} tipos de trabajo encontrados — ábralo solo si hay que ajustar la redacción",
-      "fineTuneEdited": "Editó el texto a mano, así que los cambios aquí no lo reemplazan — se le ofrecerá el texto actualizado."
+      "redoConfirm": "¿Volver a escribir el texto del estimado desde el resumen? Se reemplazarán tus cambios al texto.",
+      "generate": "Generar texto del estimado",
+      "prompt": {
+        "title": "Resumen para el estimado",
+        "hint": "Un resumen corto de las notas de la visita con los detalles importantes. Corrige o agrega lo que falte y genera el texto del estimado.",
+        "redo": "Rehacer resumen desde las notas",
+        "redoConfirm": "¿Rehacer el resumen desde las notas de la visita? Se reemplazarán tus cambios.",
+        "empty": "Escribe el resumen primero."
+      },
+      "keyPhoto": {
+        "title": "Foto clave",
+        "hint": "Toca la foto que mejor muestra el trabajo. Queda junto al estimado como guía visual.",
+        "hintAi": "Toca la foto que mejor muestra el trabajo. “Borrador con IA” la mira junto con el resumen.",
+        "none": "Esta visita no tiene fotos."
+      }
     },
     "voice": {
       "holdHint": "Mantén presionado para grabar, suelta para enviar",
@@ -1019,7 +906,66 @@
       "send": "Enviar a la oficina",
       "save": "Guardar",
       "sent": "Enviado a la oficina",
-      "needSomething": "Primero agrega una foto o escribe cuál es el trabajo."
+      "needSomething": "Primero agrega una foto o escribe cuál es el trabajo.",
+      "engineer": "Ingeniero",
+      "noEngineer": "No está en la lista — toca para elegir"
+    },
+    "noPhotosYet": "Sin fotos todavía",
+    "who": {
+      "company": "Empresa",
+      "engineer": "Ingeniero",
+      "location": "Ubicación",
+      "estimator": "Estimador",
+      "noCompany": "Sin empresa",
+      "noEngineer": "Sin ingeniero",
+      "noLocation": "Sin ubicación",
+      "noEstimator": "Sin estimador"
+    },
+    "engineers": {
+      "label": "Ingeniero",
+      "title": "Ingenieros",
+      "subtitle": "Para quién son las cotizaciones: la empresa donde trabajan y su ubicación.",
+      "search": "Buscar ingenieros por nombre, empresa o ubicación…",
+      "new": "Nuevo ingeniero",
+      "addNamed": "Agregar “{{name}}” como ingeniero nuevo",
+      "newTitle": "Nuevo ingeniero",
+      "editTitle": "Editar ingeniero",
+      "name": "Nombre del ingeniero",
+      "namePlaceholder": "ej. Bobby Smith",
+      "nameRequired": "Escribe el nombre del ingeniero",
+      "company": "Empresa",
+      "location": "Ubicación donde trabaja",
+      "jobTitle": "Cargo",
+      "jobTitlePlaceholder": "ej. Ingeniero de mantenimiento",
+      "added": "Ingeniero agregado",
+      "saved": "Ingeniero guardado",
+      "alreadyThere": "Ese ingeniero ya estaba en la lista — se usará",
+      "removed": "Ingeniero quitado",
+      "removeConfirm": "¿Quitar a {{name}} de la lista de ingenieros? Las cotizaciones anteriores lo conservan.",
+      "empty": "Aún no hay ingenieros. Agrega uno aquí, o elige “Nuevo ingeniero” en una cotización.",
+      "noMatches": "Ningún ingeniero coincide.",
+      "count_one": "{{count}} ingeniero",
+      "count_other": "{{count}} ingenieros",
+      "noCompany": "Sin empresa"
+    },
+    "statusCard": {
+      "draft": "Aún no se envió — toca “Enviar a la oficina” cuando la visita esté lista.",
+      "pending_review": "Pendiente de revisión — la oficina hace el estimado en InvoiceToGo y luego escribe aquí su número.",
+      "pending_review_noPo": "Pendiente de revisión — sin PO: la oficina programa el trabajo.",
+      "needs_info": "La oficina pidió más información — mira los Comentarios.",
+      "estimate_created": "El estimado #{{number}} está creado en InvoiceToGo pero aún no se envió. Envíalo al cliente con copia a {{depot}} — se marca enviado en cuanto llega el PDF.",
+      "sent": "Estimado #{{number}} enviado — el PDF llegó al depósito {{date}}. Esperando al cliente.",
+      "accepted": "Aceptado — el estimado #{{number}} ya es un proyecto.",
+      "declined": "El cliente lo rechazó.",
+      "cancelled": "Cancelado.",
+      "scheduled": "Programado — el trabajo está en el calendario.",
+      "done": "Trabajo terminado — listo para facturar.",
+      "invoiced": "Facturado.",
+      "link": "Vincular estimado",
+      "change": "Cambiar",
+      "numberHint": "El número que InvoiceToGo le dio al estimado. Luego envía el estimado con copia a {{depot}} — esta visita se marca enviada sola cuando llega el PDF.",
+      "linked": "Vinculado — queda “Creado — sin enviar” hasta que el PDF llegue al depósito.",
+      "linkedSent": "Vinculado — el PDF ya estaba en el depósito, así que se marcó enviado."
     }
   },
   "library": {

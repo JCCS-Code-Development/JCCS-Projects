@@ -1,5 +1,7 @@
 // Reads a client list out of an InvoiceToGo export (or any spreadsheet saved
-// as CSV). Works with a client list (Name, Email, Phone, Address…) and with
+// as CSV). Works with InvoiceToGo's client export (BillingName, ContactName,
+// Email, BillingAddress, ShippingAddress…), any client list (Name, Email,
+// Phone, Address…) and
 // InvoiceToGo's documents export, where every invoice/estimate row carries
 // its client (Name, EmailRecipient, DocumentRecipientAddress, ShipAddress) —
 // the same client on many rows becomes one client.
@@ -32,7 +34,7 @@ const norm = (h) => h.toLowerCase().replace(/[^a-z0-9]/g, '')
 
 // Column names we understand, per field (compared without case/spaces/punctuation).
 const COLUMNS = {
-  name: ['name', 'client', 'clientname', 'customer', 'customername', 'company', 'companyname', 'business', 'businessname', 'displayname', 'billto', 'documentrecipientname', 'recipientname'],
+  name: ['name', 'client', 'clientname', 'customer', 'customername', 'company', 'companyname', 'business', 'businessname', 'displayname', 'billingname', 'billto', 'documentrecipientname', 'recipientname'],
   contact_name: ['contact', 'contactname', 'contactperson', 'attention', 'attn', 'fullname'],
   first: ['firstname', 'contactfirstname'],
   last: ['lastname', 'contactlastname'],

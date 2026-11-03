@@ -72,6 +72,16 @@ function financialDocMatch(PDO $pdo, array $haystacks): array {
     return [FIN_UNFILED, 'none'];
 }
 
+// The Estimate # printed on an InvoiceToGo estimate ("Estimate # 4602",
+// "Estimate No. 4602"), else the 4-digit job number it was filed under.
+function financialDocEstimateNumber(array $haystacks, string $projectNumber): ?string {
+    $text = implode("\n", array_filter($haystacks));
+    if (preg_match('/\b(?:estimate|presupuesto|cotizaci[oó]n)\s*(?:#|no\.?|number|n[uú]mero)?\s*:?\s*#?\s*([A-Za-z0-9-]{2,20})\b/iu', $text, $m) && preg_match('/\d/', $m[1])) {
+        return $m[1];
+    }
+    return $projectNumber !== FIN_UNFILED && preg_match('/^\d{4}$/', $projectNumber) ? $projectNumber : null;
+}
+
 // estimate | invoice, guessed from the text if not given explicitly.
 function financialDocType(?string $given, array $haystacks): string {
     if ($given === 'estimate' || $given === 'invoice') return $given;
@@ -173,7 +183,25 @@ function storeFinancialDoc(
         throw $e;
     }
 
+    // An estimate PDF: any site visit waiting on its Estimate # is now sent.
+    // The document keeps that number, so a number typed in later still finds
+    // it. Best-effort — filing the PDF never fails because of this.
+    $sentFor = null;
+    if (in_array($type, ['estimate', 'addon_estimate'], true)) {
+        try {
+            require_once __DIR__ . '/../quote-requests/_common.php';
+            $sentFor = qrMatchEstimateDoc($pdo, $docId, $meta['doc_number'] ?? null, $haystacks);
+            $docNumber = $sentFor ?? (!empty($meta['doc_number']) ? null : financialDocEstimateNumber($haystacks, $projectNumber));
+            if ($docNumber !== null && empty($meta['doc_number'])) {
+                $pdo->prepare('UPDATE documents SET doc_number = ? WHERE id = ? AND doc_number IS NULL')->execute([$docNumber, $docId]);
+            }
+        } catch (Throwable $e) {
+            error_log('estimate → quote link: ' . $e->getMessage());
+        }
+    }
+
     return [
+        'quote_sent_for'   => $sentFor,
         'id'               => $docId,
         'project_number'   => $projectNumber,
         'unfiled'          => $projectNumber === FIN_UNFILED,

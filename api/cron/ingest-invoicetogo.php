@@ -101,8 +101,9 @@ foreach ($ids as $num) {
                 'body_text' => trim($bodyText),
             ]);
             $filed++;
-            $log(sprintf('  filed #%d → project %s (%s, %s confidence)',
-                $res['id'], $res['project_number'], $res['category'], $res['match_confidence'] ?? '—'));
+            $log(sprintf('  filed #%d → project %s (%s, %s confidence)%s',
+                $res['id'], $res['project_number'], $res['category'], $res['match_confidence'] ?? '—',
+                $res['quote_sent_for'] ? " — site visit marked sent (Estimate #{$res['quote_sent_for']})" : ''));
         } catch (Throwable $e) {
             $log('  ERROR filing "' . $name . '": ' . $e->getMessage());
         } finally {

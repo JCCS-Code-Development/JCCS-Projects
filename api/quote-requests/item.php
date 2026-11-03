@@ -24,6 +24,7 @@ if ($method === 'GET') {
 
     $out['recipients'] = qrRecipients($pdo, $id);
     $out['customer'] = qrCustomer($pdo, $out['customer_id'] ?? null);
+    $out['engineer'] = qrEngineer($pdo, $out['contact_id'] ?? null);
 
     $s = $pdo->prepare('SELECT * FROM quote_request_photos WHERE quote_request_id = ? ORDER BY id');
     $s->execute([$id]);
@@ -101,7 +102,7 @@ if ($method === 'GET') {
         $scopeChanged = $scope !== (string)$row['scope_text'];
         $sets[] = 'scope_text = ?'; $params[] = $scope === '' ? null : $scope;
     }
-    // Once approved, the structured form is part of the locked record too.
+    // Once decided, the structured form is part of the locked record too.
     if (array_key_exists('form', $body) && in_array($row['status'], QR_SCOPE_LOCKED, true)) {
         http_response_code(409); exit(json_encode(['error' => 'The site visit is locked — reopen the request to edit it']));
     }
@@ -122,11 +123,6 @@ if ($method === 'GET') {
 
         if ($scopeChanged) {
             qrSnapshot($pdo, $updated, $auth, 'scope_edit', isset($body['version_note']) ? mb_substr(sanitizeString($body['version_note']), 0, 255) : null);
-            // Editing the scope of a freshly submitted request means review has started.
-            if ($row['status'] === 'submitted') {
-                $pdo->prepare("UPDATE quote_requests SET status = 'in_review' WHERE id = ?")->execute([$id]);
-                qrLogActivity($pdo, $id, $auth, 'start_review', 'submitted', 'in_review');
-            }
         }
         if ($isAdmin && array_key_exists('assigned_to', $body) && (int)$updated['assigned_to'] !== (int)$row['assigned_to']) {
             qrLogActivity($pdo, $id, $auth, 'assigned_estimator', null, null, $updated['assigned_to_name'] ?? 'Unassigned');

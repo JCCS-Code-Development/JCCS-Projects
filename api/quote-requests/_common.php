@@ -7,20 +7,22 @@
 // leaves 'pm' out.
 //
 // Field managers may only edit while a request is still in their hands
-// (draft / needs_info). Once approved, the scope is locked until an admin
-// reopens it.
+// (draft / needs_info). The office can edit the estimate text until the
+// quote is decided.
 
 require_once __DIR__ . '/../services/notify.php';
 
 const QR_ROLES = ['admin', 'field'];
 
-const QR_STATUSES = ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating', 'sent', 'accepted', 'declined', 'cancelled',
+// With a PO: sent in → pending review → the office writes the estimate in
+// InvoiceToGo and types its Estimate # in (estimate created, not sent) → the
+// PDF with that number reaches the depot mailbox (sent) → accepted/declined.
+// Without a PO the work is scheduled, done, then invoiced.
+const QR_STATUSES = ['draft', 'pending_review', 'needs_info', 'estimate_created', 'sent', 'accepted', 'declined', 'cancelled',
                      'scheduled', 'done', 'invoiced'];
-// With a PO the office writes an estimate (approve → estimate → sent →
-// accepted); without one the work is scheduled, done, then invoiced.
 const QR_BILLING = ['po', 'no_po'];
 // The PO choice can change until the job is committed to one path.
-const QR_BILLING_OPEN_STATUSES = ['draft', 'submitted', 'needs_info', 'in_review'];
+const QR_BILLING_OPEN_STATUSES = ['draft', 'pending_review', 'needs_info'];
 const QR_FIELD_EDITABLE_STATUSES = ['draft', 'needs_info'];
 const QR_ESTIMATE_TYPES = ['standard', 'addon', 'emergency', 'alternative', 'line_item'];
 const QR_SOURCES = ['email', 'text', 'phone', 'site_meeting', 'work_order', 'other'];
@@ -207,6 +209,15 @@ function qrCollectFields(PDO $pdo, array $body, array $auth, array &$sets, array
         }
         $sets[] = 'customer_id = ?'; $params[] = $cid;
     }
+    if (array_key_exists('contact_id', $body)) {
+        $eid = $body['contact_id'] ? (int)$body['contact_id'] : null;
+        if ($eid) {
+            $e = $pdo->prepare('SELECT id FROM customer_contacts WHERE id = ?');
+            $e->execute([$eid]);
+            if (!$e->fetch()) { http_response_code(422); exit(json_encode(['error' => 'That engineer is no longer on the list'])); }
+        }
+        $sets[] = 'contact_id = ?'; $params[] = $eid;
+    }
     $str('facility', 200);
     $str('location_detail', 255);
     $str('original_estimate_no', 20);
@@ -309,30 +320,29 @@ function qrFileUrl(string $relativePath): string {
 // both action.php (enforcement) and the detail payload's `actions` list
 // (which buttons the UI shows).
 const QR_ACTIONS = [
-    'submit'        => ['roles' => ['admin', 'field'], 'from' => ['draft', 'needs_info'],             'to' => 'submitted'],
-    'start_review'  => ['roles' => ['admin'],          'from' => ['draft', 'submitted'],              'to' => 'in_review'],
-    'request_info'  => ['roles' => ['admin'],          'from' => ['submitted', 'in_review'],          'to' => 'needs_info'],
-    // With a PO: estimate.
-    'approve'       => ['roles' => ['admin'],          'from' => ['submitted', 'in_review'],          'to' => 'approved',  'billing' => 'po'],
-    'reopen'        => ['roles' => ['admin'],          'from' => ['approved', 'estimating'],          'to' => 'in_review', 'billing' => 'po'],
-    'set_estimate'  => ['roles' => ['admin'],          'from' => ['approved', 'estimating', 'sent'],  'to' => null,        'billing' => 'po'], // approved→estimating, else unchanged
-    'mark_sent'     => ['roles' => ['admin'],          'from' => ['approved', 'estimating'],          'to' => 'sent',      'billing' => 'po'],
+    'submit'        => ['roles' => ['admin', 'field'], 'from' => ['draft', 'needs_info'],             'to' => 'pending_review'],
+    'request_info'  => ['roles' => ['admin'],          'from' => ['pending_review'],                  'to' => 'needs_info'],
+    // With a PO: the Estimate # from InvoiceToGo. It's "sent" only when the
+    // PDF with that number comes in through the depot (qrMatchEstimateDoc).
+    'set_estimate'  => ['roles' => ['admin'],          'from' => ['pending_review', 'estimate_created'], 'to' => 'estimate_created', 'billing' => 'po'],
+    'clear_estimate'=> ['roles' => ['admin'],          'from' => ['estimate_created'],                'to' => 'pending_review',   'billing' => 'po'],
     'accept'        => ['roles' => ['admin'],          'from' => ['sent'],                            'to' => 'accepted',  'billing' => 'po'],
     'decline'       => ['roles' => ['admin'],          'from' => ['sent'],                            'to' => 'declined',  'billing' => 'po'],
     'undo_decision' => ['roles' => ['admin'],          'from' => ['accepted', 'declined'],            'to' => 'sent',      'billing' => 'po'],
     // Without a PO: schedule (also reschedules) → done → invoiced.
-    'schedule'      => ['roles' => ['admin'],          'from' => ['draft', 'submitted', 'in_review', 'scheduled'], 'to' => 'scheduled', 'billing' => 'no_po'],
-    'unschedule'    => ['roles' => ['admin'],          'from' => ['scheduled'],                       'to' => 'in_review', 'billing' => 'no_po'],
+    'schedule'      => ['roles' => ['admin'],          'from' => ['draft', 'pending_review', 'scheduled'], 'to' => 'scheduled', 'billing' => 'no_po'],
+    'unschedule'    => ['roles' => ['admin'],          'from' => ['scheduled'],                       'to' => 'pending_review', 'billing' => 'no_po'],
     'mark_done'     => ['roles' => ['admin', 'field'], 'from' => ['scheduled'],                       'to' => 'done',      'billing' => 'no_po'],
     'undo_done'     => ['roles' => ['admin'],          'from' => ['done'],                            'to' => 'scheduled', 'billing' => 'no_po'],
     'mark_invoiced' => ['roles' => ['admin'],          'from' => ['done'],                            'to' => 'invoiced',  'billing' => 'no_po'],
     'undo_invoiced' => ['roles' => ['admin'],          'from' => ['invoiced'],                        'to' => 'done',      'billing' => 'no_po'],
-    'cancel'        => ['roles' => ['admin', 'field'], 'from' => ['draft', 'submitted', 'needs_info', 'in_review', 'approved', 'estimating', 'sent', 'scheduled', 'done'], 'to' => 'cancelled'],
+    'cancel'        => ['roles' => ['admin', 'field'], 'from' => ['draft', 'pending_review', 'needs_info', 'estimate_created', 'sent', 'scheduled', 'done'], 'to' => 'cancelled'],
     'restore'       => ['roles' => ['admin'],          'from' => ['cancelled'],                       'to' => 'draft'],
 ];
 
-// Statuses in which the scope is frozen (approved and everything after it).
-const QR_SCOPE_LOCKED = ['approved', 'estimating', 'sent', 'accepted', 'declined', 'cancelled', 'scheduled', 'done', 'invoiced'];
+// Statuses in which the estimate text is frozen. It stays editable (and
+// copyable into InvoiceToGo) until the quote is decided.
+const QR_SCOPE_LOCKED = ['accepted', 'declined', 'cancelled', 'invoiced'];
 
 function qrActionAllowed(array $auth, array $row, string $action): bool {
     $def = QR_ACTIONS[$action] ?? null;
@@ -415,6 +425,67 @@ function qrCustomer(PDO $pdo, ?int $customerId): ?array {
 // client-portal access to it: their portal account is found by email, or
 // created — without sending anything; the office sends the invite from Users
 // when they want the client in. Returns the email registered, or null.
+// ── Estimate sent = its PDF reached the depot ──────────────────────────────
+// The office types the InvoiceToGo Estimate # into the site visit and sends
+// the estimate through the depot mailbox (depot@projects.jccs-services.com),
+// whose PDFs are filed in `documents`. Whichever comes first, the moment the
+// two meet the quote is marked sent — nobody clicks "sent".
+
+const QR_DEPOT_ACTOR = ['user_id' => 0, 'name' => 'Depot email', 'role' => 'admin'];
+
+// A filed estimate PDF carrying this Estimate #, newest first.
+function qrFindEstimateDoc(PDO $pdo, string $estimateNumber): ?int {
+    $s = $pdo->prepare("SELECT id FROM documents WHERE category IN ('estimate', 'addon_estimate') AND is_active = 1 AND doc_number = ? ORDER BY id DESC LIMIT 1");
+    $s->execute([$estimateNumber]);
+    $id = $s->fetchColumn();
+    return $id === false ? null : (int)$id;
+}
+
+// Estimate created → sent, pointing at the PDF. The caller holds the row
+// (and its transaction, if any).
+function qrMarkEstimateSent(PDO $pdo, array $row, int $docId, array $actor): void {
+    $pdo->prepare("UPDATE quote_requests SET status = 'sent', sent_at = NOW(), last_reminded_at = NULL, document_id = ? WHERE id = ? AND status = 'estimate_created'")
+        ->execute([$docId, $row['id']]);
+    qrLogActivity($pdo, (int)$row['id'], $actor, 'estimate_sent', $row['status'], 'sent', 'Estimate #' . $row['estimate_number'] . ' PDF received');
+    $title = 'Estimate sent: ' . $row['title'];
+    $body = 'Estimate #' . $row['estimate_number'];
+    qrNotifyOffice($pdo, $row, 'quote_sent', $title, $body, $actor['user_id'] ?: null);
+    qrNotifyUser($pdo, qrFieldUserId($row), $row, 'quote_sent', $title, $body, $actor['user_id'] ?: null);
+}
+
+// A new estimate PDF was filed: mark every quote waiting on its number sent.
+// $haystacks = subject, filename, PDF text, email body. Returns the Estimate #
+// it matched (so the document can carry it), or null.
+function qrMatchEstimateDoc(PDO $pdo, int $docId, ?string $docNumber, array $haystacks): ?string {
+    $waiting = $pdo->query("SELECT * FROM quote_requests WHERE status = 'estimate_created' AND billing = 'po' AND estimate_number IS NOT NULL")->fetchAll();
+    if (!$waiting) return null;
+    $text = implode("\n", array_filter($haystacks));
+    $matched = null;
+    foreach ($waiting as $row) {
+        $en = (string)$row['estimate_number'];
+        $hit = $docNumber !== null && strcasecmp(trim($docNumber), $en) === 0
+            || preg_match('/(?<![A-Za-z0-9])' . preg_quote($en, '/') . '(?![A-Za-z0-9])/i', $text);
+        if (!$hit) continue;
+        qrMarkEstimateSent($pdo, $row, $docId, QR_DEPOT_ACTOR);
+        $matched = $en;
+    }
+    return $matched;
+}
+
+// The engineer the quote is for, with the company they work for. Null when
+// none is picked (or the engineer-list migration hasn't run yet).
+function qrEngineer(PDO $pdo, ?int $contactId): ?array {
+    if (!$contactId) return null;
+    $rows = qrOptionalRows($pdo, 'SELECT e.id, e.name, e.title, e.location, e.email, e.phone, e.customer_id, e.is_active, cu.name AS company
+                                    FROM customer_contacts e LEFT JOIN customers cu ON cu.id = e.customer_id WHERE e.id = ?', [$contactId]);
+    if (!$rows || !array_key_exists('location', $rows[0])) return null;
+    $e = $rows[0];
+    $e['id'] = (int)$e['id'];
+    $e['customer_id'] = $e['customer_id'] !== null ? (int)$e['customer_id'] : null;
+    $e['is_active'] = (int)$e['is_active'];
+    return $e;
+}
+
 function qrRegisterCustomerToProject(PDO $pdo, array $row): ?string {
     if (empty($row['project_number']) || empty($row['customer_id'])) return null;
     $customer = qrCustomer($pdo, (int)$row['customer_id']);

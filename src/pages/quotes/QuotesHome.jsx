@@ -6,81 +6,69 @@ import PageHeader from '../../components/ui/PageHeader'
 import { useToast } from '../../components/ToastProvider'
 import { useAuthStore } from '../../store/authStore'
 import { listQuoteRequests, createQuoteRequest } from '../../api/quoteRequests'
-import { StatusPill, FlagPills } from './QuoteParts'
+import { StatusPill, FlagPills, QuoteWho } from './QuoteParts'
 import { BOARD_COLUMNS, CLOSED_STATUSES, quoteFlags, fmtDate } from './quoteUtils'
 
 const CameraIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
 )
 
-const NoPhoto = ({ className = '' }) => (
-  <div className={`flex items-center justify-center bg-gray-100 text-gray-300 ${className}`}>
-    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
-  </div>
-)
-
-// `cover` = CompanyCam-style card with the first photo as a big cover image
-// (field managers' list); otherwise a compact card with a square thumbnail.
-function QuoteCard({ q, showAssignees, cover = false }) {
-  const { t, i18n } = useTranslation()
-  const flagged = quoteFlags(q).some((f) => f === 'overdue' || f === 'followUpDue')
-  const body = (
-    <div className="min-w-0 flex-1">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-bold text-gray-400 tracking-wide truncate">
-          {q.request_no ?? t('quotes.unsaved')}{q.estimate_number ? ` · #${q.estimate_number}` : ''}{q.work_type === 'addon' && q.project_number ? ` · ${t('quotes.addonShort')} #${q.project_number}` : ''}
-        </span>
-        <StatusPill status={q.status} />
-      </div>
-      {(q.customer_name || q.recipients_label) && (
-        <p className="mt-1 flex items-center gap-1 text-[13px] font-bold text-brand-700 min-w-0">
-          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-          <span className="truncate">{q.customer_name || q.recipients_label}</span>
-        </p>
-      )}
-      <p className={`text-sm font-semibold text-gray-900 line-clamp-2 ${q.customer_name || q.recipients_label ? '' : 'mt-1'}`}>{q.title}</p>
-      {q.facility && <p className="text-xs text-gray-500 truncate">{q.facility}</p>}
-      <div className="flex flex-wrap items-center gap-1.5 mt-2">
-        <FlagPills quote={q} />
-        {q.needed_by && <span className="text-[11px] text-gray-400">{t('quotes.fields.neededBy')}: {fmtDate(q.needed_by, i18n.language)}</span>}
-      </div>
-      {showAssignees && (q.field_manager_name || q.assigned_to_name) && (
-        <p className="text-[11px] text-gray-400 mt-1 truncate">
-          {[q.field_manager_name && `${t('quotes.fields.fieldManager')}: ${q.field_manager_name}`, q.assigned_to_name && `${t('quotes.fields.estimator')}: ${q.assigned_to_name}`].filter(Boolean).join(' · ')}
-        </p>
-      )}
-    </div>
-  )
-  const photoCount = q.photo_count > 0 && (
-    <span className="absolute bottom-1.5 right-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white">
-      {t('quotes.photos', { count: q.photo_count })}
-    </span>
-  )
-  const frame = `block bg-white rounded-2xl shadow-sm border overflow-hidden transition-all hover:shadow-md active:scale-[0.99] ${flagged ? 'border-red-200' : 'border-gray-100 hover:border-brand-400'}`
-
-  if (cover) {
+// Up to four photos across the top of the card; "+N" on the last one when
+// there are more.
+function ThumbStrip({ urls = [], count = 0 }) {
+  const { t } = useTranslation()
+  if (!urls.length) {
     return (
-      <Link to={`/quotes/${q.id}`} className={frame}>
-        <div className="relative aspect-[16/9]">
-          {q.cover_url ? <img src={q.cover_url} alt="" loading="lazy" className="w-full h-full object-cover" /> : <NoPhoto className="w-full h-full" />}
-          {(q.customer_name || q.recipients_label) && (
-            <span className="absolute bottom-1.5 left-1.5 max-w-[65%] truncate rounded-full bg-white/95 px-2.5 py-0.5 text-[12px] font-bold text-gray-900 shadow-sm">
-              {q.customer_name || q.recipients_label}
-            </span>
-          )}
-          {photoCount}
-        </div>
-        <div className="px-4 py-3">{body}</div>
-      </Link>
+      <div className="flex items-center justify-center gap-1.5 h-12 bg-gray-50 text-[11px] font-semibold text-gray-300">
+        <CameraIcon className="w-4 h-4" />{t('quotes.noPhotosYet')}
+      </div>
     )
   }
+  const more = count - urls.length
   return (
-    <Link to={`/quotes/${q.id}`} className={`${frame} flex gap-3 p-3`}>
-      <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden">
-        {q.cover_url ? <img src={q.cover_url} alt="" loading="lazy" className="w-full h-full object-cover" /> : <NoPhoto className="w-full h-full" />}
-        {q.photo_count > 1 && <span className="absolute bottom-1 right-1 rounded-full bg-black/60 px-1.5 text-[10px] font-bold text-white">{q.photo_count}</span>}
+    <div className="grid grid-cols-4 gap-0.5 bg-gray-100">
+      {urls.map((u, i) => (
+        <div key={u} className="relative aspect-square">
+          <img src={u} alt="" loading="lazy" className="w-full h-full object-cover" />
+          {i === urls.length - 1 && more > 0 && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-bold text-white">+{more}</span>
+          )}
+        </div>
+      ))}
+      {/* Keep the squares the same size when there are fewer than four. */}
+      {Array.from({ length: 4 - urls.length }, (_, i) => <div key={`empty-${i}`} className="aspect-square bg-gray-50" />)}
+    </div>
+  )
+}
+
+function QuoteCard({ q, showFieldManager }) {
+  const { t, i18n } = useTranslation()
+  const flagged = quoteFlags(q).some((f) => f === 'overdue' || f === 'followUpDue')
+  return (
+    <Link to={`/quotes/${q.id}`}
+      className={`block bg-white rounded-2xl shadow-sm border overflow-hidden transition-all hover:shadow-md active:scale-[0.99] ${flagged ? 'border-red-200' : 'border-gray-100 hover:border-brand-400'}`}>
+      <ThumbStrip urls={q.thumb_urls} count={q.photo_count} />
+      <div className="px-3.5 py-3 flex flex-col gap-1.5 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] font-bold text-gray-400 tracking-wide truncate">
+            {q.request_no ?? t('quotes.unsaved')}{q.estimate_number ? ` · #${q.estimate_number}` : ''}{q.work_type === 'addon' && q.project_number ? ` · ${t('quotes.addonShort')} #${q.project_number}` : ''}
+          </span>
+          <StatusPill status={q.status} />
+        </div>
+        <p className="text-sm font-semibold text-gray-900 line-clamp-2">{q.title}</p>
+        <QuoteWho
+          company={q.customer_name || q.recipients_label}
+          engineer={q.engineer_name}
+          location={[q.facility, q.location_detail].filter(Boolean).join(' · ')}
+          estimator={q.assigned_to_name} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <FlagPills quote={q} />
+          {q.needed_by && <span className="text-[11px] text-gray-400">{t('quotes.fields.neededBy')}: {fmtDate(q.needed_by, i18n.language)}</span>}
+        </div>
+        {showFieldManager && q.field_manager_name && (
+          <p className="text-[11px] text-gray-400 truncate">{t('quotes.fields.fieldManager')}: {q.field_manager_name}</p>
+        )}
       </div>
-      {body}
     </Link>
   )
 }
@@ -130,7 +118,7 @@ export default function QuotesHome() {
       if (filter === 'mine' && r.assigned_to !== user?.id) return false
       if (filter === 'unassigned' && r.assigned_to) return false
       if (!q) return true
-      return [r.title, r.facility, r.customer_name, r.recipients_label, r.estimate_number, r.project_number, r.request_no, r.field_manager_name]
+      return [r.title, r.facility, r.location_detail, r.customer_name, r.recipients_label, r.engineer_name, r.assigned_to_name, r.estimate_number, r.project_number, r.request_no, r.field_manager_name]
         .some((v) => (v ?? '').toString().toLowerCase().includes(q))
     })
   }, [quotes, query, filter, user?.id])
@@ -146,7 +134,7 @@ export default function QuotesHome() {
   const activeItems = columns.find((c) => c.key === activeTab)?.items ?? []
 
   // Field managers: drafts and anything the office sent back first.
-  const fieldOrder = ['needs_info', 'scheduled', 'draft', 'submitted', 'in_review', 'approved', 'estimating', 'sent', 'done', ...CLOSED_STATUSES]
+  const fieldOrder = ['needs_info', 'scheduled', 'draft', 'pending_review', 'estimate_created', 'sent', 'done', ...CLOSED_STATUSES]
   const fieldList = [...filtered].sort((a, b) => fieldOrder.indexOf(a.status) - fieldOrder.indexOf(b.status))
 
   return (
@@ -158,8 +146,13 @@ export default function QuotesHome() {
         onAction={startSiteWalk}
         actionLoading={starting}
         actionIcon={CameraIcon}>
-        {/* The client list and Materials library live inside Quotes on every screen size. */}
+        {/* The engineer and client lists and the Materials library live inside Quotes on every screen size. */}
         <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start lg:w-full lg:order-last">
+          <Link to="/quotes/engineers"
+            className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm active:bg-brand-100">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            {t('quotes.engineers.title')}
+          </Link>
           <Link to="/quotes/clients"
             className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm active:bg-brand-100">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-1a4 4 0 00-5.6-3.7M17 20H7m10 0v-1c0-.7-.1-1.3-.4-1.9M7 20H2v-1a4 4 0 015.6-3.7M7 20v-1c0-.7.1-1.3.4-1.9m0 0a5 5 0 019.2 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -225,13 +218,13 @@ export default function QuotesHome() {
               <Card><p className="text-sm text-gray-400 text-center">{t('quotes.noResults')}</p></Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {activeItems.map((q) => <QuoteCard key={q.id} q={q} showAssignees />)}
+                {activeItems.map((q) => <QuoteCard key={q.id} q={q} showFieldManager />)}
               </div>
             )}
           </div>
 
           {/* Wide desktop: the full board. */}
-          <div className={`hidden xl:grid gap-4 ${showClosed ? 'xl:grid-cols-5' : 'xl:grid-cols-4'}`}>
+          <div className="hidden xl:grid gap-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
             {columns.map((col) => (
               <div key={col.key} className="flex flex-col gap-2 min-w-0">
                 <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">
@@ -239,14 +232,14 @@ export default function QuotesHome() {
                 </h2>
                 {col.items.length === 0
                   ? <div className="rounded-2xl border border-dashed border-gray-200 py-6" />
-                  : col.items.map((q) => <QuoteCard key={q.id} q={q} showAssignees />)}
+                  : col.items.map((q) => <QuoteCard key={q.id} q={q} showFieldManager />)}
               </div>
             ))}
           </div>
         </>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {fieldList.map((q) => <QuoteCard key={q.id} q={q} cover />)}
+          {fieldList.map((q) => <QuoteCard key={q.id} q={q} />)}
         </div>
       )}
 
