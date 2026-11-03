@@ -885,7 +885,8 @@
       "company": "Company",
       "companyPlaceholder": "e.g. Prisma Health",
       "location": "Location they work at",
-      "noCompany": "No company"
+      "noCompany": "No company",
+      "addCompany": "Add “{{name}}” as a new company"
     },
     "quick": {
       "newVisit": "New site visit",

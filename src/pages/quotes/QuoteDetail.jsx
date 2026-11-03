@@ -20,7 +20,7 @@ import VoiceMemoStack from './voice/VoiceMemoStack'
 import EstimatePhotos from './photos/EstimatePhotos'
 import PhotoViewer from './photos/PhotoViewer'
 import { StatusPill, FlagPills, QuoteDetailsForm, TextArea, Select, QuoteWho } from './QuoteParts'
-import { ClientCard } from './clients/ClientPicker'
+import { ClientCard, ClientFormModal, ClientPicker } from './clients/ClientPicker'
 import { normalizeForm } from '../../scope-engine'
 import { draftText } from '../../scope-engine/draft'
 import { useQuotePickers } from './useQuotePickers'
@@ -245,7 +245,7 @@ function DetailRow({ label, children }) {
   )
 }
 
-function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDone }) {
+function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDone, onEditClient }) {
   const { t, i18n } = useTranslation()
   const toast = useToast()
   const [editing, setEditing] = useState(!!startEditing)
@@ -296,7 +296,7 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
           </DetailRow>
           <DetailRow label={t('quotes.estimateType.label')}>{t(`quotes.estimateType.${quote.estimate_type}`)}</DetailRow>
           <DetailRow label={t('quotes.clients.label')}>
-            {quote.customer ? <ClientCard client={quote.customer} /> : null}
+            {quote.customer ? <ClientCard client={quote.customer} onEdit={onEditClient} /> : null}
           </DetailRow>
           <DetailRow label={t('quotes.fields.recipients')}>
             {quote.recipients?.length ? (
@@ -611,6 +611,18 @@ export default function QuoteDetail() {
   useEffect(load, [load])
 
   const canDelete = quote && (isAdmin || (quote.status === 'draft' && quote.created_by === user?.id))
+  // The client (and their company / location) is edited right from the quote:
+  // their details if there is one, else pick one.
+  const [clientDialog, setClientDialog] = useState(null) // 'edit' | 'pick'
+  const canEditClient = quote && (isAdmin || quote.can_edit)
+  const editClient = () => setClientDialog(quote.customer ? 'edit' : 'pick')
+  const pickClient = async (id, c) => {
+    try {
+      await updateQuoteRequest(quote.id, { customer_id: id, ...(c?.location && !quote.facility ? { facility: c.location } : {}) })
+      setClientDialog(null)
+      load()
+    } catch (err) { toast.error(errMsg(err, t)) }
+  }
   const handleDelete = async () => {
     if (!await confirmDialog(t('quotes.prompts.delete'), { danger: true, confirmLabel: t('quotes.actions.delete') })) return
     try { await deleteQuoteRequest(quote.id); navigate('/quotes', { replace: true }) }
@@ -655,6 +667,7 @@ export default function QuoteDetail() {
         </div>
         <h1 className="text-xl font-bold text-gray-900">{quote.title}</h1>
         <QuoteWho className="w-full max-w-xs text-left lg:max-w-md"
+          onEdit={canEditClient ? { client: editClient, company: editClient } : {}}
           client={quote.customer?.name ?? recipientsLabel(quote.recipients)}
           company={quote.customer?.company}
           location={[quote.facility || quote.customer?.location, quote.location_detail].filter(Boolean).join(' · ')}
@@ -687,7 +700,7 @@ export default function QuoteDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
         <div className="lg:col-span-3 flex flex-col gap-4 min-w-0">
-          <DetailsCard quote={quote} isAdmin={isAdmin} pickers={pickers} onSaved={load}
+          <DetailsCard quote={quote} isAdmin={isAdmin} pickers={pickers} onSaved={load} onEditClient={canEditClient ? editClient : undefined}
             startEditing={startEditing} onEditDone={() => setSearchParams({}, { replace: true })} />
           <EstimateTextCard quote={quote} />
           <FilesCard quote={quote} canEdit={canEditMedia} onChanged={load} />
@@ -697,6 +710,19 @@ export default function QuoteDetail() {
           <HistoryCard quote={quote} isAdmin={isAdmin} onChanged={load} />
         </div>
       </div>
+
+      {clientDialog === 'edit' && quote.customer && (
+        <ClientFormModal client={quote.customer} onClose={() => setClientDialog(null)}
+          onSaved={() => { setClientDialog(null); load() }} />
+      )}
+      {clientDialog === 'pick' && (
+        <Modal isOpen onClose={() => setClientDialog(null)} title={t('quotes.clients.label')}>
+          <div className="min-h-[280px]">
+            <ClientPicker value={null} label={false} autoFocus onChange={(id, c) => id && pickClient(id, c)}
+              defaults={{ location: quote.facility ?? '' }} />
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

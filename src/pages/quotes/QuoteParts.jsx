@@ -34,7 +34,8 @@ const WHO_ICONS = {
 // Who and where a quote is for — the same four lines on the board cards and
 // the quote page: client, their company, location, estimator. Missing ones
 // say so, so the office can see at a glance what still needs filling in.
-export function QuoteWho({ client, company, location, estimator, className = '' }) {
+// `onEdit` = { client?, company?, … }: those lines become tap-to-edit.
+export function QuoteWho({ client, company, location, estimator, onEdit = {}, className = '' }) {
   const { t } = useTranslation()
   const rows = [
     ['client', client, t('quotes.who.noClient')],
@@ -52,7 +53,13 @@ export function QuoteWho({ client, company, location, estimator, className = '' 
               <path strokeLinecap="round" strokeLinejoin="round" d={WHO_ICONS[key]} />
             </svg>
           </dt>
-          <dd className={`truncate ${value ? (key === 'client' ? 'font-bold text-gray-900' : 'text-gray-700') : 'text-gray-400 italic'}`}>{value || missing}</dd>
+          <dd className={`truncate ${value ? (key === 'client' ? 'font-bold text-gray-900' : 'text-gray-700') : 'text-gray-400 italic'}`}>
+            {onEdit[key] ? (
+              <button type="button" onClick={onEdit[key]} className="max-w-full truncate text-left underline decoration-dotted decoration-gray-300 underline-offset-4 hover:decoration-brand-500">
+                {value || missing}
+              </button>
+            ) : (value || missing)}
+          </dd>
         </div>
       ))}
     </dl>

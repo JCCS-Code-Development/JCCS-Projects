@@ -78,6 +78,49 @@ export function ClientCard({ client, onChange, onEdit, onClear }) {
   )
 }
 
+// ── Company picker ─────────────────────────────────────────────────────────
+// Type → the companies already on the client list that match; pick one, or
+// add what you typed as a new company. Keeps one spelling per company.
+export function CompanyPicker({ value, onChange, label, placeholder }) {
+  const { t } = useTranslation()
+  const { clients } = useClientList()
+  const [open, setOpen] = useState(false)
+  const counts = clients.reduce((m, c) => (c.company ? m.set(c.company, (m.get(c.company) ?? 0) + 1) : m), new Map())
+  const q = fold(value.trim())
+  const matches = [...counts.keys()]
+    .filter((name) => !q || fold(name).includes(q))
+    .sort((a, b) => (fold(a).startsWith(q) ? 0 : 1) - (fold(b).startsWith(q) ? 0 : 1) || a.localeCompare(b))
+    .slice(0, 8)
+  const exact = [...counts.keys()].some((name) => fold(name) === q)
+
+  return (
+    <div className="flex flex-col gap-1 relative">
+      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <input value={value} onChange={(e) => { onChange(e.target.value); setOpen(true) }} autoComplete="off"
+        onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)} placeholder={placeholder}
+        onKeyDown={(e) => { if (e.key === 'Enter' && open && matches[0] && !exact) { e.preventDefault(); onChange(matches[0]); setOpen(false) } }}
+        className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+      {open && (matches.length > 0 || (q && !exact)) && (
+        <div className="absolute top-full z-30 mt-1 w-full rounded-xl border border-gray-100 bg-white shadow-lg overflow-hidden max-h-64 overflow-y-auto">
+          {matches.map((name) => (
+            <button key={name} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onChange(name); setOpen(false) }}
+              className="w-full flex items-center justify-between gap-2 text-left px-4 py-2.5 hover:bg-gray-50 active:bg-gray-100 border-b border-gray-50">
+              <span className="text-sm font-semibold text-gray-900 truncate">{name}</span>
+              <span className="shrink-0 text-xs text-gray-400">{t('quotes.clients.count', { count: counts.get(name) })}</span>
+            </button>
+          ))}
+          {q && !exact && (
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onChange(value.trim()); setOpen(false) }}
+              className="w-full text-left px-4 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-100/40 active:bg-brand-100">
+              + {t('quotes.clients.addCompany', { name: value.trim() })}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Add / edit a client: who it is, their company, where they work ───────
 // `defaults` pre-fills a new one (e.g. the place of the visit).
 export function ClientFormModal({ client, initialName = '', defaults = {}, onClose, onSaved }) {
@@ -87,8 +130,7 @@ export function ClientFormModal({ client, initialName = '', defaults = {}, onClo
   const [company, setCompany] = useState(client?.company ?? defaults.company ?? '')
   const [location, setLocation] = useState(client?.location ?? defaults.location ?? '')
   const [email, setEmail] = useState(client?.email ?? '')
-  // Companies and locations already on the list, to pick from as you type.
-  const companies = [...new Set(store.clients.map((c) => c.company).filter(Boolean))].sort()
+  // Locations already on the list for that company, to pick from as you type.
   const locations = [...new Set(store.clients.filter((c) => !company || c.company === company).map((c) => c.location).filter(Boolean))].sort()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -115,9 +157,8 @@ export function ClientFormModal({ client, initialName = '', defaults = {}, onClo
       <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); save() }}>
         <Input label={t('quotes.clients.name')} value={name} onChange={(e) => setName(e.target.value)} autoFocus={!client}
           placeholder={t('quotes.clients.namePlaceholder')} autoComplete="off" />
-        <Input label={t('quotes.clients.company')} value={company} onChange={(e) => setCompany(e.target.value)}
-          placeholder={t('quotes.clients.companyPlaceholder')} autoComplete="off" list="client-companies" />
-        <datalist id="client-companies">{companies.map((c) => <option key={c} value={c} />)}</datalist>
+        <CompanyPicker label={t('quotes.clients.company')} value={company} onChange={setCompany}
+          placeholder={t('quotes.clients.companyPlaceholder')} />
         <Input label={t('quotes.clients.location')} value={location} onChange={(e) => setLocation(e.target.value)}
           placeholder={t('quotes.fields.facilityPlaceholder')} autoComplete="off" list="client-locations" />
         <datalist id="client-locations">{locations.map((l) => <option key={l} value={l} />)}</datalist>
