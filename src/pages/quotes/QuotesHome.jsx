@@ -7,26 +7,36 @@ import { useToast } from '../../components/ToastProvider'
 import { useAuthStore } from '../../store/authStore'
 import { listQuoteRequests, createQuoteRequest, quoteAction } from '../../api/quoteRequests'
 import { StatusPill, FlagPills, QuoteWho } from './QuoteParts'
-import { BOARDS, CLOSED_STATUSES, quoteFlags, fmtDate } from './quoteUtils'
+import { BOARDS, CLOSED_STATUSES, quoteFlags, fmtDate, parseDate } from './quoteUtils'
 
 const CameraIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
 )
 
+// When the site visit was: its date, else when it was logged. "Oct 28", with
+// the year only when it isn't this year.
+function visitDate(q, lang) {
+  const d = parseDate(q.site_visit_date || q.site_visit_at || q.submitted_at || q.created_at)
+  if (!d) return ''
+  const opts = { month: 'short', day: 'numeric', ...(d.getFullYear() !== new Date().getFullYear() && { year: 'numeric' }) }
+  return d.toLocaleDateString(lang === 'es' ? 'es-US' : 'en-US', opts)
+}
+
 // Up to four photos across the top of the card; "+N" on the last one when
-// there are more.
-function ThumbStrip({ urls = [], count = 0 }) {
+// there are more, and the site visit date in a small pill on the first.
+function ThumbStrip({ urls = [], count = 0, date }) {
   const { t } = useTranslation()
   if (!urls.length) {
     return (
-      <div className="flex items-center justify-center gap-1.5 h-12 bg-gray-50 text-[11px] font-semibold text-gray-300">
+      <div className="relative flex items-center justify-center gap-1.5 h-12 bg-gray-50 text-[11px] font-semibold text-gray-300">
         <CameraIcon className="w-4 h-4" />{t('quotes.noPhotosYet')}
+        {date && <span className="absolute right-2.5 text-gray-500" title={t('quotes.fields.siteVisitDate')}>{date}</span>}
       </div>
     )
   }
   const more = count - urls.length
   return (
-    <div className="grid grid-cols-4 gap-0.5 bg-gray-100">
+    <div className="relative grid grid-cols-4 gap-0.5 bg-gray-100">
       {urls.map((u, i) => (
         <div key={u} className="relative aspect-square">
           <img src={u} alt="" loading="lazy" className="w-full h-full object-cover" />
@@ -37,6 +47,12 @@ function ThumbStrip({ urls = [], count = 0 }) {
       ))}
       {/* Keep the squares the same size when there are fewer than four. */}
       {Array.from({ length: 4 - urls.length }, (_, i) => <div key={`empty-${i}`} className="aspect-square bg-gray-50" />)}
+      {date && (
+        <span className="absolute left-1.5 bottom-1.5 rounded-full bg-black/55 backdrop-blur-sm px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
+          title={t('quotes.fields.siteVisitDate')}>
+          {date}
+        </span>
+      )}
     </div>
   )
 }
@@ -84,7 +100,7 @@ function QuoteCard({ q, showFieldManager, onLinked }) {
   return (
     <div className={`shrink-0 bg-white rounded-2xl shadow-sm border overflow-hidden transition-all hover:shadow-md ${flagged ? 'border-red-200' : 'border-gray-100 hover:border-brand-400'}`}>
     <Link to={`/quotes/${q.id}`} className="block active:bg-gray-50">
-      <ThumbStrip urls={q.thumb_urls} count={q.photo_count} />
+      <ThumbStrip urls={q.thumb_urls} count={q.photo_count} date={visitDate(q, i18n.language)} />
       <div className="px-3.5 py-3 flex flex-col gap-1.5 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[11px] font-bold text-gray-400 tracking-wide truncate">
