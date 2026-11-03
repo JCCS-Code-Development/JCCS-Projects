@@ -85,9 +85,14 @@ try {
             $sets[] = 'estimate_number = NULL';
             break;
 
+        // Accepting needs the client's PO # — it's what the job is billed against.
         case 'accept':
+            $po = trim((string)($body['po_number'] ?? ''));
+            if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9 \/._#-]{0,39}$/', $po)) $fail('Enter the PO #');
+            $sets[] = 'po_number = ?'; $params[] = $po;
             $sets[] = 'decided_at = NOW()';
             $sets[] = 'decline_reason = NULL';
+            $note = $note !== '' ? $note : "PO #{$po}";
             // A won new job becomes a project under its InvoiceToGo Estimate #
             // (the shared 4-digit job number every JCCS app keys on).
             if (empty($row['project_number']) && preg_match('/^\d{4}$/', (string)$row['estimate_number'])) {
@@ -104,6 +109,7 @@ try {
         case 'undo_decision':
             $sets[] = 'decided_at = NULL';
             $sets[] = 'decline_reason = NULL';
+            $sets[] = 'po_number = NULL';
             break;
 
         // ── Without a PO ──
@@ -203,7 +209,7 @@ try {
             qrNotifyUser($pdo, qrFieldUserId($updated), $updated, 'quote_accepted', 'Quote accepted: ' . $title, $updated['facility'], $auth['user_id']);
             if (!empty($updated['project_number'])) {
                 notifyProjectStaff($pdo, $updated['project_number'], 'quote_accepted',
-                    'Quote accepted: ' . $title, 'Estimate #' . ($updated['estimate_number'] ?? ''), '/projects/' . $updated['project_number']);
+                    'Quote accepted: ' . $title, 'Estimate #' . ($updated['estimate_number'] ?? '') . ' · PO #' . $updated['po_number'], '/projects/' . $updated['project_number']);
             }
             break;
 

@@ -88,7 +88,7 @@ function QuoteCard({ q, showFieldManager, onLinked }) {
       <div className="px-3.5 py-3 flex flex-col gap-1.5 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[11px] font-bold text-gray-400 tracking-wide truncate">
-            {q.request_no ?? t('quotes.unsaved')}{q.estimate_number ? ` · #${q.estimate_number}` : ''}{q.work_type === 'addon' && q.project_number ? ` · ${t('quotes.addonShort')} #${q.project_number}` : ''}
+            {q.request_no ?? t('quotes.unsaved')}{q.estimate_number ? ` · #${q.estimate_number}` : ''}{q.po_number ? ` · PO ${q.po_number}` : ''}{q.work_type === 'addon' && q.project_number ? ` · ${t('quotes.addonShort')} #${q.project_number}` : ''}
           </span>
           <StatusPill status={q.status} />
         </div>
@@ -170,7 +170,7 @@ export default function QuotesHome({ view = 'visits' }) {
       if (filter === 'mine' && r.assigned_to !== user?.id) return false
       if (filter === 'unassigned' && r.assigned_to) return false
       if (!q) return true
-      return [r.title, r.facility, r.location_detail, r.customer_name, r.customer_company, r.recipients_label, r.assigned_to_name, r.estimate_number, r.project_number, r.request_no, r.field_manager_name]
+      return [r.title, r.facility, r.location_detail, r.customer_name, r.customer_company, r.recipients_label, r.assigned_to_name, r.estimate_number, r.po_number, r.project_number, r.request_no, r.field_manager_name]
         .some((v) => (v ?? '').toString().toLowerCase().includes(q))
     })
   }, [quotes, query, filter, user?.id])

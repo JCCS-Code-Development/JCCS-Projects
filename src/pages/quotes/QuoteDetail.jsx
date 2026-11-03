@@ -34,13 +34,13 @@ const errMsg = (err, t) => err?.response?.data?.error ?? t('common.couldNotSave'
 // ── Actions ──────────────────────────────────────────────────────────────
 // How each workflow action is presented. `prompt` = needs text first
 // (required unless `optional`), `confirm` = yes/no dialog, `schedule` /
-// `invoice` = asks for the date / InvoiceToGo Invoice #.
+// `invoice` / `po` = asks for the date / InvoiceToGo Invoice # / client's PO #.
 const ACTION_UI = {
   submit:        { primary: true },
   request_info:  { prompt: 'request_info' },
   // The Estimate # is typed into its own card (EstimateNumberCard), not here.
   clear_estimate:{ confirm: 'clearEstimate' },
-  accept:        { primary: true },
+  accept:        { primary: true, po: true },
   decline:       { prompt: 'decline', danger: true },
   undo_decision: {},
   cancel:        { confirm: 'cancel', danger: true, ghost: true },
@@ -93,6 +93,7 @@ function ActionBar({ quote, onDone, canDelete }) {
       setDialog({ action, kind: 'schedule' }); return
     }
     if (ui.invoice) { setText(quote.invoice_number ?? ''); setDialog({ action, kind: 'invoice' }); return }
+    if (ui.po) { setText(quote.po_number ?? ''); setDialog({ action, kind: 'po' }); return }
     if (ui.confirm) {
       const key = action === 'cancel' && quote.status === 'draft' ? 'cancelDraft' : ui.confirm
       if (!await confirmDialog(t(`quotes.prompts.${key}`), { danger: !!ui.danger, confirmLabel: t(`quotes.actions.${action}`) })) return
@@ -103,6 +104,7 @@ function ActionBar({ quote, onDone, canDelete }) {
   const submitDialog = () => {
     if (!dialog) return
     if (dialog.kind === 'invoice') return run(dialog.action, { invoice_number: text.trim() })
+    if (dialog.kind === 'po') return run(dialog.action, { po_number: text.trim() })
     if (dialog.kind === 'schedule') return run(dialog.action, { scheduled_start: fromLocalInput(when.start), scheduled_end: fromLocalInput(when.end) })
     if (!dialog.optional && !text.trim()) return
     run(dialog.action, { note: text.trim() })
@@ -146,6 +148,8 @@ function ActionBar({ quote, onDone, canDelete }) {
           <div className="flex flex-col gap-4">
             {dialog.kind === 'invoice' ? (
               <Input label={t('quotes.prompts.invoiceNumber')} value={text} onChange={(e) => setText(e.target.value)} inputMode="numeric" autoFocus />
+            ) : dialog.kind === 'po' ? (
+              <Input label={t('quotes.prompts.poNumber')} helperText={t('quotes.prompts.poNumberHint')} value={text} onChange={(e) => setText(e.target.value)} maxLength={40} autoFocus />
             ) : dialog.kind === 'schedule' ? (
               <div className="flex flex-col gap-3">
                 <Input type="datetime-local" label={t('quotes.prompts.scheduleStart')} value={when.start}
@@ -159,7 +163,7 @@ function ActionBar({ quote, onDone, canDelete }) {
             )}
             <Button size="lg" fullWidth loading={!!busy} onClick={submitDialog}
               disabled={dialog.kind === 'schedule' ? !when.start
-                : dialog.kind === 'invoice' ? !text.trim() : (!dialog.optional && !text.trim())}>
+                : ['invoice', 'po'].includes(dialog.kind) ? !text.trim() : (!dialog.optional && !text.trim())}>
               {label(dialog.action)}
             </Button>
           </div>
@@ -319,6 +323,7 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
           <DetailRow label={t('quotes.source.label')}>{quote.request_source ? t(`quotes.source.${quote.request_source}`) : null}</DetailRow>
           <DetailRow label={t('quotes.fields.estimator')}>{quote.assigned_to_name}</DetailRow>
           <DetailRow label={t('quotes.fields.estimateNumber')}>{quote.estimate_number}</DetailRow>
+          <DetailRow label={t('quotes.fields.poNumber')}>{quote.po_number}</DetailRow>
           {/* Who did the visit; who logged it only when that's someone else (e.g. the office took the call). */}
           <DetailRow label={t('quotes.fields.fieldManager')}>
             {[quote.field_manager_name || quote.created_by_name,

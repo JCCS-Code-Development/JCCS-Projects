@@ -18,7 +18,7 @@ if ($method === 'GET') {
     // List view — the heavy columns (form, scope) are left out; the detail
     // endpoint returns those.
     $sql = "SELECT q.id, q.quote_number, q.status, q.billing, q.work_type, q.estimate_type, q.title, q.facility, q.location_detail,
-                   q.project_number, q.estimate_number, q.priority, q.needed_by, q.site_visit_date, q.site_visit_at,
+                   q.project_number, q.estimate_number, q.po_number, q.priority, q.needed_by, q.site_visit_date, q.site_visit_at,
                    q.field_manager_id, q.field_manager_name, q.assigned_to, q.assigned_to_name,
                    q.follow_up_days, q.decline_reason, q.customer_id,
                    (SELECT cu.name FROM customers cu WHERE cu.id = q.customer_id) AS customer_name,
