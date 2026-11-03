@@ -6,7 +6,8 @@
 // the site visit waiting on its number as sent.
 //
 // Only PDFs from InvoiceToGo are filed. Any other mail is left in the inbox
-// and flagged (starred) so a person can look at it. At most DEPOT_BATCH
+// and flagged (starred) so a person can look at it; ?recheck=1 looks at the
+// starred ones again. At most DEPOT_BATCH
 // emails (default 20) are handled per run, and a run stops early before the
 // host's time limit, so a backlog clears a batch at a time.
 //
@@ -43,6 +44,8 @@ register_shutdown_function(function () use ($log) {
 $started = microtime(true);
 $budget  = $isCli ? 240 : 20;   // seconds of work per run, under the host's limit
 $batch   = defined('DEPOT_BATCH') ? max(1, (int) DEPOT_BATCH) : 20;
+// recheck: look again at emails starred by an earlier run (?recheck=1, or --recheck from the CLI).
+$recheck = $isCli ? in_array('--recheck', $argv ?? [], true) : !empty($_GET['recheck']);
 
 if (!function_exists('imap_open')) {
     $log('PHP imap extension not installed — cannot poll. Ask the host to enable it.');
@@ -66,16 +69,19 @@ if (!$imap) {
 }
 
 $pdo = getPDO();
-// Unread and not already set aside as "not InvoiceToGo".
-$ids = imap_search($imap, 'UNSEEN UNFLAGGED') ?: [];
+// Unread and not already set aside as "not InvoiceToGo" (unless rechecking).
+$ids = imap_search($imap, $recheck ? 'UNSEEN' : 'UNSEEN UNFLAGGED') ?: [];
+if ($recheck) $log('Rechecking starred emails too.');
 $log(count($ids) . ' new message(s).' . (count($ids) > $batch ? " Handling up to $batch now; the rest on the next runs." : ''));
 $log('PDF text reader: ' . (!financialDocHasReader() ? 'NOT available on this server — matching uses the subject and file name only' : 'available'));
 
-// InvoiceToGo's emails name it in the sender, the subject or the body.
+// An InvoiceToGo email: its subject is "Estimate #4512 to review | JCCS
+// Services LLC" / "Invoice #…", or it names InvoiceToGo in the sender or body.
 $fromInvoiceToGo = function ($header, string $subject, string $body): bool {
+    if (preg_match('/\b(estimate|invoice|quote|presupuesto|factura)\s*#\s*[A-Za-z0-9-]*\d/iu', $subject)) return true;
     $who = '';
     foreach (['from', 'sender', 'reply_to'] as $k) {
-        foreach ($header->$k ?? [] as $a) $who .= ' ' . ($a->mailbox ?? '') . '@' . ($a->host ?? '') . ' ' . (isset($a->personal) ? imap_utf8($a->personal) : '');
+        foreach (is_array($header->$k ?? null) ? $header->$k : [] as $a) $who .= ' ' . ($a->mailbox ?? '') . '@' . ($a->host ?? '') . ' ' . (isset($a->personal) ? imap_utf8($a->personal) : '');
     }
     return (bool) preg_match('/invoice\s*2\s*go|invoicetogo|invoice\s+to\s+go/i', $who . ' ' . $subject . ' ' . $body);
 };
@@ -88,6 +94,7 @@ foreach ($ids as $num) {
     }
     $handled++;
   try {
+    if ($recheck) imap_clearflag_full($imap, (string) $num, '\\Flagged');
     $header  = imap_headerinfo($imap, $num);
     $subject = isset($header->subject) ? imap_utf8($header->subject) : '';
     $struct  = imap_fetchstructure($imap, $num);
@@ -110,7 +117,9 @@ foreach ($ids as $num) {
             elseif ($enc === 4) $raw = quoted_printable_decode($raw);
 
             $filename = '';
-            foreach (array_merge($part->dparameters ?? [], $part->parameters ?? []) as $p) {
+            // imap gives an empty object (not an array) when a part has no parameters.
+            $list = fn($x) => is_array($x) ? $x : [];
+            foreach (array_merge($list($part->dparameters ?? []), $list($part->parameters ?? [])) as $p) {
                 if (in_array(strtolower($p->attribute), ['filename', 'name'], true)) $filename = $p->value;
             }
             $subtype = strtolower($part->subtype ?? '');
@@ -160,9 +169,8 @@ foreach ($ids as $num) {
     }
     imap_setflag_full($imap, (string) $num, '\\Seen');
   } catch (Throwable $e) {
-    // One bad email doesn't stop the rest; it's starred so it isn't retried forever.
-    $log("  ERROR on message $num: " . $e->getMessage() . ' — starred in the inbox.');
-    @imap_setflag_full($imap, (string) $num, '\\Flagged');
+    // One bad email doesn't stop the rest; it stays unread and is tried again next run.
+    $log("  ERROR on message $num: " . $e->getMessage() . ' — left unread, will retry.');
   }
 }
 
