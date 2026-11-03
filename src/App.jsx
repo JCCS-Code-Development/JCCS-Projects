@@ -59,6 +59,7 @@ export default function App() {
           {/* Quote requests / site walks — admins + field managers, not PMs */}
           <Route element={<RoleRoute allowedRoles={['admin', 'field']} />}>
             <Route path="/quotes" element={<QuotesHome />} />
+            <Route path="/estimates" element={<QuotesHome view="estimates" />} />
             <Route path="/quotes/:id" element={<QuoteDetail />} />
             <Route path="/quotes/:id/capture" element={<QuoteCapture />} />
             <Route path="/quotes/:id/estimate" element={<EstimateForm />} />

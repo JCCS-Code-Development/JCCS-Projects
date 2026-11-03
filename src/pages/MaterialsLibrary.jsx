@@ -58,7 +58,7 @@ export default function MaterialsLibrary() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {t('nav.quotes')}</Link>
+      <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {t('nav.siteWalks')}</Link>
       <PageHeader title={t('library.title')} subtitle={t('library.subtitle')}
         actionLabel={t('library.add')} onAction={() => openCreate()} />
 

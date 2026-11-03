@@ -15,6 +15,7 @@ import UploadProvider from '../../pages/quotes/photos/UploadProvider'
 const ProjectsIcon = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5A2.5 2.5 0 015.5 5h4l2 2h7A2.5 2.5 0 0121 9.5v7A2.5 2.5 0 0118.5 19h-13A2.5 2.5 0 013 16.5v-9z"/></svg>
 const UsersIcon    = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
 const QuotesIcon   = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+const EstimatesIcon = ({ s = 'w-5 h-5' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM14 3v5h5M9 13h6M9 17h4"/></svg>
 const LogoutIcon   = ({ s = 'w-4 h-4' }) => <svg className={s} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline strokeLinecap="round" strokeLinejoin="round" points="16 17 21 12 16 7"/><line strokeLinecap="round" x1="21" y1="12" x2="9" y2="12"/></svg>
 
 function SidebarItem({ to, icon, label, end }) {
@@ -70,11 +71,13 @@ export default function StaffLayout() {
 
   const NAV = role === 'field' ? [
     { to: '/quotes', icon: <QuotesIcon />, label: t('nav.siteWalks') },
+    { to: '/estimates', icon: <EstimatesIcon />, label: t('nav.estimates') },
     { to: '/', icon: <ProjectsIcon />, label: t('nav.projects'), end: true },
   ] : [
     { to: '/', icon: <ProjectsIcon />, label: t('nav.projects'), end: true },
     ...(isAdmin ? [
-      { to: '/quotes', icon: <QuotesIcon />, label: t('nav.quotes') },
+      { to: '/quotes', icon: <QuotesIcon />, label: t('nav.siteWalks') },
+      { to: '/estimates', icon: <EstimatesIcon />, label: t('nav.estimates') },
       { to: '/users', icon: <UsersIcon />, label: t('nav.users') },
     ] : []),
   ]

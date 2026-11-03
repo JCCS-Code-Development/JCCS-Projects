@@ -24,7 +24,7 @@ import { ClientCard } from './clients/ClientPicker'
 import { normalizeForm } from '../../scope-engine'
 import { draftText } from '../../scope-engine/draft'
 import { useQuotePickers } from './useQuotePickers'
-import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm, BILLING_OPEN_STATUSES } from './quoteUtils'
+import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm, BILLING_OPEN_STATUSES, ESTIMATE_STATUSES } from './quoteUtils'
 
 // "Prisma Health" (or the person's name when there's no company), de-duplicated.
 const recipientsLabel = (list = []) => [...new Set(list.map((r) => r.company || r.name))].join(', ')
@@ -634,7 +634,10 @@ export default function QuoteDetail() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
-        <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {isAdmin ? t('nav.quotes') : t('nav.siteWalks')}</Link>
+        {/* Back to the tab this quote lives in. */}
+        {ESTIMATE_STATUSES.includes(quote.status)
+          ? <Link to="/estimates" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {t('nav.estimates')}</Link>
+          : <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {t('nav.siteWalks')}</Link>}
         {/* Delete permanently — out of the way, top right. */}
         {canDelete && (
           <button type="button" onClick={handleDelete} aria-label={t('quotes.actions.delete')} title={t('quotes.actions.delete')}

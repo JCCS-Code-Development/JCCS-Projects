@@ -20,14 +20,26 @@ export const STATUS_STYLES = {
 // then invoiced. The choice stays open until the job is on a path.
 export const BILLING_OPEN_STATUSES = ['draft', 'pending_review', 'needs_info']
 
-export const BOARD_COLUMNS = [
-  { key: 'drafts',   statuses: ['draft'] },
-  { key: 'pending',  statuses: ['pending_review', 'needs_info'] },
-  { key: 'created',  statuses: ['estimate_created'] },
-  { key: 'sent',     statuses: ['sent'] },
-  { key: 'jobs',     statuses: ['scheduled', 'done'] }, // no PO
-  { key: 'closed',   statuses: ['accepted', 'declined', 'cancelled', 'invoiced'] },
-]
+// Two tabs. Site visits: the work still in the office's hands. Estimates:
+// what's already gone out — with a PO (estimate sent → accepted/declined) and
+// without one (scheduled → done → invoiced).
+export const BOARDS = {
+  visits: [
+    { key: 'drafts',    statuses: ['draft'] },
+    { key: 'pending',   statuses: ['pending_review', 'needs_info'] },
+    { key: 'created',   statuses: ['estimate_created'] },
+    { key: 'cancelled', statuses: ['cancelled'], closed: true },
+  ],
+  estimates: [
+    { key: 'sent',      statuses: ['sent'],      group: 'po' },
+    { key: 'accepted',  statuses: ['accepted'],  group: 'po' },
+    { key: 'declined',  statuses: ['declined'],  group: 'po' },
+    { key: 'scheduled', statuses: ['scheduled'], group: 'no_po' },
+    { key: 'done',      statuses: ['done'],      group: 'no_po' },
+    { key: 'invoiced',  statuses: ['invoiced'],  group: 'no_po' },
+  ],
+}
+export const ESTIMATE_STATUSES = BOARDS.estimates.flatMap((c) => c.statuses)
 
 export const CLOSED_STATUSES = ['accepted', 'declined', 'cancelled', 'invoiced']
 const PRE_SEND = ['draft', 'pending_review', 'needs_info', 'estimate_created']

@@ -40,7 +40,7 @@ export default function ClientList() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {t('nav.quotes')}</Link>
+      <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {t('nav.siteWalks')}</Link>
       <PageHeader title={t('quotes.clients.title')} subtitle={t('quotes.clients.subtitle')}
         actionLabel={t('quotes.clients.new')} onAction={() => setModal({})}>
         {isAdmin && (

@@ -7,7 +7,7 @@ import { useToast } from '../../components/ToastProvider'
 import { useAuthStore } from '../../store/authStore'
 import { listQuoteRequests, createQuoteRequest, quoteAction } from '../../api/quoteRequests'
 import { StatusPill, FlagPills, QuoteWho } from './QuoteParts'
-import { BOARD_COLUMNS, CLOSED_STATUSES, quoteFlags, fmtDate } from './quoteUtils'
+import { BOARDS, CLOSED_STATUSES, quoteFlags, fmtDate } from './quoteUtils'
 
 const CameraIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
@@ -119,7 +119,8 @@ const PAGE = 12
 const sentAt = (q) => String(q.submitted_at ?? q.created_at ?? '')
 const byOldest = (a, b) => sentAt(a).localeCompare(sentAt(b)) || a.id - b.id
 
-export default function QuotesHome() {
+export default function QuotesHome({ view = 'visits' }) {
+  const isEstimates = view === 'estimates'
   const { t, i18n } = useTranslation()
   const toast = useToast()
   const user = useAuthStore((s) => s.user)
@@ -155,12 +156,13 @@ export default function QuotesHome() {
 
   useEffect(() => {
     setLoading(true)
-    listQuoteRequests(showClosed ? { include_closed: 1 } : {})
+    // Estimates holds accepted / declined / invoiced, so it always asks for closed ones.
+    listQuoteRequests(showClosed || isEstimates ? { include_closed: 1 } : {})
       .then((d) => setQuotes(d.quoteRequests ?? []))
       // Show the server's reason — a missing migration, say — not a generic "save" error.
       .catch((err) => toast.error(`${t('quotes.loadFailed')}${err?.response?.data?.error ? ` (${err.response.data.error})` : ''}`))
       .finally(() => setLoading(false))
-  }, [showClosed, reload, toast, t])
+  }, [showClosed, isEstimates, reload, toast, t])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -174,9 +176,14 @@ export default function QuotesHome() {
   }, [quotes, query, filter, user?.id])
 
   // Oldest first: what's been waiting longest is at the top of each column.
-  const columns = BOARD_COLUMNS
-    .filter((c) => showClosed || c.key !== 'closed')
+  const columns = BOARDS[view]
+    .filter((c) => showClosed || !c.closed)
     .map((c) => ({ ...c, items: filtered.filter((q) => c.statuses.includes(q.status)).sort(byOldest) }))
+  const inView = new Set(columns.flatMap((c) => c.statuses))
+  // Wide screens: Estimates shows its two groups (with PO / no PO) one above the other.
+  const groups = isEstimates
+    ? ['po', 'no_po'].map((g) => ({ key: g, columns: columns.filter((c) => c.group === g) }))
+    : [{ key: null, columns }]
 
   // Tabs (below xl): remember the user's pick; until then open the first
   // status that actually has something in it.
@@ -186,15 +193,16 @@ export default function QuotesHome() {
 
   // Field managers: drafts and anything the office sent back first.
   const fieldOrder = ['needs_info', 'scheduled', 'draft', 'pending_review', 'estimate_created', 'sent', 'done', ...CLOSED_STATUSES]
-  const fieldList = [...filtered].sort((a, b) => fieldOrder.indexOf(a.status) - fieldOrder.indexOf(b.status) || byOldest(a, b))
+  const fieldList = filtered.filter((q) => inView.has(q.status))
+    .sort((a, b) => fieldOrder.indexOf(a.status) - fieldOrder.indexOf(b.status) || byOldest(a, b))
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title={isAdmin ? t('quotes.title') : t('quotes.fieldTitle')}
-        subtitle={isAdmin ? t('quotes.subtitle') : t('quotes.fieldSubtitle')}
-        actionLabel={t('quotes.newSiteWalk')}
-        onAction={startSiteWalk}
+        title={isEstimates ? t('quotes.estimatesTab.title') : isAdmin ? t('quotes.title') : t('quotes.fieldTitle')}
+        subtitle={isEstimates ? t('quotes.estimatesTab.subtitle') : isAdmin ? t('quotes.subtitle') : t('quotes.fieldSubtitle')}
+        actionLabel={isEstimates ? undefined : t('quotes.newSiteWalk')}
+        onAction={isEstimates ? undefined : startSiteWalk}
         actionLoading={starting}
         actionIcon={CameraIcon}>
         {/* The client list and Materials library live inside Quotes on every screen size. */}
@@ -230,20 +238,20 @@ export default function QuotesHome() {
               {t(`quotes.filters.${f}`)}
             </button>
           ))}
-          <button onClick={() => setShowClosed((v) => !v)}
+          {!isEstimates && <button onClick={() => setShowClosed((v) => !v)}
             className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-colors ${
               showClosed ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200'
             }`}>
             {t('quotes.showClosed')}
-          </button>
+          </button>}
         </div>
       </div>
 
       {loading ? (
         <Card><p className="text-sm text-gray-400">{t('common.loading')}</p></Card>
-      ) : quotes.length === 0 ? (
-        <Card><p className="text-sm text-gray-400">{isAdmin ? t('quotes.empty') : t('quotes.emptyField')}</p></Card>
-      ) : filtered.length === 0 ? (
+      ) : !quotes.some((q) => inView.has(q.status)) ? (
+        <Card><p className="text-sm text-gray-400">{isEstimates ? t('quotes.estimatesTab.empty') : isAdmin ? t('quotes.empty') : t('quotes.emptyField')}</p></Card>
+      ) : !filtered.some((q) => inView.has(q.status)) ? (
         <Card><p className="text-sm text-gray-400">{t('quotes.noResults')}</p></Card>
       ) : isAdmin ? (
         <>
@@ -279,9 +287,12 @@ export default function QuotesHome() {
 
           {/* Wide desktop: the full board. Each column scrolls on its own, so a
               long one (Pending review) doesn't stretch the whole page. */}
-          <div className="hidden xl:grid gap-4 items-start" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
-            {columns.map((col) => (
-              <div key={col.key} className="flex flex-col min-w-0 rounded-2xl bg-gray-100/60 max-h-[calc(100vh-15rem)]">
+          {groups.map((g) => (
+          <section key={g.key ?? 'all'} className="hidden xl:flex flex-col gap-2">
+          {g.key && <h2 className="text-sm font-bold text-gray-900 px-1">{t(`quotes.estimatesTab.${g.key}`)}</h2>}
+          <div className="grid gap-4 items-start" style={{ gridTemplateColumns: `repeat(${g.columns.length}, minmax(0, 1fr))` }}>
+            {g.columns.map((col) => (
+              <div key={col.key} className={`flex flex-col min-w-0 rounded-2xl bg-gray-100/60 ${isEstimates ? 'max-h-[60vh]' : 'max-h-[calc(100vh-15rem)]'}`}>
                 <h2 className="shrink-0 px-3 pt-3 pb-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
                   {t(`quotes.board.${col.key}`)} <span className="text-gray-400">({col.items.length})</span>
                 </h2>
@@ -293,6 +304,8 @@ export default function QuotesHome() {
               </div>
             ))}
           </div>
+          </section>
+          ))}
         </>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">

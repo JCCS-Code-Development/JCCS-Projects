@@ -20,7 +20,8 @@
     "signOut": "Cerrar sesión",
     "quotes": "Cotizaciones",
     "siteWalks": "Visitas",
-    "library": "Materiales"
+    "library": "Materiales",
+    "estimates": "Estimados"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -387,8 +388,8 @@
     }
   },
   "quotes": {
-    "title": "Solicitudes de Cotización",
-    "subtitle": "Visitas, desde pendiente de revisión hasta estimado enviado.",
+    "title": "Visitas",
+    "subtitle": "Visitas, desde borrador hasta estimado creado.",
     "fieldTitle": "Mis Visitas",
     "fieldSubtitle": "Documenta el trabajo — la oficina lo convierte en el estimado.",
     "newRequest": "Nueva solicitud",
@@ -631,11 +632,15 @@
       "pending": "Pendiente de revisión",
       "created": "Creado — sin enviar",
       "sent": "Estimado enviado",
-      "jobs": "Trabajos sin PO",
-      "closed": "Cerrados",
       "showMore": "Ver {{count}} más",
       "estimateNo": "Estimado #",
-      "link": "Vincular"
+      "link": "Vincular",
+      "accepted": "Aceptados",
+      "declined": "Rechazados",
+      "scheduled": "Programados",
+      "done": "Terminados",
+      "invoiced": "Facturados",
+      "cancelled": "Cancelados"
     },
     "manageLibrary": "Biblioteca de materiales",
     "addonShort": "Adicional",
@@ -926,6 +931,13 @@
       "numberHint": "El número que InvoiceToGo le dio al estimado. Luego envía el estimado con copia a {{depot}} — esta visita se marca enviada sola cuando llega el PDF.",
       "linked": "Vinculado — queda “Creado — sin enviar” hasta que el PDF llegue al depósito.",
       "linkedSent": "Vinculado — el PDF ya estaba en el depósito, así que se marcó enviado."
+    },
+    "estimatesTab": {
+      "title": "Estimados",
+      "subtitle": "Todo lo que ya se envió — con PO y sin PO.",
+      "po": "Con PO",
+      "no_po": "Sin PO",
+      "empty": "Aún no se ha enviado nada. Las cotizaciones aparecen aquí cuando se envía su estimado, o cuando se programa un trabajo sin PO."
     }
   },
   "library": {

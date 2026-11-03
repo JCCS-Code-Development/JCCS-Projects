@@ -20,7 +20,8 @@
     "signOut": "Sign Out",
     "quotes": "Quotes",
     "siteWalks": "Site Visits",
-    "library": "Materials"
+    "library": "Materials",
+    "estimates": "Estimates"
   },
   "notifications": {
     "title": "Notifications",
@@ -387,8 +388,8 @@
     }
   },
   "quotes": {
-    "title": "Quote Requests",
-    "subtitle": "Site visits, from pending review to estimate sent.",
+    "title": "Site Visits",
+    "subtitle": "Site visits, from draft to estimate created.",
     "fieldTitle": "My Site Visits",
     "fieldSubtitle": "Document the job — the office turns it into the estimate.",
     "newRequest": "New request",
@@ -631,11 +632,15 @@
       "pending": "Pending review",
       "created": "Created — not sent",
       "sent": "Estimate sent",
-      "jobs": "No-PO jobs",
-      "closed": "Closed",
       "showMore": "Show {{count}} more",
       "estimateNo": "Estimate #",
-      "link": "Link"
+      "link": "Link",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "scheduled": "Scheduled",
+      "done": "Done",
+      "invoiced": "Invoiced",
+      "cancelled": "Cancelled"
     },
     "manageLibrary": "Materials library",
     "addonShort": "Add-on",
@@ -926,6 +931,13 @@
       "numberHint": "The number InvoiceToGo gave the estimate. Then send the estimate with {{depot}} copied — this site visit is marked sent by itself when the PDF arrives.",
       "linked": "Linked — marked “Created — not sent” until the PDF reaches the depot.",
       "linkedSent": "Linked — the PDF was already in the depot, so it’s marked sent."
+    },
+    "estimatesTab": {
+      "title": "Estimates",
+      "subtitle": "Everything already sent — with a PO and without one.",
+      "po": "With PO",
+      "no_po": "No PO",
+      "empty": "Nothing sent yet. Quotes show up here once their estimate is sent, or a no-PO job is scheduled."
     }
   },
   "library": {
