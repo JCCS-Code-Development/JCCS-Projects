@@ -32,7 +32,9 @@ try {
         if (!filter_var(strtolower(trim((string)($raw['email'] ?? ''))), FILTER_VALIDATE_EMAIL)) unset($raw['email']);
         $data = customerClean($raw);
 
-        $existing = customerFindByName($pdo, $data['name']);
+        // Same email first (a client the depot added with only an address
+        // gets its real name from here), then same name.
+        $existing = (!empty($data['email']) ? customerFindByEmail($pdo, $data['email']) : null) ?? customerFindByName($pdo, $data['name']);
         if (!$existing) {
             $data['created_by_name'] = 'InvoiceToGo import';
             $cols = array_keys($data);
@@ -45,10 +47,13 @@ try {
         foreach ($data as $k => $v) {
             if ($k !== 'name' && $v !== null && ($existing[$k] ?? null) === null) $fill[$k] = $v;
         }
+        $renamed = customerFixPlaceholderName($pdo, $existing, $data['name']);
         if (!(int)$existing['is_active']) $fill['is_active'] = 1;
-        if ($fill) {
-            $sets = implode(', ', array_map(fn($k) => "$k = ?", array_keys($fill)));
-            $pdo->prepare("UPDATE customers SET $sets WHERE id = ?")->execute([...array_values($fill), $existing['id']]);
+        if ($fill || $renamed) {
+            if ($fill) {
+                $sets = implode(', ', array_map(fn($k) => "$k = ?", array_keys($fill)));
+                $pdo->prepare("UPDATE customers SET $sets WHERE id = ?")->execute([...array_values($fill), $existing['id']]);
+            }
             $updated++;
         } else {
             $skipped[] = $data['name'];

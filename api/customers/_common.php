@@ -42,6 +42,32 @@ function customerFindByName(PDO $pdo, string $name): ?array {
     return $s->fetch() ?: null;
 }
 
+// Same client = same email, ignoring case.
+function customerFindByEmail(PDO $pdo, string $email): ?array {
+    $email = strtolower(trim($email));
+    if ($email === '') return null;
+    $s = $pdo->prepare('SELECT * FROM customers WHERE LOWER(email) = ? ORDER BY is_active DESC, id LIMIT 1');
+    $s->execute([$email]);
+    return $s->fetch() ?: null;
+}
+
+// A client added with only an address has its email as its name until the
+// real name turns up (from the InvoiceToGo CSV, or a later email).
+function customerNameIsPlaceholder(array $row): bool {
+    $name = strtolower(trim((string) $row['name']));
+    return $name === '' || $name === strtolower(trim((string) ($row['email'] ?? ''))) || filter_var($name, FILTER_VALIDATE_EMAIL);
+}
+
+// Gives a placeholder-named client its real name — unless another client
+// already has that name.
+function customerFixPlaceholderName(PDO $pdo, array $row, ?string $name): bool {
+    $name = trim(preg_replace('/\s+/', ' ', (string) $name));
+    if ($name === '' || filter_var($name, FILTER_VALIDATE_EMAIL) || !customerNameIsPlaceholder($row)) return false;
+    if (($other = customerFindByName($pdo, $name)) && (int) $other['id'] !== (int) $row['id']) return false;
+    $pdo->prepare('UPDATE customers SET name = ? WHERE id = ?')->execute([mb_substr($name, 0, 150), $row['id']]);
+    return true;
+}
+
 // Keeps the client list in step with InvoiceToGo: InvoiceToGo sends each
 // estimate / invoice TO the client, so the depot copy's To: line is the
 // client as InvoiceToGo has them. Finds them by email (then by name, filling
@@ -57,9 +83,10 @@ function customerSyncFromEmail(PDO $pdo, string $email, ?string $name, string $s
     $name = trim(preg_replace('/\s+/', ' ', (string) $name), " \t\"'");
     if ($name === '' || filter_var($name, FILTER_VALIDATE_EMAIL)) $name = $email;
 
-    $s = $pdo->prepare('SELECT id, is_active FROM customers WHERE LOWER(email) = ? ORDER BY is_active DESC, id LIMIT 1');
-    $s->execute([$email]);
-    if ($row = $s->fetch()) return (int) $row['id'];
+    if ($row = customerFindByEmail($pdo, $email)) {
+        if ($name !== $email) customerFixPlaceholderName($pdo, $row, $name);
+        return (int) $row['id'];
+    }
 
     if ($name !== $email && ($byName = customerFindByName($pdo, $name))) {
         if (empty($byName['email'])) $pdo->prepare('UPDATE customers SET email = ? WHERE id = ?')->execute([$email, $byName['id']]);
