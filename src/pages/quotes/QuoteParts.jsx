@@ -44,7 +44,9 @@ export function QuoteWho({ client, company, location, estimator, onEdit = {}, cl
     ['estimator', estimator, t('quotes.who.noEstimator')],
   ]
   return (
-    <dl className={`flex flex-col gap-0.5 text-[13px] min-w-0 ${className}`}>
+    // relative: keeps the screen-reader labels inside the card (they'd
+    // otherwise stretch the page from inside a scrolling column).
+    <dl className={`relative flex flex-col gap-0.5 text-[13px] min-w-0 ${className}`}>
       {rows.map(([key, value, missing]) => (
         <div key={key} className="flex items-center gap-1.5 min-w-0">
           <dt className="shrink-0" title={t(`quotes.who.${key}`)}>
@@ -133,7 +135,7 @@ function BillingChoice({ value, onChange, locked }) {
   )
 }
 
-export function QuoteDetailsForm({ form, set, isAdmin, clients = [], projects = [], staff = [], mode = 'create', billingLocked = false }) {
+export function QuoteDetailsForm({ form, set, isAdmin, clients = [], projects = [], staff = [], billingLocked = false }) {
   const { t } = useTranslation()
 
   // Picking the project of an add-on pre-selects everyone who already has
@@ -222,14 +224,6 @@ export function QuoteDetailsForm({ form, set, isAdmin, clients = [], projects = 
             <option value="">{t('quotes.fields.unassigned')}</option>
             {staff.filter((s) => s.role === 'admin').map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </Select>
-          {mode === 'edit' && (
-            <>
-              <Input label={t('quotes.fields.siteVisitAt')} type="datetime-local" value={form.site_visit_at ?? ''}
-                onChange={(e) => set('site_visit_at', e.target.value)} />
-              <Input label={t('quotes.fields.followUpDays')} type="number" min={1} max={90} value={form.follow_up_days ?? 7}
-                onChange={(e) => set('follow_up_days', e.target.value === '' ? '' : Number(e.target.value))} />
-            </>
-          )}
         </div>
       )}
     </div>
