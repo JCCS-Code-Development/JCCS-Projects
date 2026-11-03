@@ -149,9 +149,9 @@ function financialDocPlace(PDO $pdo, string $type, ?string $docNumber, array $ha
     return financialDocMatch($pdo, $haystacks, $type === 'invoice' ? $docNumber : null, $guessFrom);
 }
 
-// Depot PDFs sitting in Unfiled: sort them again — by the number in the
-// subject / file name, and (when this server can read PDFs) by a known
-// project number printed inside, e.g. on an invoice. One that still can't be
+// Depot estimate PDFs sitting in Unfiled: sort them again — by the number in
+// the subject / file name, and (when this server can read PDFs) by a known
+// project number printed inside. One that still can't be
 // placed is marked 'unmatched' so it isn't read again every run; a person
 // assigns it from the Unfiled tray. Marks waiting site visits sent too.
 function financialDocRefileUnfiled(PDO $pdo, int $limit = 30): int {
@@ -159,7 +159,7 @@ function financialDocRefileUnfiled(PDO $pdo, int $limit = 30): int {
     $s = $pdo->prepare("SELECT d.id, d.category, d.title, d.doc_number, v.original_filename, v.file_path FROM documents d
                           LEFT JOIN document_versions v ON v.document_id = d.id AND v.version_number = 1
                          WHERE d.project_number = ? AND d.source = 'email' AND d.is_active = 1
-                           AND d.category IN ('estimate', 'invoice')
+                           AND d.category = 'estimate'
                            AND (d.match_confidence IS NULL OR d.match_confidence <> 'unmatched')
                            AND (? OR d.category = 'estimate' OR d.doc_number IS NULL)
                          ORDER BY d.id LIMIT " . (int) $limit);
