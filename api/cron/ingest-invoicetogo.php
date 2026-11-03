@@ -24,6 +24,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../middleware/validate.php';
 require_once __DIR__ . '/../financial-docs/_ingest.php';
+require_once __DIR__ . '/../customers/_common.php';
 
 $isCli = PHP_SAPI === 'cli';
 if (!$isCli) {
@@ -46,6 +47,9 @@ $budget  = $isCli ? 240 : 20;   // seconds of work per run, under the host's lim
 $batch   = defined('DEPOT_BATCH') ? max(1, (int) DEPOT_BATCH) : 20;
 // recheck: look again at emails starred by an earlier run (?recheck=1, or --recheck from the CLI).
 $recheck = $isCli ? in_array('--recheck', $argv ?? [], true) : !empty($_GET['recheck']);
+// sync_clients: also read the clients off every email already in the Estimates
+// and Invoices folders, once (?sync_clients=1, or --sync-clients).
+$syncAll = $isCli ? in_array('--sync-clients', $argv ?? [], true) : !empty($_GET['sync_clients']);
 
 if (!function_exists('imap_open')) {
     $log('PHP imap extension not installed — cannot poll. Ask the host to enable it.');
@@ -128,6 +132,36 @@ $alreadyFiled = function (?string $number, string $file) use ($pdo): bool {
     return (bool) $s->fetchColumn();
 };
 
+// The client an InvoiceToGo email went to → on the client list (added if new).
+$clientsAdded = 0;
+$syncClients = function ($header) use ($pdo, &$clientsAdded): ?int {
+    $first = null;
+    foreach (customerAddressesOf($header) as [$email, $name]) {
+        $before = (int) $pdo->query('SELECT COUNT(*) FROM customers')->fetchColumn();
+        $id = customerSyncFromEmail($pdo, $email, $name);
+        if ($id && (int) $pdo->query('SELECT COUNT(*) FROM customers')->fetchColumn() > $before) $clientsAdded++;
+        $first ??= $id;
+    }
+    return $first;
+};
+
+// One-time catch-up: clients on the emails already sorted into the folders.
+if ($syncAll) {
+    foreach (['Estimates', 'Invoices'] as $label) {
+        $name = null;
+        foreach ($names as $n) {
+            $leaf = ($p = strrpos($n, $delim)) === false ? $n : substr($n, $p + 1);
+            if (strcasecmp($leaf, $label) === 0) { $name = $n; break; }
+        }
+        if ($name === null || !imap_reopen($imap, $ref . $name)) continue;
+        $all = imap_search($imap, 'ALL') ?: [];
+        foreach ($all as $n) { try { $syncClients(imap_headerinfo($imap, $n)); } catch (Throwable $e) { /* skip that one */ } }
+        $log(count($all) . " email(s) in $label checked for clients.");
+    }
+    imap_reopen($imap, $mbox);
+    $ids = imap_search($imap, $recheck ? 'ALL' : 'UNFLAGGED') ?: [];
+}
+
 // Earlier estimate PDFs left Unfiled before the Estimate # was read from the subject.
 try {
     if ($moved = financialDocRefileUnfiled($pdo)) $log("Re-sorted $moved Unfiled estimate(s) onto their projects.");
@@ -155,8 +189,9 @@ foreach ($ids as $num) {
     $short   = mb_strimwidth($subject, 0, 70, '…');
     $named   = financialDocNumberFromName($subject);
 
-    // Invoice: not read, just put in the Invoices folder.
+    // Invoice: not read, just put in the Invoices folder (its client still counts).
     if ($named && $named[0] === 'invoice') {
+        $syncClients($header);
         $moveTo($num, 'Invoices');
         $invoices++;
         $log("  invoice → Invoices folder — \"$short\"");
@@ -209,6 +244,7 @@ foreach ($ids as $num) {
     $named = $named ?? financialDocNumberFromName(...$files);
     $isIt2g = $attachments && $fromInvoiceToGo($header, $subject, $bodyText . ' ' . $htmlText . ' ' . implode(' ', $files));
     if ($isIt2g && $named && $named[0] === 'invoice') {
+        $syncClients($header);
         $moveTo($num, 'Invoices');
         $invoices++;
         $log("  invoice → Invoices folder — \"$short\"");
@@ -222,7 +258,14 @@ foreach ($ids as $num) {
         continue;
     }
 
-    // Estimate: file its PDF(s), then put the email in the Estimates folder.
+    // Estimate: its client onto the list (and onto the site visit waiting on
+    // this number, if it has none yet); file its PDF(s); then put the email
+    // in the Estimates folder.
+    $clientId = $syncClients($header);
+    if ($clientId && !empty($named[1])) {
+        $pdo->prepare("UPDATE quote_requests SET customer_id = ? WHERE estimate_number = ? AND customer_id IS NULL AND status <> 'cancelled'")
+            ->execute([$clientId, $named[1]]);
+    }
     $ok = true;
     foreach ($attachments as [$name, $bytes]) {
         if ($alreadyFiled($named[1] ?? null, $name)) { $log("  already in the app — \"$short\" / $name"); continue; }
@@ -258,4 +301,5 @@ foreach ($ids as $num) {
 
 imap_expunge($imap);   // finishes the moves
 imap_close($imap);
-$log("Done. $filed estimate(s) filed, $invoices invoice(s) put in the Invoices folder, $skipped set aside (starred) as not InvoiceToGo.");
+$log("Done. $filed estimate(s) filed, $invoices invoice(s) put in the Invoices folder, $skipped set aside (starred) as not InvoiceToGo"
+    . ($clientsAdded ? ", $clientsAdded new client(s) added from InvoiceToGo." : '.'));

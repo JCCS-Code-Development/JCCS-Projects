@@ -41,3 +41,44 @@ function customerFindByName(PDO $pdo, string $name): ?array {
     $s->execute([mb_strtolower(preg_replace('/\s+/', ' ', trim($name)))]);
     return $s->fetch() ?: null;
 }
+
+// Keeps the client list in step with InvoiceToGo: InvoiceToGo sends each
+// estimate / invoice TO the client, so the depot copy's To: line is the
+// client as InvoiceToGo has them. Finds them by email (then by name, filling
+// in a missing email) or adds them. Returns the client id, or null when the
+// address isn't a client (our own, InvoiceToGo's). Never exits — safe for cron.
+const CUSTOMER_NOT_CLIENT_DOMAINS = ['jccs-services.com', 'projects.jccs-services.com', 'invoice2go.com', 'invoicetogo.com'];
+
+function customerSyncFromEmail(PDO $pdo, string $email, ?string $name, string $source = 'InvoiceToGo (depot)'): ?int {
+    $email = strtolower(trim($email));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return null;
+    $domain = substr($email, strrpos($email, '@') + 1);
+    foreach (CUSTOMER_NOT_CLIENT_DOMAINS as $d) if ($domain === $d || str_ends_with($domain, '.' . $d)) return null;
+    $name = trim(preg_replace('/\s+/', ' ', (string) $name), " \t\"'");
+    if ($name === '' || filter_var($name, FILTER_VALIDATE_EMAIL)) $name = $email;
+
+    $s = $pdo->prepare('SELECT id, is_active FROM customers WHERE LOWER(email) = ? ORDER BY is_active DESC, id LIMIT 1');
+    $s->execute([$email]);
+    if ($row = $s->fetch()) return (int) $row['id'];
+
+    if ($name !== $email && ($byName = customerFindByName($pdo, $name))) {
+        if (empty($byName['email'])) $pdo->prepare('UPDATE customers SET email = ? WHERE id = ?')->execute([$email, $byName['id']]);
+        return (int) $byName['id'];
+    }
+    $pdo->prepare('INSERT INTO customers (name, email, created_by_name) VALUES (?, ?, ?)')
+        ->execute([mb_substr($name, 0, 150), mb_substr($email, 0, 190), $source]);
+    return (int) $pdo->lastInsertId();
+}
+
+// The To / Cc people on an email (imap_headerinfo), as [email, name] pairs.
+function customerAddressesOf($header): array {
+    $out = [];
+    foreach (['to', 'cc'] as $k) {
+        foreach (is_array($header->$k ?? null) ? $header->$k : [] as $a) {
+            if (empty($a->mailbox) || empty($a->host)) continue;
+            $name = isset($a->personal) ? (function_exists('imap_utf8') ? imap_utf8($a->personal) : mb_decode_mimeheader($a->personal)) : null;
+            $out[] = [$a->mailbox . '@' . $a->host, $name];
+        }
+    }
+    return $out;
+}
