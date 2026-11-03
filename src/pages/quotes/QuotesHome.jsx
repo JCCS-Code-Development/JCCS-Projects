@@ -82,7 +82,7 @@ function QuoteCard({ q, showFieldManager, onLinked }) {
   const flagged = quoteFlags(q).some((f) => f === 'overdue' || f === 'followUpDue')
   const quickLink = onLinked && q.status === 'pending_review' && (q.billing ?? 'po') === 'po' && !q.estimate_number
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all hover:shadow-md ${flagged ? 'border-red-200' : 'border-gray-100 hover:border-brand-400'}`}>
+    <div className={`shrink-0 bg-white rounded-2xl shadow-sm border overflow-hidden transition-all hover:shadow-md ${flagged ? 'border-red-200' : 'border-gray-100 hover:border-brand-400'}`}>
     <Link to={`/quotes/${q.id}`} className="block active:bg-gray-50">
       <ThumbStrip urls={q.thumb_urls} count={q.photo_count} />
       <div className="px-3.5 py-3 flex flex-col gap-1.5 min-w-0">
