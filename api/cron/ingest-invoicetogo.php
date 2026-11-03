@@ -135,7 +135,8 @@ try {
 
 $filed = 0; $invoices = 0; $skipped = 0; $estimates = 0; $done = 0;
 foreach ($ids as $num) {
-    // Filing an estimate is the slow part; invoices are only moved.
+    // Filing an estimate is the slow part; invoices and estimates already in
+    // the app are only moved.
     if ($estimates >= $batch || microtime(true) - $started > $budget) {
         $log('Stopping here for this run — ' . (count($ids) - $done) . ' left for the next one.');
         break;
@@ -216,10 +217,10 @@ foreach ($ids as $num) {
     }
 
     // Estimate: file its PDF(s), then put the email in the Estimates folder.
-    $estimates++;
     $ok = true;
     foreach ($attachments as [$name, $bytes]) {
         if ($alreadyFiled($named[1] ?? null, $name)) { $log("  already in the app — \"$short\" / $name"); continue; }
+        $estimates++;   // only real filing counts toward the batch
         $tmp = tempnam(sys_get_temp_dir(), 'depot_');
         file_put_contents($tmp, $bytes);
         try {
