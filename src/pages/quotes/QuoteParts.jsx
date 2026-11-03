@@ -4,7 +4,6 @@ import { listProjectClientIds } from '../../api/quoteRequests'
 import Input from '../../components/ui/Input'
 import { STATUS_STYLES, FLAG_STYLES, quoteFlags, ESTIMATE_TYPES, SOURCES, PRIORITIES } from './quoteUtils'
 import { ClientPicker } from './clients/ClientPicker'
-import { EngineerPicker } from './engineers/EngineerPicker'
 
 export function StatusPill({ status, className = '' }) {
   const { t } = useTranslation()
@@ -27,20 +26,20 @@ export function FlagPills({ quote }) {
 }
 
 const WHO_ICONS = {
+  client:    'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
   company:   'M3 21h18M5 21V7l7-4 7 4v14M9 9h1m4 0h1M9 13h1m4 0h1M9 17h1m4 0h1',
-  engineer:  'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
   location:  'M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zm0-8.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z',
   estimator: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
 }
 
 // Who and where a quote is for — the same four lines on the board cards and
-// the quote page: company, engineer, location, estimator. Missing ones say so,
-// so the office can see at a glance what still needs filling in.
-export function QuoteWho({ company, engineer, location, estimator, className = '' }) {
+// the quote page: client, their company, location, estimator. Missing ones
+// say so, so the office can see at a glance what still needs filling in.
+export function QuoteWho({ client, company, location, estimator, className = '' }) {
   const { t } = useTranslation()
   const rows = [
+    ['client', client, t('quotes.who.noClient')],
     ['company', company, t('quotes.who.noCompany')],
-    ['engineer', engineer, t('quotes.who.noEngineer')],
     ['location', location, t('quotes.who.noLocation')],
     ['estimator', estimator, t('quotes.who.noEstimator')],
   ]
@@ -54,7 +53,7 @@ export function QuoteWho({ company, engineer, location, estimator, className = '
               <path strokeLinecap="round" strokeLinejoin="round" d={WHO_ICONS[key]} />
             </svg>
           </dt>
-          <dd className={`truncate ${value ? (key === 'company' ? 'font-bold text-gray-900' : 'text-gray-700') : 'text-gray-400 italic'}`}>{value || missing}</dd>
+          <dd className={`truncate ${value ? (key === 'client' ? 'font-bold text-gray-900' : 'text-gray-700') : 'text-gray-400 italic'}`}>{value || missing}</dd>
         </div>
       ))}
     </dl>
@@ -228,15 +227,12 @@ export function QuoteDetailsForm({ form, set, isAdmin, clients = [], projects = 
       <Input label={t('quotes.fields.title')} placeholder={t('quotes.fields.titlePlaceholder')} value={form.title}
         onChange={(e) => set('title', e.target.value)} />
 
-      {/* Picking the engineer fills in their company and location when those are still empty. */}
-      <EngineerPicker value={form.contact_id} defaults={{ customer_id: form.customer_id, location: form.facility }}
-        onChange={(id, e) => {
-          set('contact_id', id)
-          if (e?.customer_id && !form.customer_id) set('customer_id', e.customer_id)
-          if (e?.location && !form.facility) set('facility', e.location)
+      {/* Picking the client fills in where they work when the place is still empty. */}
+      <ClientPicker value={form.customer_id} defaults={{ location: form.facility }}
+        onChange={(id, c) => {
+          set('customer_id', id)
+          if (c?.location && !form.facility) set('facility', c.location)
         }} />
-
-      <ClientPicker value={form.customer_id} onChange={(id) => set('customer_id', id)} label={t('quotes.engineers.company')} />
 
       <RecipientsPicker clients={clients} value={form.recipient_ids ?? []} onChange={(ids) => set('recipient_ids', ids)} />
 

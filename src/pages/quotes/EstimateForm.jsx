@@ -5,11 +5,11 @@ import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
 import { useToast } from '../../components/ToastProvider'
 import { useConfirm } from '../../components/ConfirmProvider'
-import { useAuthStore } from '../../store/authStore'
 import { getQuoteRequest, updateQuoteRequest, aiDraftEstimate } from '../../api/quoteRequests'
 import { listLibrary } from '../../api/quoteLibrary'
 import { generateScope, normalizeForm, toInvoiceToGoText } from '../../scope-engine'
 import { formFromNotes } from '../../scope-engine/fromNotes'
+import { draftText, generatedText } from '../../scope-engine/draft'
 import { summarizeVisit } from '../../scope-engine/summary'
 import { Thumb } from './photos/WalkNotesSheet'
 import { useAutosave } from './photos/useAutosave'
@@ -40,7 +40,6 @@ export default function EstimateForm() {
   const { t } = useTranslation()
   const toast = useToast()
   const confirmDialog = useConfirm()
-  const isAdmin = useAuthStore((s) => s.user?.role === 'admin')
   const [quote, setQuote] = useState(null)
   const [form, setForm] = useState(null)
   const [library, setLibrary] = useState([])
@@ -86,26 +85,38 @@ export default function EstimateForm() {
   }), [id, summaryOf, fromPrompt])
   useEffect(() => { load() }, [load])
 
-  const readOnly = !quote || !quote.can_edit || LOCKED.includes(quote.status)
+  // The estimate text has one home: the request's scope_text. This page is
+  // where it's written and edited; the quote page only shows and copies it.
+  // Older requests kept it on the form (form.draft) — that's where it starts.
+  const [text, setText] = useState(null)
+  useEffect(() => {
+    if (quote && form && text === null) setText(quote.scope_text ?? draftText(form, quote.estimate_type))
+  }, [quote, form, text])
+
+  const readOnly = !quote || !quote.can_edit_scope || LOCKED.includes(quote.status)
   // A freshly written draft is saved straight away, so it's there next time.
   useEffect(() => {
-    if (quote && form && !quote.form && !readOnly && !savedOnce) {
+    if (quote && form && text !== null && !readOnly && !savedOnce && (!quote.form || quote.scope_text == null)) {
       setSavedOnce(true)
-      updateQuoteRequest(id, { form }).catch(() => {})
+      updateQuoteRequest(id, { form, ...(quote.scope_text == null && text.trim() ? { scope_text: text } : {}) }).catch(() => {})
     }
-  }, [quote, form, readOnly, savedOnce, id])
+  }, [quote, form, text, readOnly, savedOnce, id])
   useAutosave(form, (v) => {
     if (!v || readOnly) return
+    updateQuoteRequest(id, { form: v }).catch((err) => toast.error(err?.response?.data?.error ?? t('common.couldNotSave')))
+  }, [readOnly])
+  useAutosave(text, (v) => {
+    if (v === null || readOnly) return
     setSaving(true)
-    updateQuoteRequest(id, { form: v })
+    updateQuoteRequest(id, { scope_text: v })
       .catch((err) => toast.error(err?.response?.data?.error ?? t('common.couldNotSave')))
       .finally(() => setSaving(false))
   }, [readOnly])
 
   const g = useMemo(() => (form ? generateScope(form, { estimateType: quote?.estimate_type }) : null), [form, quote?.estimate_type])
   const generated = g ? toInvoiceToGoText(g) : ''
-  const text = form?.draft?.edited ? (form.draft.text ?? '') : generated
-  const edited = !!form?.draft?.edited
+  // Edited = differs from what the prompt would write (so regenerating asks first).
+  const edited = text !== null && text !== generated
 
   // Let the box grow with the text instead of scrolling inside it.
   useEffect(() => {
@@ -115,13 +126,14 @@ export default function EstimateForm() {
     el.style.height = `${el.scrollHeight + 2}px`
   }, [text])
 
-  if (!quote || !form) return <div className="flex justify-center py-16"><Spinner size="lg" className="text-brand-500" /></div>
+  if (!quote || !form || text === null) return <div className="flex justify-center py-16"><Spinner size="lg" className="text-brand-500" /></div>
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
-  const editText = (v) => setForm((f) => ({
-    ...f, draft: { edited: true, text: v, basedOn: f.draft?.edited ? f.draft.basedOn : generated },
-  }))
-  const useGenerated = () => setForm((f) => ({ ...f, draft: null }))
+  // A new form from a generator → its text replaces the estimate text.
+  const applyForm = (next) => {
+    setForm({ ...next, draft: null })
+    setText(generatedText(next, quote.estimate_type))
+  }
 
   const copy = async (value) => {
     if (await copyText(value)) toast.success(t('quotes.est.copied'))
@@ -140,7 +152,7 @@ export default function EstimateForm() {
   const generate = async () => {
     if (!promptText.trim()) { toast.error(t('quotes.est.prompt.empty')); promptRef.current?.focus(); return }
     if (edited && !await confirmDialog(t('quotes.est.redoConfirm'), { confirmLabel: t('quotes.est.generate') })) return
-    setForm(fromPrompt(promptText, quote, library, keep()))
+    applyForm(fromPrompt(promptText, quote, library, keep()))
     toast.success(t('quotes.est.auto.done'))
   }
   // Paid option — only offered when the server has an Anthropic key. It is
@@ -151,21 +163,11 @@ export default function EstimateForm() {
     setDrafting(true)
     try {
       const res = await aiDraftEstimate(id, { prompt: promptText, key_photo_id: form.keyPhotoId })
-      setForm(normalizeForm({ ...res.form, ...keep(), aiNotes: res.office_notes, aiDraftedAt: new Date().toISOString() }))
+      applyForm(normalizeForm({ ...res.form, ...keep(), aiNotes: res.office_notes, aiDraftedAt: new Date().toISOString() }))
       toast.success(t('quotes.est.ai.done', { count: res.photos_used }))
     } catch (err) {
       toast.error(err?.response?.data?.error ?? t('quotes.est.ai.failed'))
     } finally { setDrafting(false) }
-  }
-
-  const useAsScope = async () => {
-    if (quote.scope_text && quote.scope_text !== text
-      && !await confirmDialog(t('quotes.est.replaceScope'), { confirmLabel: t('quotes.est.useAsScope') })) return
-    try {
-      await updateQuoteRequest(id, { scope_text: text })
-      toast.success(t('quotes.scope.saved'))
-      load()
-    } catch (err) { toast.error(err?.response?.data?.error ?? t('common.couldNotSave')) }
   }
 
   // Title = first line; the rest is the description (what InvoiceToGo wants).
@@ -197,20 +199,15 @@ export default function EstimateForm() {
       {readOnly ? (
         <pre className="whitespace-pre-wrap break-words font-sans text-sm text-gray-800 leading-relaxed">{text}</pre>
       ) : (
-        <textarea ref={textRef} value={text} onChange={(e) => editText(e.target.value)} spellCheck rows={12}
+        <textarea ref={textRef} value={text} onChange={(e) => setText(e.target.value)} spellCheck rows={12}
           className="w-full resize-none overflow-hidden rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-base lg:text-sm leading-relaxed text-gray-800 outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
       )}
 
+      <Button size="lg" onClick={() => copy(text)} disabled={!text.trim()}>{t('quotes.scope.copy')}</Button>
       <div className="grid grid-cols-2 gap-2">
         <Button variant="secondary" onClick={() => copy(titleLine)} disabled={!titleLine.trim()}>{t('quotes.est.copyTitle')}</Button>
         <Button variant="secondary" onClick={() => copy(description)} disabled={!description.trim()}>{t('quotes.est.copyDescription')}</Button>
       </div>
-      {isAdmin && !LOCKED.includes(quote.status) && (
-        <Button size="lg" onClick={useAsScope} disabled={!text.trim()}>{t('quotes.est.useAsScope')}</Button>
-      )}
-      {!readOnly && edited && (
-        <button type="button" onClick={useGenerated} className="self-start text-xs font-semibold text-gray-500 hover:underline">{t('quotes.est.undoEdits')}</button>
-      )}
     </section>
   )
 

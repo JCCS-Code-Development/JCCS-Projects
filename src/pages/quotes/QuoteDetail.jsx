@@ -21,11 +21,10 @@ import EstimatePhotos from './photos/EstimatePhotos'
 import PhotoViewer from './photos/PhotoViewer'
 import { StatusPill, FlagPills, QuoteDetailsForm, TextArea, Select, QuoteWho } from './QuoteParts'
 import { ClientCard } from './clients/ClientPicker'
-import { EngineerCard } from './engineers/EngineerPicker'
 import { normalizeForm } from '../../scope-engine'
 import { draftText } from '../../scope-engine/draft'
 import { useQuotePickers } from './useQuotePickers'
-import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm, BILLING_OPEN_STATUSES, PO_STEPS, NO_PO_STEPS } from './quoteUtils'
+import { fmtDate, fmtDateTime, copyText, FILE_KINDS, formFromQuote, payloadFromForm, BILLING_OPEN_STATUSES } from './quoteUtils'
 
 // "Prisma Health" (or the person's name when there's no company), de-duplicated.
 const recipientsLabel = (list = []) => [...new Set(list.map((r) => r.company || r.name))].join(', ')
@@ -39,7 +38,7 @@ const errMsg = (err, t) => err?.response?.data?.error ?? t('common.couldNotSave'
 const ACTION_UI = {
   submit:        { primary: true },
   request_info:  { prompt: 'request_info' },
-  // The Estimate # is typed into the status card (StatusCard), not here.
+  // The Estimate # is typed into its own card (EstimateNumberCard), not here.
   clear_estimate:{ confirm: 'clearEstimate' },
   accept:        { primary: true },
   decline:       { prompt: 'decline', danger: true },
@@ -59,7 +58,7 @@ const ACTION_UI = {
 const toLocalInput = (v) => (v ? String(v).replace(' ', 'T').slice(0, 16) : '')
 const fromLocalInput = (v) => (v ? new Date(v).toISOString() : null)
 
-function ActionBar({ quote, onDone, onDelete, canDelete }) {
+function ActionBar({ quote, onDone, canDelete }) {
   const { t } = useTranslation()
   const toast = useToast()
   const confirmDialog = useConfirm()
@@ -111,7 +110,7 @@ function ActionBar({ quote, onDone, onDelete, canDelete }) {
 
   // A field manager's own draft can simply be deleted — "cancel" would be redundant.
   const actions = (quote.actions ?? []).filter((a) => a !== 'set_estimate' && !(a === 'cancel' && canDelete && quote.status === 'draft'))
-  if (!actions.length && !canDelete) return null
+  if (!actions.length) return null
   const label = (a) => (a === 'submit' && quote.status === 'needs_info' ? t('quotes.actions.resubmit')
     : a === 'schedule' && quote.status === 'scheduled' ? t('quotes.actions.reschedule') : t(`quotes.actions.${a}`))
   const main = [...actions.filter((a) => ACTION_UI[a]?.primary), ...actions.filter((a) => !ACTION_UI[a]?.primary && !ACTION_UI[a]?.ghost)]
@@ -133,14 +132,11 @@ function ActionBar({ quote, onDone, onDelete, canDelete }) {
             })}
           </div>
         )}
-        {(quiet.length > 0 || canDelete) && (
+        {quiet.length > 0 && (
           <div className="flex flex-wrap justify-center lg:justify-start gap-1">
             {quiet.map((a) => (
               <Button key={a} variant="ghost" size="lg" loading={busy === a} onClick={() => start(a)} className="!text-red-600">{label(a)}</Button>
             ))}
-            {canDelete && (
-              <Button variant="ghost" size="lg" className="!text-red-600" onClick={onDelete}>{t('quotes.actions.delete')}</Button>
-            )}
           </div>
         )}
       </div>
@@ -173,24 +169,17 @@ function ActionBar({ quote, onDone, onDelete, canDelete }) {
   )
 }
 
-// ── Where the quote is ───────────────────────────────────────────────────
-// The steps of its path with the current one lit, one plain sentence on what
-// it's waiting for, and — for the office — the InvoiceToGo Estimate # box
-// that ties the site visit to its estimate.
-function StatusCard({ quote, isAdmin, onDone }) {
-  const { t, i18n } = useTranslation()
+// ── InvoiceToGo Estimate # ───────────────────────────────────────────────
+// The office types the number InvoiceToGo gave the estimate; it ties this
+// site visit to its estimate. Shown while a number can still be linked.
+function EstimateNumberCard({ quote, onDone }) {
+  const { t } = useTranslation()
   const toast = useToast()
   const [number, setNumber] = useState(quote.estimate_number ?? '')
   const [busy, setBusy] = useState(false)
   useEffect(() => { setNumber(quote.estimate_number ?? '') }, [quote.estimate_number])
 
-  const noPo = (quote.billing ?? 'po') === 'no_po'
-  const steps = noPo ? NO_PO_STEPS : PO_STEPS
-  // Declined sits where accepted would; needs-info and drafts on the first step.
-  const at = { draft: 0, needs_info: 0, declined: steps.length - 1 }[quote.status] ?? steps.indexOf(quote.status)
-  const off = quote.status === 'cancelled'
-  const canSetNumber = isAdmin && (quote.actions ?? []).includes('set_estimate')
-  const vars = { number: quote.estimate_number, date: fmtDateTime(quote.sent_at, i18n.language), depot: 'depot@projects.jccs-services.com' }
+  if (!(quote.actions ?? []).includes('set_estimate')) return null
 
   const saveNumber = async (e) => {
     e.preventDefault()
@@ -205,38 +194,17 @@ function StatusCard({ quote, isAdmin, onDone }) {
   }
 
   return (
-    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col gap-3">
-      <ol className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
-        {steps.map((st, i) => {
-          const done = !off && at > i
-          const here = !off && at === i
-          const label = i === steps.length - 1 && quote.status === 'declined' ? 'declined' : st
-          return (
-            <li key={st} className="flex flex-col gap-1 min-w-0">
-              <span className={`h-1.5 rounded-full ${here ? (label === 'declined' ? 'bg-red-500' : 'bg-brand-500') : done ? 'bg-brand-400' : 'bg-gray-100'}`} />
-              <span className={`text-[11px] leading-tight font-semibold ${here ? 'text-gray-900' : done ? 'text-gray-500' : 'text-gray-300'}`}>
-                {t(`quotes.status.${label}`)}
-              </span>
-            </li>
-          )
-        })}
-      </ol>
-      <p className="text-sm text-gray-700">{t(`quotes.statusCard.${quote.status}${noPo ? '_noPo' : ''}`, { ...vars, defaultValue: t(`quotes.statusCard.${quote.status}`, vars) })}</p>
-
-      {canSetNumber && (
-        <form onSubmit={saveNumber} className="flex flex-col gap-2 rounded-xl bg-gray-50 p-3">
-          <label htmlFor="estimate-number" className="text-sm font-semibold text-gray-900">{t('quotes.fields.estimateNumber')}</label>
-          <div className="flex gap-2">
-            <input id="estimate-number" value={number} onChange={(e) => setNumber(e.target.value)} inputMode="numeric" autoComplete="off"
-              placeholder="4602" className="min-w-0 flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
-            <Button type="submit" loading={busy} disabled={!number.trim() || number.trim() === (quote.estimate_number ?? '')}>
-              {quote.estimate_number ? t('quotes.statusCard.change') : t('quotes.statusCard.link')}
-            </Button>
-          </div>
-          <p className="text-xs text-gray-500">{t('quotes.statusCard.numberHint', vars)}</p>
-        </form>
-      )}
-    </section>
+    <form onSubmit={saveNumber} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col gap-2">
+      <label htmlFor="estimate-number" className="text-sm font-semibold text-gray-900">{t('quotes.fields.estimateNumber')}</label>
+      <div className="flex gap-2">
+        <input id="estimate-number" value={number} onChange={(e) => setNumber(e.target.value)} inputMode="numeric" autoComplete="off"
+          placeholder="4602" className="min-w-0 flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+        <Button type="submit" loading={busy} disabled={!number.trim() || number.trim() === (quote.estimate_number ?? '')}>
+          {quote.estimate_number ? t('quotes.statusCard.change') : t('quotes.statusCard.link')}
+        </Button>
+      </div>
+      <p className="text-xs text-gray-500">{t('quotes.statusCard.numberHint', { depot: 'depot@projects.jccs-services.com' })}</p>
+    </form>
   )
 }
 
@@ -327,10 +295,7 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
             {t(`quotes.workType.${quote.work_type}`)}{quote.project_number ? ` — #${quote.project_number}` : ''}
           </DetailRow>
           <DetailRow label={t('quotes.estimateType.label')}>{t(`quotes.estimateType.${quote.estimate_type}`)}</DetailRow>
-          <DetailRow label={t('quotes.engineers.label')}>
-            {quote.engineer ? <EngineerCard engineer={quote.engineer} /> : null}
-          </DetailRow>
-          <DetailRow label={t('quotes.engineers.company')}>
+          <DetailRow label={t('quotes.clients.label')}>
             {quote.customer ? <ClientCard client={quote.customer} /> : null}
           </DetailRow>
           <DetailRow label={t('quotes.fields.recipients')}>
@@ -352,10 +317,14 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
           <DetailRow label={t('quotes.fields.siteVisitDate')}>{fmtDate(quote.site_visit_date, lang)}</DetailRow>
           <DetailRow label={t('quotes.fields.siteVisitAt')}>{fmtDateTime(quote.site_visit_at, lang)}</DetailRow>
           <DetailRow label={t('quotes.source.label')}>{quote.request_source ? t(`quotes.source.${quote.request_source}`) : null}</DetailRow>
-          <DetailRow label={t('quotes.fields.fieldManager')}>{quote.field_manager_name}</DetailRow>
           <DetailRow label={t('quotes.fields.estimator')}>{quote.assigned_to_name}</DetailRow>
           <DetailRow label={t('quotes.fields.estimateNumber')}>{quote.estimate_number}</DetailRow>
-          <DetailRow label={t('quotes.fields.createdBy')}>{`${quote.created_by_name} · ${fmtDateTime(quote.created_at, lang)}`}</DetailRow>
+          {/* Who did the visit; who logged it only when that's someone else (e.g. the office took the call). */}
+          <DetailRow label={t('quotes.fields.fieldManager')}>
+            {[quote.field_manager_name || quote.created_by_name,
+              quote.field_manager_name && quote.field_manager_name !== quote.created_by_name ? t('quotes.fields.loggedBy', { name: quote.created_by_name }) : null,
+              fmtDateTime(quote.created_at, lang)].filter(Boolean).join(' · ')}
+          </DetailRow>
           {quote.status === 'declined' && isAdmin && <DetailRow label={t('quotes.status.declined')}>{quote.decline_reason}</DetailRow>}
         </dl>
       )}
@@ -363,72 +332,44 @@ function DetailsCard({ quote, isAdmin, pickers, onSaved, startEditing, onEditDon
   )
 }
 
-// ── Scope of Work (office only) ─────────────────────────────────────────
-function ScopeCard({ quote, onSaved, loadIntoEditor }) {
+// ── Estimate text ────────────────────────────────────────────────────────
+// The one estimate text, shown here to read and copy into InvoiceToGo. It's
+// written and edited in one place only: the estimate page (Edit).
+function EstimateTextCard({ quote }) {
   const { t } = useTranslation()
   const toast = useToast()
-  // Nothing saved yet → start from the site visit's (possibly edited) draft.
-  const fromDraft = !quote.scope_text && quote.form ? draftText(normalizeForm(quote.form), quote.estimate_type) : ''
-  const [text, setText] = useState(quote.scope_text || fromDraft)
-  const [saving, setSaving] = useState(false)
-  const ref = useRef(null)
-  const dirty = text !== (quote.scope_text ?? '')
-  const editable = quote.can_edit_scope
-
-  useEffect(() => { setText(quote.scope_text || fromDraft) }, [quote.scope_text, fromDraft])
-  useEffect(() => {
-    if (loadIntoEditor?.text != null) setText(loadIntoEditor.text)
-  }, [loadIntoEditor])
-
-  const save = async () => {
-    setSaving(true)
-    try {
-      await updateQuoteRequest(quote.id, { scope_text: text })
-      toast.success(t('quotes.scope.saved'))
-      onSaved()
-    } catch (err) { toast.error(errMsg(err, t)) }
-    finally { setSaving(false) }
-  }
+  const [open, setOpen] = useState(false)
+  // Older requests kept the text on the form until someone saved it.
+  const text = quote.scope_text ?? (quote.form ? draftText(normalizeForm(quote.form), quote.estimate_type) : '')
+  const long = text.split('\n').length > 12
 
   const copy = async () => {
     if (await copyText(text)) toast.success(t('quotes.scope.copied'))
     else toast.error(t('common.couldNotSave'))
   }
 
-  // Inserts "• " at the start of the current line — phones have no bullet key.
-  const insertBullet = () => {
-    const el = ref.current
-    if (!el) return
-    const pos = el.selectionStart
-    const lineStart = text.lastIndexOf('\n', pos - 1) + 1
-    const next = text.slice(0, lineStart) + '• ' + text.slice(lineStart)
-    setText(next)
-    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(pos + 2, pos + 2) })
-  }
-
   return (
     <Card title={t('quotes.sections.scope')}
       action={text.trim() && <Button size="sm" onClick={copy}>{t('quotes.scope.copy')}</Button>}>
-      {editable ? (
-        <div className="flex flex-col gap-3">
-          <textarea ref={ref} value={text} onChange={(e) => setText(e.target.value)} rows={18}
-            placeholder={t('quotes.scope.placeholder')} spellCheck
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base lg:text-sm leading-relaxed font-mono outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
-          <p className="text-xs text-gray-500">{fromDraft && !quote.scope_text ? t('quotes.scope.fromDraft') : t('quotes.scope.hint')}</p>
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-            <Button size="lg" onClick={save} loading={saving} disabled={!dirty}>{t('quotes.scope.save')}</Button>
-            <Button size="lg" variant="secondary" onClick={insertBullet}>{t('quotes.scope.insertBullet')}</Button>
-            {dirty && <span className="col-span-2 text-center sm:text-left text-xs font-semibold text-amber-600">{t('quotes.scope.unsaved')}</span>}
+      <div className="flex flex-col gap-3">
+        {text.trim() ? (
+          <div className="relative">
+            <pre className={`whitespace-pre-wrap break-words font-sans text-sm text-gray-800 leading-relaxed ${long && !open ? 'max-h-72 overflow-hidden' : ''}`}>{text}</pre>
+            {long && !open && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white" />}
           </div>
+        ) : <p className="text-sm text-gray-400">{t('quotes.scope.empty')}</p>}
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to={`/quotes/${quote.id}/estimate`}
+            className="inline-flex items-center justify-center rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">
+            {quote.can_edit_scope ? (text.trim() ? t('quotes.scope.edit') : t('quotes.scope.write')) : t('quotes.scope.open')}
+          </Link>
+          {long && (
+            <button type="button" onClick={() => setOpen((v) => !v)} className="text-sm font-semibold text-gray-500 px-2 py-2 hover:underline">
+              {open ? t('quotes.scope.showLess') : t('quotes.scope.showAll')}
+            </button>
+          )}
         </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {quote.scope_text
-            ? <pre className="whitespace-pre-wrap break-words font-sans text-sm text-gray-800 leading-relaxed">{quote.scope_text}</pre>
-            : <p className="text-sm text-gray-400">{t('quotes.scope.empty')}</p>}
-          {quote.scope_text && <p className="text-xs text-gray-400">{t('quotes.scope.locked')}</p>}
-        </div>
-      )}
+      </div>
     </Card>
   )
 }
@@ -578,10 +519,22 @@ function ThreadCard({ quote, onChanged }) {
 }
 
 // ── History ──────────────────────────────────────────────────────────────
-function HistoryCard({ quote, isAdmin, onLoadVersion }) {
+function HistoryCard({ quote, isAdmin, onChanged }) {
   const { t, i18n } = useTranslation()
   const toast = useToast()
+  const confirmDialog = useConfirm()
   const [viewing, setViewing] = useState(null)
+
+  // Bring an earlier version back as the estimate text.
+  const restore = async (text) => {
+    if (!await confirmDialog(t('quotes.scope.restoreConfirm'), { confirmLabel: t('quotes.scope.restore') })) return
+    try {
+      await updateQuoteRequest(quote.id, { scope_text: text, version_note: 'Restored an earlier version' })
+      toast.success(t('quotes.scope.saved'))
+      setViewing(null)
+      onChanged()
+    } catch (err) { toast.error(errMsg(err, t)) }
+  }
 
   const view = async (v) => {
     try { const d = await getQuoteVersion(v.id); setViewing(d.version) }
@@ -625,7 +578,7 @@ function HistoryCard({ quote, isAdmin, onLoadVersion }) {
               ? <pre className="whitespace-pre-wrap break-words font-sans text-sm text-gray-800 leading-relaxed max-h-[55vh] overflow-y-auto">{viewing.scope_text}</pre>
               : <p className="text-sm text-gray-400">{t('quotes.scope.empty')}</p>}
             {viewing.scope_text && quote.can_edit_scope && (
-              <Button onClick={() => { onLoadVersion(viewing.scope_text); setViewing(null) }}>{t('quotes.scope.restore')}</Button>
+              <Button onClick={() => restore(viewing.scope_text)}>{t('quotes.scope.restore')}</Button>
             )}
           </div>
         )}
@@ -647,7 +600,6 @@ export default function QuoteDetail() {
 
   const [quote, setQuote] = useState(null)
   const [error, setError] = useState(false)
-  const [loadIntoEditor, setLoadIntoEditor] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
   // ?edit=1 — arriving from the photo step of a new site walk.
   const startEditing = searchParams.get('edit') === '1' && !!quote?.can_edit
@@ -681,7 +633,16 @@ export default function QuoteDetail() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {isAdmin ? t('nav.quotes') : t('nav.siteWalks')}</Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link to="/quotes" className="text-sm font-semibold text-brand-500 hover:underline w-fit py-1">← {isAdmin ? t('nav.quotes') : t('nav.siteWalks')}</Link>
+        {/* Delete permanently — out of the way, top right. */}
+        {canDelete && (
+          <button type="button" onClick={handleDelete} aria-label={t('quotes.actions.delete')} title={t('quotes.actions.delete')}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" /></svg>
+          </button>
+        )}
+      </div>
 
       <div className="flex flex-col items-center text-center gap-2 lg:items-start lg:text-left">
         <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
@@ -691,9 +652,9 @@ export default function QuoteDetail() {
         </div>
         <h1 className="text-xl font-bold text-gray-900">{quote.title}</h1>
         <QuoteWho className="w-full max-w-xs text-left lg:max-w-md"
-          company={quote.customer?.name ?? recipientsLabel(quote.recipients)}
-          engineer={quote.engineer?.name}
-          location={[quote.facility, quote.location_detail].filter(Boolean).join(' · ')}
+          client={quote.customer?.name ?? recipientsLabel(quote.recipients)}
+          company={quote.customer?.company}
+          location={[quote.facility || quote.customer?.location, quote.location_detail].filter(Boolean).join(' · ')}
           estimator={quote.assigned_to_name} />
       </div>
 
@@ -711,8 +672,8 @@ export default function QuoteDetail() {
           {!isAdmin && quote.status === 'draft' && (
             <p className="text-xs text-gray-500 text-center lg:text-left">{t('quotes.submitHint')}</p>
           )}
-          <StatusCard quote={quote} isAdmin={isAdmin} onDone={load} />
-          <ActionBar quote={quote} onDone={load} onDelete={handleDelete} canDelete={canDelete} />
+          {isAdmin && <EstimateNumberCard quote={quote} onDone={load} />}
+          <ActionBar quote={quote} onDone={load} canDelete={canDelete} />
         </>
       )}
 
@@ -720,27 +681,17 @@ export default function QuoteDetail() {
       {/* The office picks / downloads photos (and collages) for InvoiceToGo. */}
       {!startEditing && isAdmin && <EstimatePhotos quote={quote} onChanged={load} />}
 
-      {!startEditing && (
-        <Link to={`/quotes/${quote.id}/estimate`}
-          className="flex items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3.5 shadow-sm hover:border-brand-400 active:bg-brand-100/40">
-          <span className="min-w-0">
-            <span className="block text-sm font-bold text-gray-900">{t('quotes.est.open')}</span>
-            <span className="block text-xs text-gray-500">{quote.form ? t('quotes.est.openHintStarted') : t('quotes.est.openHint')}</span>
-          </span>
-          <span className="text-brand-500 text-lg">→</span>
-        </Link>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
         <div className="lg:col-span-3 flex flex-col gap-4 min-w-0">
           <DetailsCard quote={quote} isAdmin={isAdmin} pickers={pickers} onSaved={load}
             startEditing={startEditing} onEditDone={() => setSearchParams({}, { replace: true })} />
-          {isAdmin && <ScopeCard quote={quote} onSaved={load} loadIntoEditor={loadIntoEditor} />}
+          <EstimateTextCard quote={quote} />
           <FilesCard quote={quote} canEdit={canEditMedia} onChanged={load} />
         </div>
         <div className="lg:col-span-2 flex flex-col gap-4 min-w-0">
           <ThreadCard quote={quote} onChanged={load} />
-          <HistoryCard quote={quote} isAdmin={isAdmin} onLoadVersion={(text) => setLoadIntoEditor({ text, at: Date.now() })} />
+          <HistoryCard quote={quote} isAdmin={isAdmin} onChanged={load} />
         </div>
       </div>
     </div>

@@ -57,9 +57,9 @@ function QuoteCard({ q, showFieldManager }) {
         </div>
         <p className="text-sm font-semibold text-gray-900 line-clamp-2">{q.title}</p>
         <QuoteWho
-          company={q.customer_name || q.recipients_label}
-          engineer={q.engineer_name}
-          location={[q.facility, q.location_detail].filter(Boolean).join(' · ')}
+          client={q.customer_name || q.recipients_label}
+          company={q.customer_company}
+          location={[q.facility || q.customer_location, q.location_detail].filter(Boolean).join(' · ')}
           estimator={q.assigned_to_name} />
         <div className="flex flex-wrap items-center gap-1.5">
           <FlagPills quote={q} />
@@ -118,7 +118,7 @@ export default function QuotesHome() {
       if (filter === 'mine' && r.assigned_to !== user?.id) return false
       if (filter === 'unassigned' && r.assigned_to) return false
       if (!q) return true
-      return [r.title, r.facility, r.location_detail, r.customer_name, r.recipients_label, r.engineer_name, r.assigned_to_name, r.estimate_number, r.project_number, r.request_no, r.field_manager_name]
+      return [r.title, r.facility, r.location_detail, r.customer_name, r.customer_company, r.recipients_label, r.assigned_to_name, r.estimate_number, r.project_number, r.request_no, r.field_manager_name]
         .some((v) => (v ?? '').toString().toLowerCase().includes(q))
     })
   }, [quotes, query, filter, user?.id])
@@ -146,13 +146,8 @@ export default function QuotesHome() {
         onAction={startSiteWalk}
         actionLoading={starting}
         actionIcon={CameraIcon}>
-        {/* The engineer and client lists and the Materials library live inside Quotes on every screen size. */}
+        {/* The client list and Materials library live inside Quotes on every screen size. */}
         <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start lg:w-full lg:order-last">
-          <Link to="/quotes/engineers"
-            className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm active:bg-brand-100">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-            {t('quotes.engineers.title')}
-          </Link>
           <Link to="/quotes/clients"
             className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm active:bg-brand-100">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-1a4 4 0 00-5.6-3.7M17 20H7m10 0v-1c0-.7-.1-1.3-.4-1.9M7 20H2v-1a4 4 0 015.6-3.7M7 20v-1c0-.7.1-1.3.4-1.9m0 0a5 5 0 019.2 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>

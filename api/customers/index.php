@@ -13,7 +13,7 @@ require_once __DIR__ . '/_common.php';
 // Client list. Field managers and the office can look clients up and add or
 // fix one from a site visit; removing is office-only.
 //   GET                 active clients (admins: ?include_inactive=1)
-//   POST                add {name, contact_name?, email?, phone?, mobile?, address?, ship_address?, notes?}
+//   POST                add {name, company?, location?, contact_name?, email?, phone?, mobile?, address?, ship_address?, notes?}
 //   PATCH  ?id=         edit (admins may also send is_active)
 //   DELETE ?id=         deactivate (admin)
 $auth   = requireAuth(['admin', 'field']);
@@ -23,7 +23,7 @@ $isAdmin = $auth['role'] === 'admin';
 
 if ($method === 'GET') {
     $where = !empty($_GET['include_inactive']) && $isAdmin ? '' : 'WHERE is_active = 1';
-    $rows = $pdo->query("SELECT id, name, contact_name, email, phone, mobile, address, ship_address, notes, is_active, created_by_name, updated_at
+    $rows = $pdo->query("SELECT id, name, contact_name, company, location, email, phone, mobile, address, ship_address, notes, is_active, created_by_name, updated_at
                            FROM customers $where ORDER BY name")->fetchAll();
     echo json_encode(['clients' => array_map('customerPresent', $rows)]);
     exit;

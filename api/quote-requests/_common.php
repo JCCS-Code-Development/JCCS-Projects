@@ -92,6 +92,19 @@ function qrSnapshot(PDO $pdo, array $row, array $auth, string $kind, ?string $no
     )->execute([$row['id'], $kind, $row['form_json'], $row['scope_text'], $note, $auth['user_id'], $auth['name']]);
 }
 
+// The estimate text saves as you type: one person's edits within 15 minutes
+// are one version (the latest text), not one per keystroke pause.
+function qrSnapshotScopeEdit(PDO $pdo, array $row, array $auth, ?string $note = null): void {
+    $s = $pdo->prepare("SELECT id FROM quote_request_versions WHERE quote_request_id = ? AND kind = 'scope_edit' AND created_by = ?
+                          AND created_at >= NOW() - INTERVAL 15 MINUTE
+                          AND id = (SELECT MAX(id) FROM quote_request_versions WHERE quote_request_id = ?) LIMIT 1");
+    $s->execute([$row['id'], $auth['user_id'], $row['id']]);
+    $recent = $s->fetchColumn();
+    if ($recent === false || $note !== null) { qrSnapshot($pdo, $row, $auth, 'scope_edit', $note); return; }
+    $pdo->prepare('UPDATE quote_request_versions SET form_json = ?, scope_text = ? WHERE id = ?')
+        ->execute([$row['form_json'], $row['scope_text'], $recent]);
+}
+
 // notifications.project_number is NOT NULL; requests for a new job have no
 // project yet, so they carry ''.
 function qrNotifyUser(PDO $pdo, ?int $userId, array $row, string $type, string $title, ?string $body, ?int $skipUserId = null): void {
@@ -208,15 +221,6 @@ function qrCollectFields(PDO $pdo, array $body, array $auth, array &$sets, array
             if (!$c->fetch()) { http_response_code(422); exit(json_encode(['error' => 'That client is no longer on the list'])); }
         }
         $sets[] = 'customer_id = ?'; $params[] = $cid;
-    }
-    if (array_key_exists('contact_id', $body)) {
-        $eid = $body['contact_id'] ? (int)$body['contact_id'] : null;
-        if ($eid) {
-            $e = $pdo->prepare('SELECT id FROM customer_contacts WHERE id = ?');
-            $e->execute([$eid]);
-            if (!$e->fetch()) { http_response_code(422); exit(json_encode(['error' => 'That engineer is no longer on the list'])); }
-        }
-        $sets[] = 'contact_id = ?'; $params[] = $eid;
     }
     $str('facility', 200);
     $str('location_detail', 255);
@@ -414,7 +418,7 @@ function qrGrantRecipientsAccess(PDO $pdo, array $row): int {
 // manager may need on site.
 function qrCustomer(PDO $pdo, ?int $customerId): ?array {
     if (!$customerId) return null;
-    $rows = qrOptionalRows($pdo, 'SELECT id, name, contact_name, email, phone, mobile, address, ship_address, notes, is_active FROM customers WHERE id = ?', [$customerId]);
+    $rows = qrOptionalRows($pdo, 'SELECT * FROM customers WHERE id = ?', [$customerId]);
     if (!$rows) return null;
     $rows[0]['id'] = (int)$rows[0]['id'];
     $rows[0]['is_active'] = (int)$rows[0]['is_active'];
@@ -470,20 +474,6 @@ function qrMatchEstimateDoc(PDO $pdo, int $docId, ?string $docNumber, array $hay
         $matched = $en;
     }
     return $matched;
-}
-
-// The engineer the quote is for, with the company they work for. Null when
-// none is picked (or the engineer-list migration hasn't run yet).
-function qrEngineer(PDO $pdo, ?int $contactId): ?array {
-    if (!$contactId) return null;
-    $rows = qrOptionalRows($pdo, 'SELECT e.id, e.name, e.title, e.location, e.email, e.phone, e.customer_id, e.is_active, cu.name AS company
-                                    FROM customer_contacts e LEFT JOIN customers cu ON cu.id = e.customer_id WHERE e.id = ?', [$contactId]);
-    if (!$rows || !array_key_exists('location', $rows[0])) return null;
-    $e = $rows[0];
-    $e['id'] = (int)$e['id'];
-    $e['customer_id'] = $e['customer_id'] !== null ? (int)$e['customer_id'] : null;
-    $e['is_active'] = (int)$e['is_active'];
-    return $e;
 }
 
 function qrRegisterCustomerToProject(PDO $pdo, array $row): ?string {

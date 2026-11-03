@@ -25,7 +25,12 @@ export default function ClientList() {
   const [q, setQ] = useState('')
   const [modal, setModal] = useState(null) // {client?} for add/edit
   const [importing, setImporting] = useState(false)
-  const shown = q.trim() ? searchClients(clients, q, 200) : clients
+  const shown = q.trim() ? searchClients(clients, q, 500) : clients
+  // Grouped by company (A→Z); clients without one last.
+  const groups = Object.entries(shown.reduce((acc, c) => {
+    ;(acc[c.company ?? ''] ??= []).push(c)
+    return acc
+  }, {})).sort(([a], [b]) => (a === '') - (b === '') || a.localeCompare(b))
 
   const remove = async (c) => {
     if (!await confirmDialog(t('quotes.clients.removeConfirm', { name: c.name }), { danger: true, confirmLabel: t('quotes.clients.remove') })) return
@@ -67,18 +72,25 @@ export default function ClientList() {
       ) : (
         <>
           <p className="text-xs text-gray-400 -mb-3">{t('quotes.clients.count', { count: shown.length })}</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
-            {shown.map((c) => (
-              <div key={c.id} className="flex flex-col gap-1">
-                <ClientCard client={c} onEdit={() => setModal({ client: c })} />
-                {isAdmin && (
-                  <button onClick={() => remove(c)} className="self-end text-xs font-semibold text-red-500 px-2 py-1 rounded-lg active:bg-red-50 hover:underline">
-                    {t('quotes.clients.remove')}
-                  </button>
-                )}
+          {groups.map(([company, list]) => (
+            <section key={company || '—'} className="flex flex-col gap-2">
+              <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">
+                {company || t('quotes.clients.noCompany')} <span className="text-gray-300">({list.length})</span>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
+                {list.map((c) => (
+                  <div key={c.id} className="flex flex-col gap-1">
+                    <ClientCard client={c} onEdit={() => setModal({ client: c })} />
+                    {isAdmin && (
+                      <button onClick={() => remove(c)} className="self-end text-xs font-semibold text-red-500 px-2 py-1 rounded-lg active:bg-red-50 hover:underline">
+                        {t('quotes.clients.remove')}
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </section>
+          ))}
         </>
       )}
 

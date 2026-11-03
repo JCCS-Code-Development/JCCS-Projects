@@ -24,7 +24,6 @@ if ($method === 'GET') {
 
     $out['recipients'] = qrRecipients($pdo, $id);
     $out['customer'] = qrCustomer($pdo, $out['customer_id'] ?? null);
-    $out['engineer'] = qrEngineer($pdo, $out['contact_id'] ?? null);
 
     $s = $pdo->prepare('SELECT * FROM quote_request_photos WHERE quote_request_id = ? ORDER BY id');
     $s->execute([$id]);
@@ -71,7 +70,7 @@ if ($method === 'GET') {
     $out['ai_available']   = defined('ANTHROPIC_API_KEY') && ANTHROPIC_API_KEY !== '' && ANTHROPIC_API_KEY !== 'CHANGE_ME' && PHP_VERSION_ID >= 80100;
     $out['actions']        = qrAvailableActions($auth, $row);
     $out['can_edit']       = $isAdmin ? $row['status'] !== 'cancelled' : qrFieldCanEdit($auth, $row);
-    $out['can_edit_scope'] = $isAdmin && !in_array($row['status'], QR_SCOPE_LOCKED, true);
+    $out['can_edit_scope'] = $isAdmin ? !in_array($row['status'], QR_SCOPE_LOCKED, true) : qrFieldCanEdit($auth, $row);
 
     echo json_encode(['quoteRequest' => $out]);
 
@@ -92,8 +91,9 @@ if ($method === 'GET') {
     $recipientIds = array_key_exists('recipient_ids', $body) ? qrCleanRecipientIds($pdo, $body['recipient_ids']) : null;
 
     $scopeChanged = false;
+    // The estimate text: one copy, edited on the estimate page — by the office
+    // until the quote is decided, by the field manager while it's theirs.
     if (array_key_exists('scope_text', $body)) {
-        if (!$isAdmin) { http_response_code(403); exit(json_encode(['error' => 'Only the office edits the scope'])); }
         if (in_array($row['status'], QR_SCOPE_LOCKED, true)) {
             http_response_code(409); exit(json_encode(['error' => 'The scope is locked — reopen the request to edit it']));
         }
@@ -122,7 +122,7 @@ if ($method === 'GET') {
         $updated = qrLoadVisible($pdo, $auth, $id);
 
         if ($scopeChanged) {
-            qrSnapshot($pdo, $updated, $auth, 'scope_edit', isset($body['version_note']) ? mb_substr(sanitizeString($body['version_note']), 0, 255) : null);
+            qrSnapshotScopeEdit($pdo, $updated, $auth, isset($body['version_note']) ? mb_substr(sanitizeString($body['version_note']), 0, 255) : null);
         }
         if ($isAdmin && array_key_exists('assigned_to', $body) && (int)$updated['assigned_to'] !== (int)$row['assigned_to']) {
             qrLogActivity($pdo, $id, $auth, 'assigned_estimator', null, null, $updated['assigned_to_name'] ?? 'Unassigned');

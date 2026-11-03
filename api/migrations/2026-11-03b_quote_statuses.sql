@@ -1,7 +1,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- JCCS Projects — simpler quote statuses (2026-11-03)
 -- Run once, by hand, against production BEFORE deploying the code that uses
--- it, and AFTER 2026-11-03_engineers.sql. This app has no migration tooling.
+-- it, and AFTER 2026-11-03_client_company_location.sql. This app has no migration tooling.
 --
 -- With a PO:  draft → pending_review → estimate_created → sent → accepted / declined
 --   pending_review   = sent in by anyone, waiting for the office

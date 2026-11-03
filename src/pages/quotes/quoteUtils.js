@@ -20,10 +20,6 @@ export const STATUS_STYLES = {
 // then invoiced. The choice stays open until the job is on a path.
 export const BILLING_OPEN_STATUSES = ['draft', 'pending_review', 'needs_info']
 
-// The PO path in order — the stepper on a quote's page.
-export const PO_STEPS = ['pending_review', 'estimate_created', 'sent', 'accepted']
-export const NO_PO_STEPS = ['pending_review', 'scheduled', 'done', 'invoiced']
-
 export const BOARD_COLUMNS = [
   { key: 'drafts',   statuses: ['draft'] },
   { key: 'pending',  statuses: ['pending_review', 'needs_info'] },
@@ -108,7 +104,7 @@ export const FILE_KINDS = ['plan', 'sketch', 'product_data', 'finish_selection',
 
 // ── Request form state ⇄ API payload ──
 export const EMPTY_QUOTE_FORM = {
-  billing: 'po', work_type: 'new', estimate_type: 'standard', title: '', customer_id: null, contact_id: null, recipient_ids: [],
+  billing: 'po', work_type: 'new', estimate_type: 'standard', title: '', customer_id: null, recipient_ids: [],
   facility: '', location_detail: '', project_number: '', original_estimate_no: '', related_ref: '',
   description: '', needed_by: '', site_visit_date: '', priority: 'normal', request_source: '',
   field_manager_id: '', assigned_to: '', follow_up_days: 7, site_visit_at: '',

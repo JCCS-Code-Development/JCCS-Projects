@@ -1,9 +1,10 @@
 <?php
-// Client list (the `customers` table) — who a job is for, with the details
-// InvoiceToGo keeps for a client. Not the same thing as portal client users.
+// Client list (the `customers` table) — who a job is for (often a person,
+// e.g. an engineer), the company they work for and the location they work
+// at, with the details InvoiceToGo keeps. Not the same as portal client users.
 
 const CUSTOMER_FIELDS = [
-    'name' => 150, 'contact_name' => 150, 'email' => 190, 'phone' => 30, 'mobile' => 30,
+    'name' => 150, 'contact_name' => 150, 'company' => 150, 'location' => 200, 'email' => 190, 'phone' => 30, 'mobile' => 30,
     'address' => 500, 'ship_address' => 500, 'notes' => 5000,
 ];
 

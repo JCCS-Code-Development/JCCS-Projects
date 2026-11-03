@@ -17,9 +17,8 @@ import PhotoViewer from './photos/PhotoViewer'
 import VoiceRecorder from './voice/VoiceRecorder'
 import VoiceMemoStack from './voice/VoiceMemoStack'
 import { useVoiceMemos } from './voice/useVoiceMemos'
-import { ClientPicker, useClientList, rememberClient } from './clients/ClientPicker'
-import { EngineerPicker, useEngineerList, rememberEngineer, engineerWhere } from './engineers/EngineerPicker'
-import { readVisitMessage, matchClient } from '../../scope-engine/fromMessage'
+import { ClientPicker, useClientList, rememberClient, clientWhere } from './clients/ClientPicker'
+import { readVisitMessage } from '../../scope-engine/fromMessage'
 import { normalizeForm } from '../../scope-engine/index'
 
 // The new title placeholder ("Site visit – Oct 13") gets replaced by the
@@ -39,14 +38,12 @@ export default function QuoteCapture() {
   const toast = useToast()
   const confirmDialog = useConfirm()
   const { clients } = useClientList()
-  const { engineers } = useEngineerList()
   const [quote, setQuote] = useState(null)
   const [message, setMessage] = useState(null) // = the request description
   const [library, setLibrary] = useState([])
   const [camera, setCamera] = useState(false)
   const [viewing, setViewing] = useState(null)
   const [pickingClient, setPickingClient] = useState(false)
-  const [pickingEngineer, setPickingEngineer] = useState(false)
   const [billing, setBilling] = useState(null) // null = what the message says
   const [place, setPlace] = useState(null)     // null = what the message says
   const [sending, setSending] = useState(false)
@@ -95,40 +92,23 @@ export default function QuoteCapture() {
   const hasText = !!(message ?? '').trim() || oldNotes.length > 0
 
   // What goes to the office: picked by hand first, then what the message says.
-  // The person it names ("for Mr Bobby") is an engineer on the list when one
-  // matches — their company and location come with them.
-  const readEngineer = read.clientName ? matchClient(read.clientName, engineers) : null
-  const engineer = quote.contact_id ? (engineers.find((e) => e.id === quote.contact_id) ?? quote.engineer) : readEngineer
-  const engineerCompany = engineer?.customer_id
-    ? (clients.find((c) => c.id === engineer.customer_id) ?? { id: engineer.customer_id, name: engineer.company })
-    : null
-  const client = quote.customer_id
-    ? (clients.find((c) => c.id === quote.customer_id) ?? quote.customer)
-    : (engineerCompany ?? (readEngineer ? null : read.client))
-  const newClientName = !client && !engineer && read.clientName ? read.clientName.replace(HONORIFIC, '').trim() : ''
-  const facility = place ?? (read.facility || quote.facility || engineer?.location || '')
+  // The person it names ("for Mr Bobby") is matched to the client list; where
+  // they work comes with them.
+  const client = quote.customer_id ? (clients.find((c) => c.id === quote.customer_id) ?? quote.customer) : read.client
+  const newClientName = !client && read.clientName ? read.clientName.replace(HONORIFIC, '').trim() : ''
+  const facility = place ?? (read.facility || quote.facility || client?.location || '')
   const bill = billing ?? (quote.is_saved || quote.status !== 'draft' ? (quote.billing ?? read.billing) : read.billing)
 
   const pickClient = async (cid, c) => {
     if (c) rememberClient(c)
-    try { await updateQuoteRequest(id, { customer_id: cid }); await load() }
-    catch (err) { toast.error(err?.response?.data?.error ?? t('common.couldNotSave')) }
-    setPickingClient(false)
-  }
-
-  // Picking the engineer brings their company and location along when the
-  // visit doesn't have those yet.
-  const pickEngineer = async (eid, e) => {
-    if (e) rememberEngineer(e)
     try {
       await updateQuoteRequest(id, {
-        contact_id: eid,
-        ...(e?.customer_id && !quote.customer_id ? { customer_id: e.customer_id } : {}),
-        ...(e?.location && !quote.facility && place === null && !read.facility ? { facility: e.location } : {}),
+        customer_id: cid,
+        ...(c?.location && !quote.facility && place === null && !read.facility ? { facility: c.location } : {}),
       })
       await load()
     } catch (err) { toast.error(err?.response?.data?.error ?? t('common.couldNotSave')) }
-    setPickingEngineer(false)
+    setPickingClient(false)
   }
 
   // Cancel on a visit that was never sent/saved throws it away (asks first
@@ -167,7 +147,6 @@ export default function QuoteCapture() {
         billing: bill,
         ...(facility ? { facility } : {}),
         ...(customerId ? { customer_id: customerId } : {}),
-        ...(engineer && !quote.contact_id ? { contact_id: engineer.id } : {}),
         // The scope draft, unless someone already started it.
         ...(quote.form ? {} : { form: normalizeForm({
           ...read.form,
@@ -258,20 +237,9 @@ export default function QuoteCapture() {
             <input value={facility} onChange={(e) => setPlace(e.target.value)} placeholder={t('quotes.fields.facilityPlaceholder')}
               className="w-full rounded-lg border border-transparent bg-white/70 px-2 py-1 text-sm font-semibold text-gray-900 outline-none focus:border-brand-500" />
           </Row>
-          <Row label={t('quotes.quick.engineer')}>
-            <button type="button" onClick={() => setPickingEngineer(true)} className="text-left text-sm min-w-0">
-              {engineer ? (
-                <span>
-                  <span className="font-semibold text-gray-900">{engineer.name}</span>
-                  {engineerWhere(engineer) && <span className="block text-xs text-gray-500 truncate">{engineerWhere(engineer)}</span>}
-                </span>
-              ) : <span className="text-gray-400">{t('quotes.quick.noEngineer')}</span>}
-              <span className="ml-2 text-xs font-semibold text-brand-700">{t('quotes.clients.change')}</span>
-            </button>
-          </Row>
           <Row label={t('quotes.quick.client')}>
             <button type="button" onClick={() => setPickingClient(true)} className="text-left text-sm">
-              {client ? <span className="font-semibold text-gray-900">{client.name}</span>
+              {client ? <span><span className="font-semibold text-gray-900">{client.name}</span>{clientWhere(client) && <span className="block text-xs text-gray-500 truncate">{clientWhere(client)}</span>}</span>
                 : newClientName ? <span><span className="font-semibold text-gray-900">{newClientName}</span> <span className="text-xs text-gray-500">· {t('quotes.quick.newClient')}</span></span>
                 : <span className="text-gray-400">{t('quotes.quick.noClient')}</span>}
               <span className="ml-2 text-xs font-semibold text-brand-700">{t('quotes.clients.change')}</span>
@@ -314,16 +282,7 @@ export default function QuoteCapture() {
       {pickingClient && (
         <Modal isOpen onClose={() => setPickingClient(false)} title={t('quotes.clients.label')}>
           <div className="min-h-[280px]">
-            <ClientPicker value={quote.customer_id} label={false} autoFocus onChange={pickClient} />
-          </div>
-        </Modal>
-      )}
-
-      {pickingEngineer && (
-        <Modal isOpen onClose={() => setPickingEngineer(false)} title={t('quotes.engineers.label')}>
-          <div className="min-h-[280px]">
-            <EngineerPicker value={quote.contact_id} label={false} autoFocus onChange={pickEngineer}
-              defaults={{ customer_id: client?.id ?? null, location: facility }} />
+            <ClientPicker value={quote.customer_id} label={false} autoFocus onChange={pickClient} defaults={{ location: facility }} />
           </div>
         </Modal>
       )}

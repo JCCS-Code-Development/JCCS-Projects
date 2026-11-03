@@ -42,20 +42,26 @@ export function searchClients(clients, query, limit = 8) {
     if (name.startsWith(q)) return 0
     if (name.split(/\s+/).some((w) => w.startsWith(q))) return 1
     if (name.includes(q)) return 2
-    if (fold(c.email).includes(q)) return 3
+    if (fold(c.company).includes(q) || fold(c.location).includes(q)) return 3
+    if (fold(c.email).includes(q)) return 4
     return -1
   }
   return clients.map((c) => [score(c), c]).filter(([s]) => s >= 0)
     .sort((a, b) => a[0] - b[0] || a[1].name.localeCompare(b[1].name)).slice(0, limit).map(([, c]) => c)
 }
 
-// ── Client card: name + email (tap to write to them) ──────────────────────
+// "Company · Location" under a client's name.
+export const clientWhere = (c) => [c?.company, c?.location].filter(Boolean).join(' · ')
+
+// ── Client card: name, company, location, email (tap to write to them) ────
 export function ClientCard({ client, onChange, onEdit, onClear }) {
   const { t } = useTranslation()
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-3.5 flex items-start justify-between gap-2">
       <div className="min-w-0">
         <p className="text-base font-bold text-gray-900 leading-tight">{client.name}</p>
+        {client.company && <p className="text-sm font-semibold text-gray-700 truncate">{client.company}</p>}
+        {client.location && <p className="text-sm text-gray-500">{client.location}</p>}
         {client.email
           ? <a href={`mailto:${client.email}`} className="block truncate text-sm font-medium text-brand-700 underline-offset-2 active:underline">{client.email}</a>
           : <p className="text-sm text-gray-400">{t('quotes.clients.noEmail')}</p>}
@@ -72,12 +78,18 @@ export function ClientCard({ client, onChange, onEdit, onClear }) {
   )
 }
 
-// ── Add / edit a client (the same fields InvoiceToGo keeps) ───────────────
-export function ClientFormModal({ client, initialName = '', onClose, onSaved }) {
+// ── Add / edit a client: who it is, their company, where they work ───────
+// `defaults` pre-fills a new one (e.g. the place of the visit).
+export function ClientFormModal({ client, initialName = '', defaults = {}, onClose, onSaved }) {
   const { t } = useTranslation()
   const toast = useToast()
   const [name, setName] = useState(client?.name ?? initialName)
+  const [company, setCompany] = useState(client?.company ?? defaults.company ?? '')
+  const [location, setLocation] = useState(client?.location ?? defaults.location ?? '')
   const [email, setEmail] = useState(client?.email ?? '')
+  // Companies and locations already on the list, to pick from as you type.
+  const companies = [...new Set(store.clients.map((c) => c.company).filter(Boolean))].sort()
+  const locations = [...new Set(store.clients.filter((c) => !company || c.company === company).map((c) => c.location).filter(Boolean))].sort()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -85,7 +97,7 @@ export function ClientFormModal({ client, initialName = '', onClose, onSaved }) 
     if (!name.trim()) { setError(t('quotes.clients.nameRequired')); return }
     setSaving(true); setError('')
     try {
-      const payload = { name, email }
+      const payload = { name, company, location, email }
       const res = client ? await updateCustomer(client.id, payload) : await createCustomer(payload)
       rememberClient(res.client)
       toast.success(client ? t('quotes.clients.saved') : t('quotes.clients.added'))
@@ -103,6 +115,12 @@ export function ClientFormModal({ client, initialName = '', onClose, onSaved }) 
       <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); save() }}>
         <Input label={t('quotes.clients.name')} value={name} onChange={(e) => setName(e.target.value)} autoFocus={!client}
           placeholder={t('quotes.clients.namePlaceholder')} autoComplete="off" />
+        <Input label={t('quotes.clients.company')} value={company} onChange={(e) => setCompany(e.target.value)}
+          placeholder={t('quotes.clients.companyPlaceholder')} autoComplete="off" list="client-companies" />
+        <datalist id="client-companies">{companies.map((c) => <option key={c} value={c} />)}</datalist>
+        <Input label={t('quotes.clients.location')} value={location} onChange={(e) => setLocation(e.target.value)}
+          placeholder={t('quotes.fields.facilityPlaceholder')} autoComplete="off" list="client-locations" />
+        <datalist id="client-locations">{locations.map((l) => <option key={l} value={l} />)}</datalist>
         <Input label={t('quotes.clients.email')} type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)}
           autoComplete="off" autoCapitalize="none" helperText={t('quotes.clients.emailHint')} />
         {error && <p className="text-xs text-red-500">{error}</p>}
@@ -115,7 +133,7 @@ export function ClientFormModal({ client, initialName = '', onClose, onSaved }) 
 // ── Type-ahead picker ──────────────────────────────────────────────────────
 // Start typing → matching clients; nothing matches → add it as a new client
 // right there. Once picked, shows the client's card.
-export function ClientPicker({ value, onChange, label, autoFocus = false }) {
+export function ClientPicker({ value, onChange, label, autoFocus = false, defaults }) {
   const { t } = useTranslation()
   const { clients, loaded } = useClientList()
   const [q, setQ] = useState('')
@@ -144,7 +162,7 @@ export function ClientPicker({ value, onChange, label, autoFocus = false }) {
                 <button key={c.id} type="button" onClick={() => pick(c)}
                   className="w-full text-left px-4 py-2.5 hover:bg-gray-50 active:bg-gray-100 border-b border-gray-50">
                   <span className="block text-sm font-semibold text-gray-900">{c.name}</span>
-                  {c.email && <span className="block text-xs text-gray-400 truncate">{c.email}</span>}
+                  {(clientWhere(c) || c.email) && <span className="block text-xs text-gray-400 truncate">{clientWhere(c) || c.email}</span>}
                 </button>
               ))}
               <button type="button" onClick={() => setAdding(q.trim())}
@@ -161,7 +179,7 @@ export function ClientPicker({ value, onChange, label, autoFocus = false }) {
         </div>
       )}
       {adding !== null && (
-        <ClientFormModal initialName={adding} onClose={() => setAdding(null)}
+        <ClientFormModal initialName={adding} defaults={defaults} onClose={() => setAdding(null)}
           onSaved={(c) => { setAdding(null); pick(c) }} />
       )}
       {editing && selected && (

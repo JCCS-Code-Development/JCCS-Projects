@@ -357,8 +357,10 @@ CREATE TABLE punch_item_photos (
 -- number of contacts — the "For:" person on an estimate varies per job.
 CREATE TABLE customers (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(150) NOT NULL,
+  name VARCHAR(150) NOT NULL,                   -- the client: a person (engineer) or a company
   contact_name VARCHAR(150) NULL,
+  company VARCHAR(150) NULL,                   -- who they work for (2026-11-03)
+  location VARCHAR(200) NULL,                  -- facility they work at (2026-11-03)
   phone VARCHAR(30) NULL,
   mobile VARCHAR(30) NULL,
   email VARCHAR(190) NULL,
@@ -372,23 +374,18 @@ CREATE TABLE customers (
   INDEX idx_customers_name (name)
 );
 
--- The engineer list (migrations/2026-11-03_engineers.sql): the person a
--- quote is for, the company they work for and where they work.
+-- Unused since 2026-10-06 (kept so nothing breaks); quote_requests.contact_id too.
 CREATE TABLE customer_contacts (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  customer_id INT UNSIGNED NULL,               -- company (customers.id)
+  customer_id INT UNSIGNED NOT NULL,
   name VARCHAR(150) NOT NULL,
   title VARCHAR(100) NULL,
-  location VARCHAR(200) NULL,                  -- facility they work at
   email VARCHAR(190) NULL,
   phone VARCHAR(30) NULL,
   address VARCHAR(255) NULL,
   is_active TINYINT(1) DEFAULT 1,
-  created_by_name VARCHAR(150) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_contacts_customer (customer_id),
-  INDEX idx_contacts_name (name)
+  INDEX idx_contacts_customer (customer_id)
 );
 
 -- One row per quote request / site walk. request # shown as Q-0001 from
@@ -409,7 +406,7 @@ CREATE TABLE quote_requests (
   estimate_type VARCHAR(20) NOT NULL DEFAULT 'standard', -- standard|addon|emergency|alternative|line_item
   title VARCHAR(200) NOT NULL,
   customer_id INT UNSIGNED NULL,
-  contact_id INT UNSIGNED NULL,                -- engineer (customer_contacts.id)
+  contact_id INT UNSIGNED NULL,
   facility VARCHAR(200) NULL,
   location_detail VARCHAR(255) NULL,           -- building / floor / department / suite
   project_number VARCHAR(4) NULL,              -- add-ons: the existing project
