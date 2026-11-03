@@ -942,6 +942,20 @@
       "po": "With PO",
       "no_po": "No PO",
       "empty": "Nothing sent yet. Quotes show up here once their estimate is sent, or a no-PO job is scheduled."
+    },
+    "start": {
+      "title": "New site visit",
+      "clientPlaceholder": "Start typing a name…",
+      "willAdd": "Not on the list — “{{name}}” will be added as a new client",
+      "newClient": "New client — added to the list when you continue.",
+      "onList": "From the client list.",
+      "suggested": "Suggested from {{name}} — change it if needed.",
+      "location": "Location",
+      "detail": "Location specifics",
+      "detailPlaceholder": "e.g. 2nd floor, ER hallway, room 214",
+      "next": "Continue to photos",
+      "needClient": "Type the client’s name",
+      "needLocation": "Type the location"
     }
   },
   "library": {

@@ -40,7 +40,7 @@ function PhotoStrip({ photos, pending, uploader, onOpenPhoto, emptyText }) {
 
 // A note's text box: grows with its text (re-measured when the text OR its
 // width changes, so no line ends up hidden) and autosaves as you type.
-function NoteText({ note, onFocus, autoFocus }) {
+function NoteText({ note, onFocus, autoFocus, onText }) {
   const { t } = useTranslation()
   const toast = useToast()
   const [text, setText] = useState(note.body ?? '')
@@ -63,7 +63,7 @@ function NoteText({ note, onFocus, autoFocus }) {
   })
   return (
     <div className="relative">
-      <textarea ref={ref} value={text} onChange={(e) => setText(e.target.value)} onFocus={onFocus} autoFocus={autoFocus}
+      <textarea ref={ref} value={text} onChange={(e) => { setText(e.target.value); onText?.(note.id, e.target.value) }} onFocus={onFocus} autoFocus={autoFocus}
         rows={2} placeholder={t('quotes.walk.notePlaceholder')}
         className="w-full resize-none overflow-hidden rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-base leading-snug text-gray-900 placeholder-gray-300 outline-none focus:border-brand-500" />
       {saving && <Spinner size="sm" className="absolute right-2 top-2 text-gray-300" />}
@@ -72,7 +72,7 @@ function NoteText({ note, onFocus, autoFocus }) {
 }
 
 // One note as a card: photos on top, the note below, then its voice memos.
-function NoteCard({ note, index, photos, pending, active, editable, onSelect, onOpenPhoto, onDeleted, uploader, autoFocus, audio, voice }) {
+function NoteCard({ note, index, photos, pending, active, editable, onSelect, onOpenPhoto, onDeleted, uploader, autoFocus, audio, voice, onText }) {
   const { t } = useTranslation()
   const toast = useToast()
   const confirmDialog = useConfirm()
@@ -99,7 +99,7 @@ function NoteCard({ note, index, photos, pending, active, editable, onSelect, on
       <PhotoStrip photos={photos} pending={pending} uploader={uploader} onOpenPhoto={onOpenPhoto}
         emptyText={editable && active ? t('quotes.walk.photosGoHere') : null} />
       {editable
-        ? <NoteText note={note} onFocus={onSelect} autoFocus={autoFocus} />
+        ? <NoteText note={note} onFocus={onSelect} autoFocus={autoFocus} onText={onText} />
         : <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{note.body || <span className="text-gray-300">—</span>}</p>}
       <VoiceMemoStack memos={audio} voice={voice} noteId={note.id} editable={editable} />
     </div>
@@ -113,7 +113,7 @@ function NoteCard({ note, index, photos, pending, active, editable, onSelect, on
 // null means General.
 export default function WalkNotesSheet({
   notes, photos, uploader, activeNoteId, onSelect, editable, onOpenPhoto, onChanged,
-  onAddNote, adding, focusNoteId, generalNotes, onGeneralNotesChange, audio = [], voice,
+  onAddNote, adding, focusNoteId, generalNotes, onGeneralNotesChange, audio = [], voice, onNoteText,
 }) {
   const { t } = useTranslation()
   const pendingFor = (noteId) => (uploader?.items ?? []).filter((it) => (it.meta?.note_id ?? null) === noteId)
@@ -128,7 +128,7 @@ export default function WalkNotesSheet({
         <NoteCard key={n.id} note={n} index={i} active={editable && n.id === activeNoteId} editable={editable}
           photos={photos.filter((p) => p.note_id === n.id)} pending={pendingFor(n.id)} uploader={uploader}
           onSelect={() => onSelect?.(n.id)} onOpenPhoto={onOpenPhoto} onDeleted={onChanged} autoFocus={n.id === focusNoteId}
-          audio={audio} voice={editable ? voice : null} />
+          audio={audio} voice={editable ? voice : null} onText={onNoteText} />
       ))}
 
       {editable && (

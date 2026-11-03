@@ -2,149 +2,217 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Spinner from '../../components/ui/Spinner'
-import Modal from '../../components/ui/Modal'
 import { useToast } from '../../components/ToastProvider'
 import { useConfirm } from '../../components/ConfirmProvider'
-import { getQuoteRequest, deleteQuoteRequest, updateQuoteRequest, quoteAction } from '../../api/quoteRequests'
+import { getQuoteRequest, deleteQuoteRequest, createQuoteNote, updateQuoteNote, updateQuoteRequest, quoteAction } from '../../api/quoteRequests'
 import { createCustomer } from '../../api/customers'
 import { listLibrary } from '../../api/quoteLibrary'
 import { usePhotoUploader } from './photos/usePhotoUploader'
 import CameraView from './photos/CameraView'
 import { release as releaseMedia } from './photos/mediaStreams'
 import { useAutosave } from './photos/useAutosave'
-import { Thumb } from './photos/WalkNotesSheet'
-import PhotoViewer from './photos/PhotoViewer'
+import WalkNotesSheet from './photos/WalkNotesSheet'
 import VoiceRecorder from './voice/VoiceRecorder'
-import VoiceMemoStack from './voice/VoiceMemoStack'
 import { useVoiceMemos } from './voice/useVoiceMemos'
-import { ClientPicker, useClientList, rememberClient, clientWhere } from './clients/ClientPicker'
+import PhotoViewer from './photos/PhotoViewer'
+import ClientSheet from './clients/ClientSheet'
+import VisitStart from './VisitStart'
+import { useClientList, rememberClient } from './clients/ClientPicker'
 import { readVisitMessage } from '../../scope-engine/fromMessage'
 import { normalizeForm } from '../../scope-engine/index'
 
 // The new title placeholder ("Site visit – Oct 13") gets replaced by the
-// title the software writes from the message.
+// title the software writes from the notes.
 const AUTO_TITLE = /^(site visit|visita)\s+[–-]/i
 const HONORIFIC = /^(mr|mrs|ms|miss|dr|sr|sra|srta|se[nñ]or(?:a)?|don|do[nñ]a)\.?\s+/i
 
-// A site visit the way crews already send it in WhatsApp: photos, then one
-// message — where, what, how much, for who. The software reads the message
-// (place, client, PO or not, the work and quantities), writes the Scope of
-// Work, and sends it all to the office in one tap. Anything it got wrong is
-// one tap to fix on the "Got it" card, and the office can fix the rest.
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const on = () => setMatches(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [query])
+  return matches
+}
+
+// Fits the site-visit screen exactly between where it starts and the bottom
+// of the screen (or the top of the mobile tab bar), and stops the page itself
+// from scrolling — only the notes column scrolls. Re-measured on rotate /
+// resize. Returns a callback ref for the screen's root element.
+function useFitToScreen() {
+  const [height, setHeight] = useState(null)
+  const [el, setEl] = useState(null)
+  useEffect(() => {
+    if (!el) return
+    const scroller = el.closest('.overflow-y-auto')
+    const prev = scroller?.style.overflowY
+    if (scroller) { scroller.scrollTop = 0; scroller.style.overflowY = 'hidden' }
+    const fit = () => {
+      const nav = document.querySelector('[data-bottom-nav]')
+      const navTop = nav?.getBoundingClientRect().height ? nav.getBoundingClientRect().top : window.innerHeight
+      setHeight(Math.max(380, Math.floor(navTop - el.getBoundingClientRect().top - 12)))
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    window.addEventListener('orientationchange', fit)
+    const t = setTimeout(fit, 300) // after the rotate animation settles
+    return () => {
+      window.removeEventListener('resize', fit)
+      window.removeEventListener('orientationchange', fit)
+      clearTimeout(t)
+      if (scroller) scroller.style.overflowY = prev ?? ''
+    }
+  }, [el])
+  return [setEl, height]
+}
+
+// The site walk, Cornell-notes style: a sheet of short notes (one per area or
+// issue) with the photos for each note beside it, and a live in-app camera. Every photo taken is filed under the active note.
+//  - iPad / landscape (md+): sheet on the left, camera on the right.
+//  - Upright phone: swipe (or tap) between Notes and Camera.
+// Everything saves as you go and uploads run in the background, so nothing
+// ever blocks the field manager. "Send to office" reads the notes (place,
+// client, PO or not, the work), writes the scope draft, and submits.
 export default function QuoteCapture() {
   const { id } = useParams()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
   const confirmDialog = useConfirm()
-  const { clients } = useClientList()
   const [quote, setQuote] = useState(null)
-  const [message, setMessage] = useState(null) // = the request description
-  const [library, setLibrary] = useState([])
-  const [camera, setCamera] = useState(false)
+  const [activeNoteId, setActiveNoteId] = useState(null)
+  const [focusNoteId, setFocusNoteId] = useState(null)
+  const [adding, setAdding] = useState(false)
+  const [tab, setTab] = useState('camera') // phones only: notes | camera
   const [viewing, setViewing] = useState(null)
-  const [pickingClient, setPickingClient] = useState(false)
-  const [billing, setBilling] = useState(null) // null = what the message says
-  const [place, setPlace] = useState(null)     // null = what the message says
+  const [generalNotes, setGeneralNotes] = useState(null) // = the request description
+  const seeded = useRef(false)
+  const wide = useMediaQuery('(min-width: 768px)')
+  const touchX = useRef(null)
+  const [fitRef, fitHeight] = useFitToScreen()
+  const [barEl, setBarEl] = useState(null) // the record bar, where recording status shows
   const [sending, setSending] = useState(false)
-  const [barEl, setBarEl] = useState(null)
-  const libraryRef = useRef(null)
-  const textRef = useRef(null)
+  // A brand-new visit starts with who it's for and where; then the photos.
+  const [starting, setStarting] = useState(null)
+  const [library, setLibrary] = useState([])
+  // What's typed in each note right now — its autosave may not have landed yet.
+  const [typed, setTyped] = useState({})
+  const onNoteText = useCallback((noteId, text) => setTyped((m) => ({ ...m, [noteId]: text })), [])
+  const { clients } = useClientList()
+  useEffect(() => { listLibrary().then((d) => setLibrary(d.items ?? [])).catch(() => {}) }, [])
 
   const load = useCallback(() => getQuoteRequest(id).then((d) => {
     setQuote(d.quoteRequest)
-    setMessage((m) => (m === null ? (d.quoteRequest.description ?? '') : m))
+    setStarting((s) => (s === null ? (!d.quoteRequest.is_saved && !d.quoteRequest.customer_id && !d.quoteRequest.facility) : s))
+    setGeneralNotes((g) => (g === null ? (d.quoteRequest.description ?? '') : g))
     return d.quoteRequest
   }).catch((err) => {
+    // Don't bounce silently — say why the walk couldn't open.
     toast.error(`${t('quotes.openFailed')}${err?.response?.data?.error ? ` (${err.response.data.error})` : ''}`)
     navigate('/quotes', { replace: true })
   }), [id, navigate, toast, t])
-  useEffect(() => { load() }, [load])
-  useEffect(() => { listLibrary().then((d) => setLibrary(d.items ?? [])).catch(() => {}) }, [])
 
   const uploader = usePhotoUploader(id, { onUploaded: load })
-  const voice = useVoiceMemos(id, load)
+  // Leaving the site-visit screen turns the camera and mic off.
   useEffect(() => () => releaseMedia(), [])
+  const voice = useVoiceMemos(id, load)
 
-  useAutosave(message, (v) => {
+  const addNote = useCallback(async ({ focus = true } = {}) => {
+    setAdding(true)
+    try {
+      const { note } = await createQuoteNote(id, { client_uid: `n-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` })
+      await load()
+      setActiveNoteId(note.id)
+      if (focus) setFocusNoteId(note.id)
+      return note
+    } catch (err) {
+      toast.error(err?.response?.data?.error ?? t('common.couldNotSave'))
+      return null
+    } finally { setAdding(false) }
+  }, [id, load, toast, t])
+
+  // First load: start on the last note, or create the first one.
+  useEffect(() => {
+    load().then((q) => {
+      if (!q || seeded.current) return
+      seeded.current = true
+      if (q.notes?.length) setActiveNoteId(q.notes[q.notes.length - 1].id)
+      else if (q.can_edit) addNote({ focus: false })
+    })
+  }, [load, addNote])
+
+
+  useAutosave(generalNotes, (v) => {
     if (v === null) return
     updateQuoteRequest(id, { description: v }).catch((err) => toast.error(err?.response?.data?.error ?? t('common.couldNotSave')))
   })
 
-  // Older visits written as note cards: their notes count too.
-  const oldNotes = useMemo(() => (quote?.notes ?? []).map((n) => (n.body ?? '').trim()).filter(Boolean), [quote])
-  const read = useMemo(() => readVisitMessage(message ?? '', { clients, library, notes: oldNotes }), [message, clients, library, oldNotes])
-
-  // The message grows the box instead of scrolling inside it.
-  useEffect(() => {
-    const el = textRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.max(140, el.scrollHeight + 2)}px`
-  }, [message])
+  const noteText = useMemo(() => (quote?.notes ?? []).map((n) => (typed[n.id] ?? n.body ?? '').trim()).filter(Boolean), [quote, typed])
+  const read = useMemo(() => readVisitMessage(generalNotes ?? '', { clients, library, notes: noteText }), [generalNotes, clients, library, noteText])
 
   if (!quote) return <div className="flex justify-center py-16"><Spinner size="lg" className="text-brand-500" /></div>
   if (!quote.can_edit) return <Navigate to={`/quotes/${id}`} replace />
 
-  const pending = uploader.items
-  const failed = pending.filter((i) => i.status === 'error').length
-  const photoCount = quote.photos.length + pending.filter((i) => i.status !== 'error').length
-  const hasText = !!(message ?? '').trim() || oldNotes.length > 0
+  const notes = quote.notes ?? []
+  const activeIndex = notes.findIndex((n) => n.id === activeNoteId)
+  const active = notes[activeIndex]
+  const meta = activeNoteId ? { note_id: activeNoteId } : {}
+  const capture = (file) => uploader.addFiles([file], meta)
+  const addFiles = (files) => uploader.addFiles(files, meta)
+  const uploading = uploader.items.filter((i) => i.status !== 'error').length
+  const failed = uploader.items.filter((i) => i.status === 'error').length
 
-  // What goes to the office: picked by hand first, then what the message says.
-  // The person it names ("for Mr Bobby") is matched to the client list; where
-  // they work comes with them.
-  const client = quote.customer_id ? (clients.find((c) => c.id === quote.customer_id) ?? quote.customer) : read.client
-  const newClientName = !client && read.clientName ? read.clientName.replace(HONORIFIC, '').trim() : ''
-  const facility = place ?? (read.facility || quote.facility || client?.location || '')
-  const bill = billing ?? (quote.is_saved || quote.status !== 'draft' ? (quote.billing ?? read.billing) : read.billing)
-
-  const pickClient = async (cid, c) => {
-    if (c) rememberClient(c)
-    try {
-      await updateQuoteRequest(id, {
-        customer_id: cid,
-        ...(c?.location && !quote.facility && place === null && !read.facility ? { facility: c.location } : {}),
-      })
-      await load()
-    } catch (err) { toast.error(err?.response?.data?.error ?? t('common.couldNotSave')) }
-    setPickingClient(false)
+  const newNoteFromCamera = async () => {
+    const n = await addNote()
+    if (n) setTab('notes')
   }
 
-  // Cancel on a visit that was never sent/saved throws it away (asks first
-  // when something was captured); a saved one just goes back to its page.
+  // Cancel on a walk that was never saved discards it entirely — it never
+  // becomes a quote and never takes a Q-number. (Asks first if anything was
+  // captured.) A saved walk just goes back to its page.
   const cancel = async () => {
     if (quote.is_saved) { navigate(`/quotes/${id}`); return }
-    const empty = !quote.photos.length && !pending.length && !hasText && !(quote.audio ?? []).length
+    const empty = !quote.photos.length && !uploader.items.length && !(generalNotes ?? '').trim()
+      && notes.every((n) => !(n.body ?? '').trim())
     if (!empty && !await confirmDialog(t('quotes.walk.discardConfirm'), { danger: true, confirmLabel: t('quotes.walk.discard') })) return
     uploader.discardAll()
     try { await deleteQuoteRequest(id) } catch { /* already gone */ }
     navigate('/quotes', { replace: true })
   }
-
+  // Send to office: saves the walk (it gets its Q-number), fills in what the
+  // notes say — title, place, client (added to the list if new), PO or not,
+  // the scope draft — and submits it. The office fixes anything it got wrong.
   const send = async () => {
-    if (!hasText && !photoCount) { toast.error(t('quotes.quick.needSomething')); textRef.current?.focus(); return }
+    const hasText = !!(generalNotes ?? '').trim() || noteText.length > 0
+    if (!hasText && !quote.photos.length && !uploader.items.length) { toast.error(t('quotes.quick.needSomething')); return }
     setSending(true)
     try {
-      // A client named in the message that isn't on the list yet gets added.
-      let customerId = quote.customer_id ?? client?.id ?? null
-      if (!customerId && newClientName) {
+      // Save what's still typing first, so the office (and submit) sees it.
+      await Promise.all((quote.notes ?? []).filter((n) => typed[n.id] !== undefined && typed[n.id] !== (n.body ?? ''))
+        .map((n) => updateQuoteNote(n.id, { body: typed[n.id] })))
+      let customerId = quote.customer_id ?? read.client?.id ?? null
+      const newName = !customerId && read.clientName ? read.clientName.replace(HONORIFIC, '').trim() : ''
+      if (newName) {
         try {
-          const res = await createCustomer({ name: newClientName })
+          const res = await createCustomer({ name: newName })
           rememberClient(res.client); customerId = res.client.id
         } catch (err) {
           const existing = err?.response?.status === 409 ? err.response.data?.client : null
           if (existing) { rememberClient(existing); customerId = existing.id }
         }
       }
+      const client = clients.find((c) => c.id === customerId) ?? quote.customer ?? read.client
+      const facility = quote.facility || read.facility || client?.location || ''
       const title = !quote.title || AUTO_TITLE.test(quote.title)
         ? (read.title || (facility ? `${t('quotes.walk.title')} – ${facility}` : quote.title))
         : quote.title
       await updateQuoteRequest(id, {
         keep: true,
-        description: message ?? '',
+        description: generalNotes ?? '',
         title,
-        billing: bill,
+        ...(quote.is_saved || quote.status !== 'draft' ? {} : { billing: read.billing }),
         ...(facility ? { facility } : {}),
         ...(customerId ? { customer_id: customerId } : {}),
         // The scope draft, unless someone already started it.
@@ -161,144 +229,125 @@ export default function QuoteCapture() {
       toast.error(err?.response?.data?.error ?? t('common.couldNotSave'))
     } finally { setSending(false) }
   }
-
   const sendLabel = (quote.actions ?? []).includes('submit') ? t('quotes.quick.send') : t('quotes.quick.save')
 
+  const onTouchStart = (e) => { touchX.current = e.touches[0].clientX }
+  const onTouchEnd = (e) => {
+    if (touchX.current == null) return
+    const dx = e.changedTouches[0].clientX - touchX.current
+    touchX.current = null
+    if (Math.abs(dx) > 70) setTab(dx < 0 ? 'camera' : 'notes')
+  }
+
+  const cameraChip = (
+    <div className="flex items-center justify-between gap-2">
+      <button onClick={() => setTab('notes')}
+        className="min-w-0 max-w-[70%] rounded-full bg-black/60 backdrop-blur px-3 py-1.5 text-left text-xs text-white">
+        <span className="font-bold">{active ? `${t('quotes.walk.noteN', { n: activeIndex + 1 })}` : t('quotes.walk.generalNotes')}</span>
+        {active?.body ? <span className="text-white/80"> · {active.body.split('\n')[0]}</span> : null}
+      </button>
+      {/* Side by side, the sheet's own "+ New note" is right there. */}
+      {!wide && (
+        <button onClick={newNoteFromCamera} disabled={adding}
+          className="shrink-0 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-900 disabled:opacity-60">
+          + {t('quotes.walk.newNote')}
+        </button>
+      )}
+    </div>
+  )
+
+  // WhatsApp-style record bar under the notes: one mic for the selected card.
+  const composer = (
+    <div ref={setBarEl} className="relative shrink-0 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/95 backdrop-blur px-3 py-2 shadow-sm select-none"
+      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}>
+      <span className="flex-1 min-w-0 text-sm text-gray-600 truncate">
+        {t('quotes.voice.holdHint')} · <b className="text-gray-900">{active ? t('quotes.walk.noteN', { n: activeIndex + 1 }) : t('quotes.walk.generalNotes')}</b>
+      </span>
+      <VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, activeNoteId)} className="!w-12 !h-12" barEl={barEl} />
+    </div>
+  )
+
+  const sheet = (
+    <WalkNotesSheet notes={notes} photos={quote.photos} uploader={uploader} editable
+      activeNoteId={activeNoteId} onSelect={setActiveNoteId} focusNoteId={focusNoteId}
+      onOpenPhoto={setViewing} onChanged={load} onAddNote={() => addNote()} adding={adding}
+      generalNotes={generalNotes} onGeneralNotesChange={setGeneralNotes}
+      audio={quote.audio ?? []} voice={voice} onNoteText={onNoteText} />
+  )
+
+  if (starting) return <VisitStart quote={quote} onCancel={cancel} onDone={() => load().then(() => setStarting(false))} />
+
   return (
-    <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto pb-24">
+    <div ref={fitRef} className="flex flex-col gap-3 w-full" style={fitHeight ? { height: fitHeight } : undefined}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="shrink-0 flex items-center justify-between gap-3">
         <button onClick={cancel} className="text-sm font-semibold text-gray-500 py-2 pr-2">{t('common.cancel')}</button>
         <div className="min-w-0 text-center">
-          <p className="text-[11px] font-bold text-gray-400 tracking-wide">{quote.request_no ?? t('quotes.walk.title')}</p>
-          <p className="text-sm font-bold text-gray-900 truncate">{facility || read.title || t('quotes.quick.newVisit')}</p>
+          <p className="text-[11px] font-bold text-gray-400 tracking-wide">{quote.request_no ?? t('quotes.unsaved')}</p>
+          <p className="text-sm font-bold text-gray-900 truncate">{quote.title}</p>
         </div>
-        <span className="w-14" />
-      </div>
-
-      {/* 1 · Photos */}
-      <section className="flex flex-col gap-2">
-        <div className="grid grid-cols-2 gap-2">
-          <button onClick={() => setCamera(true)}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-gray-900 py-4 text-base font-bold text-white active:bg-gray-700">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.89l.82-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.66.89l.82 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            {t('quotes.quick.takePhotos')}
-          </button>
-          <button onClick={() => libraryRef.current?.click()}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white py-4 text-base font-bold text-gray-800 active:bg-gray-50">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.59-4.59a2 2 0 012.82 0L16 16m-2-2l1.59-1.59a2 2 0 012.82 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            {t('quotes.quick.fromLibrary')}
-          </button>
-          <input ref={libraryRef} type="file" accept="image/*" multiple className="hidden"
-            onChange={(e) => { const fs = [...(e.target.files ?? [])]; e.target.value = ''; if (fs.length) uploader.addFiles(fs) }} />
-        </div>
-        {(quote.photos.length > 0 || pending.length > 0) && (
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
-            {pending.map((it) => (
-              <Thumb key={it.key} src={it.previewUrl} pending error={it.status === 'error'} onRetry={() => uploader.retry(it.key)} />
-            ))}
-            {quote.photos.map((p) => <Thumb key={p.id} src={p.url} shapes={p.annotations?.shapes} onClick={() => setViewing(p.id)} />)}
-          </div>
-        )}
-        <p className="text-xs text-gray-500">
-          {t('quotes.quick.photoCount', { count: photoCount })}
-          {failed > 0 && <span className="text-red-500 font-semibold"> · {t('quotes.walk.failed', { count: failed })}</span>}
-        </p>
-      </section>
-
-      {/* 2 · The message */}
-      <section className="flex flex-col gap-2">
-        <label htmlFor="visit-message" className="text-sm font-bold text-gray-900">{t('quotes.quick.messageLabel')}</label>
-        {oldNotes.length > 0 && (
-          <ul className="rounded-xl bg-gray-50 px-4 py-2.5 text-sm text-gray-600 list-disc pl-8">
-            {oldNotes.map((n, i) => <li key={i} className="whitespace-pre-line">{n}</li>)}
-          </ul>
-        )}
-        <textarea id="visit-message" ref={textRef} value={message ?? ''} onChange={(e) => setMessage(e.target.value)}
-          placeholder={t('quotes.quick.messagePlaceholder')} autoCapitalize="sentences"
-          className="w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-base leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
-        <p className="text-xs text-gray-500">{t('quotes.quick.messageHint')}</p>
-        <div ref={setBarEl} className="relative flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-2 select-none"
-          style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}>
-          <span className="flex-1 min-w-0 text-sm text-gray-500">{t('quotes.quick.voiceHint')}</span>
-          <VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, null)} className="!w-11 !h-11" barEl={barEl} />
-        </div>
-        <VoiceMemoStack memos={quote.audio ?? []} voice={voice} all editable />
-      </section>
-
-      {/* 3 · What the software understood — tap to fix */}
-      {hasText && (
-        <section className="rounded-2xl border border-brand-100 bg-brand-100/30 p-4 flex flex-col gap-3">
-          <p className="text-sm font-bold text-gray-900">{t('quotes.quick.gotIt')}</p>
-          <Row label={t('quotes.quick.work')}>
-            <span className="font-semibold text-gray-900">{read.title || <span className="text-gray-400 font-normal">{t('quotes.quick.workUnknown')}</span>}</span>
-          </Row>
-          <Row label={t('quotes.quick.place')}>
-            <input value={facility} onChange={(e) => setPlace(e.target.value)} placeholder={t('quotes.fields.facilityPlaceholder')}
-              className="w-full rounded-lg border border-transparent bg-white/70 px-2 py-1 text-sm font-semibold text-gray-900 outline-none focus:border-brand-500" />
-          </Row>
-          <Row label={t('quotes.quick.client')}>
-            <button type="button" onClick={() => setPickingClient(true)} className="text-left text-sm">
-              {client ? <span><span className="font-semibold text-gray-900">{client.name}</span>{clientWhere(client) && <span className="block text-xs text-gray-500 truncate">{clientWhere(client)}</span>}</span>
-                : newClientName ? <span><span className="font-semibold text-gray-900">{newClientName}</span> <span className="text-xs text-gray-500">· {t('quotes.quick.newClient')}</span></span>
-                : <span className="text-gray-400">{t('quotes.quick.noClient')}</span>}
-              <span className="ml-2 text-xs font-semibold text-brand-700">{t('quotes.clients.change')}</span>
-            </button>
-          </Row>
-          <Row label={t('quotes.quick.billing')}>
-            <div className="inline-flex rounded-full bg-white p-0.5 border border-gray-200">
-              {['po', 'no_po'].map((k) => (
-                <button key={k} type="button" onClick={() => setBilling(k)}
-                  className={`rounded-full px-3 py-1 text-xs font-bold ${bill === k ? 'bg-brand-500 text-white' : 'text-gray-600'}`}>
-                  {t(`quotes.quick.billing_${k}`)}
-                </button>
-              ))}
-            </div>
-          </Row>
-        </section>
-      )}
-
-      {/* Send — always within thumb reach */}
-      <div className="sticky bottom-2 z-10">
         <button onClick={send} disabled={sending}
-          className="w-full rounded-2xl bg-brand-500 py-4 text-lg font-bold text-white shadow-lg active:bg-brand-700 disabled:opacity-60">
+          className="shrink-0 rounded-full bg-brand-500 text-white px-4 py-2 text-sm font-bold active:bg-brand-700 disabled:opacity-60">
           {sending ? <Spinner size="sm" className="text-white inline" /> : `${sendLabel} →`}
         </button>
       </div>
 
-      {camera && (
-        <div className="fixed inset-0 z-50 bg-black">
-          <CameraView active onCapture={(f) => uploader.addFiles([f])} onFiles={(fs) => uploader.addFiles(fs)} className="h-full"
-            header={(
-              <div className="flex items-center justify-between gap-2">
-                <span className="rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white">{t('quotes.quick.photoCount', { count: photoCount })}</span>
-                <button onClick={() => { setCamera(false); releaseMedia('camera') }}
-                  className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-gray-900">{t('quotes.quick.done')}</button>
-              </div>
-            )} />
-        </div>
+      {/* Who the job is for — pick, add, or look up their details mid-walk. */}
+      <ClientSheet quote={quote} onChanged={load} />
+
+      {(uploading > 0 || failed > 0) && (
+        <p className="shrink-0 text-center text-xs text-gray-500">
+          {uploading > 0 && t('quotes.photos.uploading', { count: uploading })}
+          {failed > 0 && <span className="text-red-500 font-semibold"> · {t('quotes.walk.failed', { count: failed })}</span>}
+        </p>
       )}
 
-      {pickingClient && (
-        <Modal isOpen onClose={() => setPickingClient(false)} title={t('quotes.clients.label')}>
-          <div className="min-h-[280px]">
-            <ClientPicker value={quote.customer_id} label={false} autoFocus onChange={pickClient} defaults={{ location: facility }} />
+      {/* Phones: Notes | Camera tabs (swipe or tap). Only one layout is
+          rendered at a time so there's never a second camera stream. */}
+      {!wide && (<>
+      <div className="shrink-0 grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1">
+        {['notes', 'camera'].map((k) => (
+          <button key={k} onClick={() => setTab(k)}
+            className={`rounded-lg py-2 text-sm font-semibold ${tab === k ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>
+            {k === 'notes' ? `${t('quotes.walk.notesCol')} (${notes.length})` : `${t('quotes.walk.camera')} (${quote.photos.length + uploader.items.length})`}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 min-h-0" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        {tab === 'notes' ? (
+          // Only the notes scroll; the record bar stays put under them.
+          <div className="h-full flex flex-col gap-3">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">{sheet}</div>
+            {composer}
           </div>
-        </Modal>
+        ) : (
+          <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}
+            extra={<VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, activeNoteId)} className="!w-12 !h-12" barEl={barEl} />}
+            className="h-full" />
+        )}
+      </div>
+      </>)}
+
+      {/* iPad / landscape: notes left, camera right. */}
+      {wide && (
+      // Both columns fill the screen height: the notes scroll inside their own
+      // column (record bar pinned under them), the camera takes the rest.
+      <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-4">
+        <div className="min-w-0 flex flex-col gap-3 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1">{sheet}</div>
+          {composer}
+        </div>
+        <CameraView active onCapture={capture} onFiles={addFiles} header={cameraChip}
+          extra={<VoiceRecorder size="md" onRecorded={(rec) => voice.add(rec, activeNoteId)} className="!w-12 !h-12" barEl={barEl} />}
+          className="h-full" />
+      </div>
       )}
 
       {viewing != null && (
-        <PhotoViewer photos={quote.photos} startId={viewing} canEdit onChanged={load} onClose={() => setViewing(null)} notes={quote.notes ?? []} />
+        <PhotoViewer photos={quote.photos} startId={viewing} canEdit onChanged={load} onClose={() => setViewing(null)}
+          notes={notes} />
       )}
-    </div>
-  )
-}
-
-function Row({ label, children }) {
-  return (
-    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2">
-      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</span>
-      <div className="min-w-0">{children}</div>
     </div>
   )
 }

@@ -942,6 +942,20 @@
       "po": "Con PO",
       "no_po": "Sin PO",
       "empty": "Aún no se ha enviado nada. Las cotizaciones aparecen aquí cuando se envía su estimado, o cuando se programa un trabajo sin PO."
+    },
+    "start": {
+      "title": "Nueva visita",
+      "clientPlaceholder": "Empieza a escribir un nombre…",
+      "willAdd": "No está en la lista — “{{name}}” se agregará como cliente nuevo",
+      "newClient": "Cliente nuevo — se agrega a la lista al continuar.",
+      "onList": "De la lista de clientes.",
+      "suggested": "Sugerido de {{name}} — cámbialo si hace falta.",
+      "location": "Ubicación",
+      "detail": "Detalles de la ubicación",
+      "detailPlaceholder": "ej. 2do piso, pasillo de emergencias, cuarto 214",
+      "next": "Continuar a las fotos",
+      "needClient": "Escribe el nombre del cliente",
+      "needLocation": "Escribe la ubicación"
     }
   },
   "library": {
