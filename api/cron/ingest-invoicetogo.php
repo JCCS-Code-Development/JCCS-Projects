@@ -73,7 +73,8 @@ $pdo = getPDO();
 $ids = imap_search($imap, $recheck ? 'UNSEEN' : 'UNSEEN UNFLAGGED') ?: [];
 if ($recheck) $log('Rechecking starred emails too.');
 $log(count($ids) . ' new message(s).' . (count($ids) > $batch ? " Handling up to $batch now; the rest on the next runs." : ''));
-$log('PDF text reader: ' . (!financialDocHasReader() ? 'NOT available on this server — matching uses the subject and file name only' : 'available'));
+$reader = financialDocReaderName();
+$log('PDF text reader: ' . ($reader === null ? 'NOT available on this server — matching uses the subject and file name only' : "available ($reader)"));
 
 // An InvoiceToGo email: its subject is "Estimate #4512 to review | JCCS
 // Services LLC" / "Invoice #…", or it names InvoiceToGo in the sender or body.

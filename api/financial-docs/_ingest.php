@@ -28,13 +28,30 @@ function financialDocReader(): ?string {
     }
     return null;
 }
-function financialDocHasReader(): bool { return financialDocReader() !== null; }
+// The built-in reader (smalot/pdfparser in api/vendor — plain PHP, so it
+// works on shared hosting without pdftotext). Needs PHP 8.1+ like the rest
+// of api/vendor; loaded only when a PDF is actually read.
+function financialDocPhpReader(): bool {
+    static $ok = null;
+    if ($ok !== null) return $ok;
+    $ok = false;
+    if (PHP_VERSION_ID >= 80100 && is_file(__DIR__ . '/../vendor/autoload.php')) {
+        require_once __DIR__ . '/../vendor/autoload.php';
+        $ok = class_exists(\Smalot\PdfParser\Parser::class);
+    }
+    return $ok;
+}
+function financialDocHasReader(): bool { return financialDocReader() !== null || financialDocPhpReader(); }
+// For the depot log: which reader this server uses.
+function financialDocReaderName(): ?string {
+    return financialDocReader() !== null ? 'pdftotext' : (financialDocPhpReader() ? 'built-in' : null);
+}
 
 function financialDocText(string $path): string {
     if (!is_file($path)) return '';
     // Locate the binary without ever handing proc_open a bad path.
     $bin = financialDocReader();
-    if ($bin === null) return '';
+    if ($bin === null) return financialDocTextPhp($path);
 
     $prev = set_error_handler(static fn() => true); // swallow proc warnings here only
     try {
@@ -46,6 +63,23 @@ function financialDocText(string $path): string {
         fclose($pipes[2]);
         proc_close($proc);
         return is_string($out) ? $out : '';
+    } catch (\Throwable $e) {
+        return '';
+    } finally {
+        set_error_handler($prev);
+    }
+}
+
+// Text of a PDF via the built-in reader; '' if it can't (scanned image,
+// odd encoding, too big). Never throws.
+function financialDocTextPhp(string $path): string {
+    if (!financialDocPhpReader() || filesize($path) > 15 * 1024 * 1024) return '';
+    $prev = set_error_handler(static fn() => true);
+    try {
+        $config = new \Smalot\PdfParser\Config();
+        $config->setRetainImageContent(false);   // text only — keeps memory low
+        $text = (new \Smalot\PdfParser\Parser([], $config))->parseFile($path)->getText();
+        return mb_substr((string) $text, 0, 200000);
     } catch (\Throwable $e) {
         return '';
     } finally {
@@ -115,25 +149,40 @@ function financialDocPlace(PDO $pdo, string $type, ?string $docNumber, array $ha
     return financialDocMatch($pdo, $haystacks, $type === 'invoice' ? $docNumber : null, $guessFrom);
 }
 
-// Depot PDFs filed Unfiled before the number was read from the subject /
-// file name: sort them again (and mark their site visits sent). Each is
-// looked at once — it gets its doc_number either way.
-function financialDocRefileUnfiled(PDO $pdo, int $limit = 200): int {
-    $s = $pdo->prepare("SELECT d.id, d.category, d.title, v.original_filename FROM documents d
+// Depot PDFs sitting in Unfiled: sort them again — by the number in the
+// subject / file name, and (when this server can read PDFs) by a known
+// project number printed inside, e.g. on an invoice. One that still can't be
+// placed is marked 'unmatched' so it isn't read again every run; a person
+// assigns it from the Unfiled tray. Marks waiting site visits sent too.
+function financialDocRefileUnfiled(PDO $pdo, int $limit = 30): int {
+    $canRead = financialDocHasReader();
+    $s = $pdo->prepare("SELECT d.id, d.category, d.title, d.doc_number, v.original_filename, v.file_path FROM documents d
                           LEFT JOIN document_versions v ON v.document_id = d.id AND v.version_number = 1
-                         WHERE d.project_number = ? AND d.source = 'email' AND d.doc_number IS NULL AND d.is_active = 1
-                           AND d.category IN ('estimate', 'invoice') ORDER BY d.id LIMIT " . (int) $limit);
-    $s->execute([FIN_UNFILED]);
+                         WHERE d.project_number = ? AND d.source = 'email' AND d.is_active = 1
+                           AND d.category IN ('estimate', 'invoice')
+                           AND (d.match_confidence IS NULL OR d.match_confidence <> 'unmatched')
+                           AND (? OR d.category = 'estimate' OR d.doc_number IS NULL)
+                         ORDER BY d.id LIMIT " . (int) $limit);
+    $s->execute([FIN_UNFILED, $canRead ? 1 : 0]);
     $moved = 0;
     foreach ($s->fetchAll() as $d) {
-        $named = financialDocNumberFromName((string) $d['title'], (string) $d['original_filename']);
-        if (!$named) continue;
-        [$type, $number] = $named;
-        [$project, $confidence] = financialDocPlace($pdo, $type, $number, [$d['title'], $d['original_filename']], [$d['title'], $d['original_filename']]);
-        $pdo->prepare('UPDATE documents SET category = ?, doc_number = ?, project_number = ?, match_confidence = ? WHERE id = ?')
+        $names = [(string) $d['title'], (string) $d['original_filename']];
+        $named = financialDocNumberFromName(...$names) ?? ($d['doc_number'] ? [$d['category'], (string) $d['doc_number']] : null);
+        $type = $named[0] ?? $d['category'];
+        $number = $named[1] ?? null;
+        $hay = $names;
+        if ($canRead && $d['file_path']) $hay[] = financialDocText(__DIR__ . '/../uploads/' . $d['file_path']);
+        [$project, $confidence] = financialDocPlace($pdo, $type, $number, $hay, $names);
+        if ($project === FIN_UNFILED) {
+            // Tried everything this server can do: leave it for a person.
+            if ($type === 'estimate' || $canRead) $confidence = 'unmatched';
+            else $confidence = 'none';
+        } else {
+            $moved++;
+        }
+        $pdo->prepare('UPDATE documents SET category = ?, doc_number = COALESCE(?, doc_number), project_number = ?, match_confidence = ? WHERE id = ?')
             ->execute([$type, $number, $project, $confidence, $d['id']]);
-        if ($project !== FIN_UNFILED) $moved++;
-        if ($type === 'estimate') {
+        if ($type === 'estimate' && $number !== null) {
             try {
                 require_once __DIR__ . '/../quote-requests/_common.php';
                 qrMatchEstimateDoc($pdo, (int) $d['id'], $number, []);
