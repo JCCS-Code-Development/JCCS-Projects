@@ -960,7 +960,7 @@
   },
   "library": {
     "title": "Biblioteca de Materiales",
-    "subtitle": "Colores, laminados, superficies sólidas y productos que el formulario de visita ofrece con un toque.",
+    "subtitle": "Colores, productos y los tipos de trabajo que conoce el redactor de estimados. Enséñale trabajos nuevos aquí.",
     "add": "Agregar material",
     "edit": "Editar material",
     "kind": "Tipo",
@@ -982,6 +982,25 @@
       "ceiling_tile": "Plafón",
       "wall_protection": "Protección de pared",
       "other": "Otro"
+    },
+    "teach": {
+      "badge": "Enseña estimados",
+      "title": "Enseñar al redactor de estimados (opcional)",
+      "hint": "Llénalo y “Generar texto del estimado” escribe este trabajo cada vez que una visita lo mencione.",
+      "aliases": "Palabras que usa el equipo",
+      "aliasesPlaceholder": "ej. lvp, vinil de lujo, vinyl plank",
+      "unit": "Se mide en",
+      "units": {
+        "none": "No se mide",
+        "SF": "Pies cuadrados (SF)",
+        "LF": "Pies lineales (LF)",
+        "EA": "Por unidad"
+      },
+      "scope": "Cómo lo redacta JCCS (en inglés)",
+      "scopePlaceholder": "# LVP Flooring Installation\nProvide and install {amount}approved luxury vinyl plank flooring{where}.\nCoordinate the approved product, color, and layout before installation.",
+      "scopeHint": "Una viñeta por línea. Una línea que empieza con # es un título de sección. {amount} se vuelve “approximately 783 square feet of ” (calculado de las notas), {where} dónde va, {name} su nombre.",
+      "checks": "Revisiones de acabado (Fit & Finish)",
+      "checksPlaceholder": "Verify the new flooring is flat, properly aligned, and securely installed."
     }
   }
 }

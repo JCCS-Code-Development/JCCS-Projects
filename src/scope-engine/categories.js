@@ -347,6 +347,43 @@ export function wallProtection(f) {
   }
 }
 
+// ── Work taught in the Materials library ──────────────────────────────────
+// The office writes how JCCS words a kind of work on its library entry, one
+// bullet per line, "# Heading" starting a section. In the wording:
+//   {amount} → "approximately 783 square feet of " (nothing when no quantity)
+//   {where}  → " throughout the hallways" / " within the designated areas"
+//   {name}   → the entry's name
+// items: [{ name, kind, unit (SF|LF|EA), qty, where, scope, checks }]
+const UNIT_WORDS = { SF: 'square feet', LF: 'linear feet' }
+const lines = (s) => String(s ?? '').split('\n').map((l) => l.trim().replace(/^[-•*·]\s*/, '')).filter(Boolean)
+function fillTaught(text, it) {
+  const n = Number(String(it.qty ?? '').replace(/,/g, ''))
+  const amount = !n ? '' : it.unit === 'EA' ? `${countWord(n)} ` : `approximately ${n.toLocaleString('en-US')} ${UNIT_WORDS[it.unit] ?? it.unit ?? ''} of `
+  const where = (it.where ?? '').trim()
+  return text
+    .replace(/\{amount\}\s*/gi, amount)
+    .replace(/\s*\{where\}/gi, where ? ` ${where}` : ' within the designated areas')
+    .replace(/\{name\}/gi, it.name ?? '')
+    .replace(/\s{2,}/g, ' ').replace(/\s+([.,;])/g, '$1').trim()
+}
+export function taught(f) {
+  const c = f.cats.taught
+  if (!on(c) || !c.items?.length) return null
+  const sections = []
+  const checks = []
+  for (const it of c.items) {
+    let cur = null
+    for (const l of lines(it.scope)) {
+      if (l.startsWith('#')) { cur = { heading: fillTaught(l.replace(/^#+\s*/, ''), it), bullets: [] }; sections.push(cur); continue }
+      if (!cur) { cur = { heading: `${titleCase(it.name ?? '')} Installation`, bullets: [] }; sections.push(cur) }
+      cur.bullets.push(cap(fillTaught(l, it)))
+    }
+    checks.push(...lines(it.checks).map((l) => cap(fillTaught(l, it))))
+  }
+  const out = sections.filter((s) => s.bullets.length)
+  return out.length ? { sections: out, checks, defects: ['scratches'] } : null
+}
+
 // ── Anything else: free-form sections the user writes ──────────────────────
 export function other(f) {
   const c = f.cats.other
@@ -358,7 +395,7 @@ export function other(f) {
 }
 
 // Construction order of the trade sections.
-export const ORDER = [itemRemoval, demo, plumbing, framing, antimicrobial, drywall, ceiling, windowFilm, window, painting, coveBase, wallProtection, other]
+export const ORDER = [itemRemoval, demo, plumbing, framing, antimicrobial, drywall, ceiling, windowFilm, window, painting, taught, coveBase, wallProtection, other]
 
 // Fit & Finish checks that depend on several categories at once.
 export function structuralChecks(f) {

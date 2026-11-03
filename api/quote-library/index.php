@@ -21,11 +21,20 @@ $auth   = requireAuth(['admin', 'field']);
 $pdo    = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];
 
+// Teaching fields (see migrations/2026-11-03d_library_scopes.sql): the words
+// crews use, the unit it's measured in, and how the estimate words it.
+const LIBRARY_UNITS = ['SF', 'LF', 'EA'];
+
 function libraryStrings(array $body, array &$sets, array &$params): void {
-    foreach (['manufacturer' => 100, 'product_code' => 60, 'notes' => 255] as $key => $max) {
+    foreach (['manufacturer' => 100, 'product_code' => 60, 'notes' => 255, 'aliases' => 255, 'scope_text' => 6000, 'checks' => 2000] as $key => $max) {
         if (!array_key_exists($key, $body)) continue;
-        $v = sanitizeString($body[$key] ?? '');
+        $v = str_replace("\r\n", "\n", sanitizeString($body[$key] ?? ''));
         $sets[] = "$key = ?"; $params[] = $v === '' ? null : mb_substr($v, 0, $max);
+    }
+    if (array_key_exists('unit', $body)) {
+        $u = strtoupper(trim((string)$body['unit']));
+        if ($u !== '' && !in_array($u, LIBRARY_UNITS, true)) { http_response_code(422); exit(json_encode(['error' => 'Unknown unit'])); }
+        $sets[] = 'unit = ?'; $params[] = $u === '' ? null : $u;
     }
 }
 

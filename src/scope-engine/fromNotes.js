@@ -104,6 +104,45 @@ function findExclusion(raw) {
   return { text: /^(the|a|an|all|any)\b/i.test(x) ? x : `the ${x}`, raw: m[0].trim() }
 }
 
+// ── Work taught in the Materials library ──
+// An entry with scope wording is "taught": its name or any of the words crews
+// use for it ("lvp, luxury vinyl, vinyl plank") turns it on.
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const wordsOf = (l) => uniq([l.label, ...String(l.aliases ?? '').split(',')].map((w) => fold(w).trim()).filter((w) => w.length > 1))
+const mentions = (t, w) => new RegExp(`(^|[^a-z0-9])${esc(w)}([^a-z0-9]|$)`).test(t)
+function findTaught(t, library) {
+  return library.filter((l) => (l.scope_text ?? '').trim() && wordsOf(l).some((w) => mentions(t, w)))
+}
+
+// Areas measured in the notes, in feet: "45 x 16", "9 by 7", "12' x 10'",
+// or two lengths in a row ("45 feet, 16 feet"). What's written just before
+// a pair names it ("front entrance 9 by 7"). The summary's own lines
+// (Measurements:, Location: …) are skipped so nothing counts twice.
+const FT = String.raw`(?:\s*(?:feet|foot|ft\.?|'|pies))`
+const NUM = String.raw`(\d{1,4}(?:\.\d+)?)`
+const PAIR = new RegExp(String.raw`${NUM}${FT}?\s*(?:x|×|by|por)\s*${NUM}${FT}?|${NUM}${FT}\s*(?:,|and|y|&)?\s*${NUM}${FT}`, 'gi')
+const SUMMARY_LINE = /^(measurements|exclusions|location|for|medidas|ubicaci[oó]n):/i
+function findAreas(raw, skipWords) {
+  const areas = []
+  for (const line of raw.split('\n')) {
+    if (SUMMARY_LINE.test(line.trim())) continue
+    let from = 0
+    for (const m of line.matchAll(PAIR)) {
+      const w = Number(m[1] ?? m[3]); const l = Number(m[2] ?? m[4])
+      const before = line.slice(from, m.index).split(/[,.;:]/).pop() ?? ''
+      from = m.index + m[0].length
+      if (!w || !l) continue
+      let label = fold(before).replace(/[^a-z\s-]/g, ' ')
+      for (const sw of skipWords) label = label.replace(new RegExp(`(^|\\s)${esc(sw)}(?=\\s|$)`, 'g'), ' ')
+      label = label.replace(/\s+/g, ' ').trim()
+      areas.push({ w, l, label: label && label.split(' ').length <= 4 ? label : '' })
+    }
+  }
+  return areas
+}
+const AREA_STOPWORDS = ['estimate', 'estimado', 'install', 'instalar', 'new', 'nuevo', 'nueva', 'approx', 'approximately', 'aprox', 'about',
+  'around', 'flooring', 'floor', 'piso', 'pisos', 'area', 'areas', 'and', 'y', 'the', 'el', 'la', 'of', 'de', 'at', 'in', 'en']
+
 // A saved material named in the notes (e.g. "Canvas Tan", "Moon Rock").
 function findLibrary(text, library, kind) {
   return library.filter((l) => l.kind === kind).find((l) => fold(text).includes(fold(l.label)))?.label ?? ''
@@ -223,6 +262,38 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
     f.area = `work areas ${along}`
     f.leaveArea = 'the affected areas'
   }
+  // ── Work taught in the Materials library ──
+  const taughtEntries = findTaught(t, library)
+  const floorTaught = taughtEntries.some((l) => l.kind === 'flooring')
+  let areas = []
+  if (taughtEntries.length) {
+    areas = taughtEntries.some((l) => l.unit === 'SF') ? findAreas(raw, [...AREA_STOPWORDS, ...taughtEntries.flatMap(wordsOf)]) : []
+    const sf = areas.reduce((sum, a) => sum + a.w * a.l, 0)
+    const statedSf = findQuantities(raw).find((q) => /sf|sq|square|cuadrados/i.test(q))
+    c.taught = { on: true, items: taughtEntries.map((l) => {
+      let qty = ''
+      if (l.unit === 'SF') qty = sf ? String(Math.round(sf)) : (statedSf ? statedSf.split(' ')[0].replace(/,/g, '') : '')
+      else if (l.unit === 'LF') qty = findLinearFeet(raw)
+      else if (l.unit === 'EA') {
+        const n = wordsOf(l).map((w) => t.match(new RegExp(`(\\d+)\\s+${esc(w)}`))).find(Boolean)
+        qty = n ? n[1] : ''
+      }
+      return { id: l.id, name: l.label, kind: l.kind, unit: l.unit || '', qty, where: along, scope: l.scope_text, checks: l.checks ?? '' }
+    }) }
+    for (const it of c.taught.items) {
+      if (it.unit === 'SF' && sf) remarks.push(`${it.name}: ${Math.round(sf).toLocaleString('en-US')} SF from ${areas.map((a) => `${a.w} × ${a.l}`).join(' + ')} — field verify, and add waste when ordering`)
+      else if (it.unit && !it.qty) remarks.push(`${it.name}: no ${it.unit === 'EA' ? 'count' : it.unit} found in the notes — add the quantity`)
+    }
+    // "Prepare the designated flooring area measuring approximately 45 feet by
+    // 16 feet and the front entrance area measuring approximately 9 feet by 7 feet."
+    if (areas.length && !rooms && !along) {
+      const noun = floorTaught ? 'flooring' : 'work'
+      const size = (a) => `measuring approximately ${a.w} feet by ${a.l} feet`
+      f.area = list(areas.map((a, i) => (a.label ? `${i ? 'the ' : ''}${a.label} area ${size(a)}` : `${i ? `the ${noun}` : noun} area ${size(a)}`)))
+      if (areas.length > 1) f.leaveArea = 'the affected areas'
+    }
+  }
+
   if (exclusion.raw && !exclusion.text) remarks.push(`exclusion in the notes, add it in English: “${exclusion.raw}”`)
   if (exclusion.text && !c.wallProtection.on) remarks.push(`exclusion in the notes: “${exclusion.raw}” — check it’s in the scope`)
 
@@ -237,7 +308,8 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
 
   // ── Protect / verify ──
   f.protect = uniq([
-    'flooring', 'walls',
+    !floorTaught && 'flooring', 'walls',
+    floorTaught && 'doors', floorTaught && 'millwork',
     c.ceiling.on && 'solid ceiling',
     /countertop|encimera|meson|mostrador/.test(t) && 'countertops',
     has(t, ...W.clinical) && 'medical equipment',
@@ -251,6 +323,7 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
     c.wallProtection.on && 'wall dimensions', c.wallProtection.on && 'mounting conditions',
     (water || mold) && 'the extent of affected materials',
     !c.window.on && !c.windowFilm.on && !c.wallProtection.on && 'dimensions',
+    floorTaught && 'flooring transitions', floorTaught && 'elevations',
     'existing conditions',
   ])
 
@@ -262,6 +335,7 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
     c.coveBase.on && 'Cove Base',
     c.ceiling.on && 'Hard-Ceiling',
     c.windowFilm.on && `${c.windowFilm.film === 'tinted' ? 'Tinted' : 'Frosted'} Window Film`,
+    ...(c.taught?.items ?? []).map((it) => titleCase(it.name)),
     c.wallProtection.on && titleCase([c.wallProtection.brand, c.wallProtection.product].filter(Boolean).join(' ')),
     c.window.on && `${c.window.glazing ? `${c.window.glazing[0].toUpperCase()}${c.window.glazing.slice(1)} ` : ''}${c.window.kind === 'fixed' ? 'Fixed' : 'Sliding'} Window`,
   ])
@@ -272,7 +346,7 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
   // ── Checklist for the estimator ──
   const qty = findQuantities(raw)
   if (qty.length) remarks.push(`quantities in the notes: ${qty.join(', ')}`)
-  if (!Object.values(c).some((x) => x.on)) remarks.push('no scope recognized in the notes — pick the categories by hand')
+  if (!Object.values(c).some((x) => x.on)) remarks.push('no scope recognized in the notes — teach this kind of work in the Materials library, or write it by hand')
   remarks.push('auto-filled from the written notes only; check it against the photos')
 
   return { form: f, notes: remarks }

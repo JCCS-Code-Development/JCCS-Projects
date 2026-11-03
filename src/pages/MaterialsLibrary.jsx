@@ -9,14 +9,18 @@ import Input from '../components/ui/Input'
 import Spinner from '../components/ui/Spinner'
 import { useToast } from '../components/ToastProvider'
 import { useConfirm } from '../components/ConfirmProvider'
-import { Select } from './quotes/QuoteParts'
+import { Select, TextArea } from './quotes/QuoteParts'
 import { listLibrary, createLibraryItem, updateLibraryItem, removeLibraryItem } from '../api/quoteLibrary'
 
-const EMPTY = { kind: 'paint_color', label: '', manufacturer: '', product_code: '', notes: '' }
+const EMPTY = { kind: 'paint_color', label: '', manufacturer: '', product_code: '', notes: '', aliases: '', unit: '', scope_text: '', checks: '' }
+const UNITS = ['', 'SF', 'LF', 'EA']
 const errMsg = (err, t) => err?.response?.data?.error ?? t('common.couldNotSave')
 
 // The finishes/colors/products the site-walk form offers as one-tap picks,
 // kept here so JCCS can add a new laminate or paint color without a code change.
+// An entry can also teach the estimate writer a kind of work: the words crews
+// use for it, how it's measured, and how JCCS words it — then "Generate
+// estimate text" writes it whenever a site visit mentions it.
 export default function MaterialsLibrary() {
   const { t } = useTranslation()
   const toast = useToast()
@@ -37,7 +41,8 @@ export default function MaterialsLibrary() {
 
   const openCreate = (kind = 'paint_color') => { setForm({ ...EMPTY, kind }); setError(''); setModal('create') }
   const openEdit = (it) => {
-    setForm({ kind: it.kind, label: it.label, manufacturer: it.manufacturer ?? '', product_code: it.product_code ?? '', notes: it.notes ?? '' })
+    setForm({ kind: it.kind, label: it.label, manufacturer: it.manufacturer ?? '', product_code: it.product_code ?? '', notes: it.notes ?? '',
+      aliases: it.aliases ?? '', unit: it.unit ?? '', scope_text: it.scope_text ?? '', checks: it.checks ?? '' })
     setError(''); setModal(it)
   }
   const save = async () => {
@@ -74,7 +79,10 @@ export default function MaterialsLibrary() {
                     {list.map((it) => (
                       <li key={it.id} className="flex items-center justify-between gap-2 py-1.5">
                         <span className="min-w-0">
-                          <span className="block text-sm text-gray-800 truncate">{it.label}</span>
+                          <span className="flex items-center gap-1.5 text-sm text-gray-800">
+                            <span className="truncate">{it.label}</span>
+                            {it.scope_text && <span className="shrink-0 rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold text-brand-700">{t('library.teach.badge')}</span>}
+                          </span>
                           <span className="block text-xs text-gray-400 truncate">
                             {[it.manufacturer, it.product_code, it.use_count ? t('library.used', { count: it.use_count }) : null].filter(Boolean).join(' · ')}
                           </span>
@@ -102,6 +110,20 @@ export default function MaterialsLibrary() {
           <Input label={t('library.manufacturer')} value={form.manufacturer} onChange={set('manufacturer')} />
           <Input label={t('library.productCode')} value={form.product_code} onChange={set('product_code')} />
           <Input label={t('library.notes')} value={form.notes} onChange={set('notes')} />
+          <div className="flex flex-col gap-3 rounded-2xl border border-brand-100 bg-brand-100/20 p-3">
+            <div>
+              <p className="text-sm font-bold text-gray-900">{t('library.teach.title')}</p>
+              <p className="text-xs text-gray-500">{t('library.teach.hint')}</p>
+            </div>
+            <Input label={t('library.teach.aliases')} value={form.aliases} onChange={set('aliases')} placeholder={t('library.teach.aliasesPlaceholder')} />
+            <Select label={t('library.teach.unit')} value={form.unit} onChange={(v) => setForm((f) => ({ ...f, unit: v }))}>
+              {UNITS.map((u) => <option key={u} value={u}>{t(`library.teach.units.${u || 'none'}`)}</option>)}
+            </Select>
+            <TextArea label={t('library.teach.scope')} value={form.scope_text} onChange={(v) => setForm((f) => ({ ...f, scope_text: v }))} rows={8}
+              placeholder={t('library.teach.scopePlaceholder')} helperText={t('library.teach.scopeHint')} />
+            <TextArea label={t('library.teach.checks')} value={form.checks} onChange={(v) => setForm((f) => ({ ...f, checks: v }))} rows={3}
+              placeholder={t('library.teach.checksPlaceholder')} />
+          </div>
           {error && <p className="text-xs text-red-500">{error}</p>}
           <Button onClick={save} loading={saving} fullWidth>{t('common.save')}</Button>
         </div>

@@ -960,7 +960,7 @@
   },
   "library": {
     "title": "Materials Library",
-    "subtitle": "Colors, laminates, solid surfaces and products the site-visit form offers as one-tap picks.",
+    "subtitle": "Colors, products and the kinds of work the estimate writer knows. Teach it new work here.",
     "add": "Add material",
     "edit": "Edit material",
     "kind": "Type",
@@ -982,6 +982,25 @@
       "ceiling_tile": "Ceiling tile",
       "wall_protection": "Wall protection",
       "other": "Other"
+    },
+    "teach": {
+      "badge": "Teaches estimates",
+      "title": "Teach the estimate writer (optional)",
+      "hint": "Fill this in and “Generate estimate text” writes this work whenever a site visit mentions it.",
+      "aliases": "Words crews use for it",
+      "aliasesPlaceholder": "e.g. lvp, luxury vinyl, vinyl plank",
+      "unit": "Measured in",
+      "units": {
+        "none": "Not measured",
+        "SF": "Square feet (SF)",
+        "LF": "Linear feet (LF)",
+        "EA": "Each (count)"
+      },
+      "scope": "How JCCS words it",
+      "scopePlaceholder": "# LVP Flooring Installation\nProvide and install {amount}approved luxury vinyl plank flooring{where}.\nCoordinate the approved product, color, and layout before installation.",
+      "scopeHint": "One bullet per line. A line starting with # is a section heading. {amount} becomes “approximately 783 square feet of ” (worked out from the notes), {where} becomes where it goes, {name} its name.",
+      "checks": "Fit & Finish checks",
+      "checksPlaceholder": "Verify the new flooring is flat, properly aligned, and securely installed."
     }
   }
 }
