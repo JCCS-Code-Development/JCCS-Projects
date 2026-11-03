@@ -58,10 +58,14 @@ function financialDocText(string $path): string {
 //   high — a 4-digit token that matches a known project in project_cache
 //   low  — exactly one 4-digit token, but no project match (probably a new #)
 //   none — nothing usable → Unfiled
-function financialDocMatch(PDO $pdo, array $haystacks): array {
+//
+// $exclude: a number that is NOT a project (an invoice's own Invoice #).
+// $guessFrom: where a lone unknown number may be trusted — the subject and
+// file name, not the email body or PDF (full of years, zips and amounts).
+function financialDocMatch(PDO $pdo, array $haystacks, ?string $exclude = null, ?array $guessFrom = null): array {
     $text = strtolower(implode("\n", array_filter($haystacks)));
     preg_match_all('/(?<!\d)(\d{4})(?!\d)/', $text, $m);
-    $nums = array_values(array_unique($m[1]));
+    $nums = array_values(array_diff(array_unique($m[1]), [$exclude]));
     if (!$nums) return [FIN_UNFILED, 'none'];
 
     $in   = implode(',', array_fill(0, count($nums), '?'));
@@ -74,8 +78,69 @@ function financialDocMatch(PDO $pdo, array $haystacks): array {
         usort($known, fn($a, $b) => strpos($text, $a) <=> strpos($text, $b));
         return [(string) $known[0], 'high'];
     }
+    if ($guessFrom !== null) {
+        preg_match_all('/(?<!\d)(\d{4})(?!\d)/', strtolower(implode("\n", array_filter($guessFrom))), $g);
+        $nums = array_values(array_diff(array_unique($g[1]), [$exclude]));
+    }
     if (count($nums) === 1) return [(string) $nums[0], 'low'];
     return [FIN_UNFILED, 'none'];
+}
+
+// What InvoiceToGo puts in the subject and file name: "Estimate #4551 to
+// review | …", "Invoice #5876 from …", "estimate_4551.pdf". Returns
+// ['estimate'|'invoice', number] or null.
+function financialDocNumberFromName(string ...$names): ?array {
+    foreach ($names as $s) {
+        if (preg_match('/\b(estimate|quote|presupuesto|cotizaci[oó]n|invoice|factura)\s*(?:#|no\.?|number|n[uú]mero)?\s*[_:-]?\s*#?\s*(\d{2,10})\b/iu', $s, $m)) {
+            return [preg_match('/invoice|factura/i', $m[1]) ? 'invoice' : 'estimate', $m[2]];
+        }
+    }
+    return null;
+}
+
+// Is this number a project we know?
+function financialDocKnownProject(PDO $pdo, string $number): bool {
+    $s = $pdo->prepare("SELECT 1 FROM project_cache WHERE project_number = ? AND project_number <> '0000'");
+    $s->execute([$number]);
+    return (bool) $s->fetchColumn();
+}
+
+// Where a document goes. An estimate's Estimate # IS the JCCS job number;
+// an invoice's Invoice # is not, so an invoice only lands on a project whose
+// number shows up somewhere (else Unfiled for a person).
+function financialDocPlace(PDO $pdo, string $type, ?string $docNumber, array $haystacks, array $guessFrom): array {
+    if ($type === 'estimate' && $docNumber !== null && preg_match('/^\d{4}$/', $docNumber)) {
+        return [$docNumber, financialDocKnownProject($pdo, $docNumber) ? 'high' : 'low'];
+    }
+    return financialDocMatch($pdo, $haystacks, $type === 'invoice' ? $docNumber : null, $guessFrom);
+}
+
+// Depot PDFs filed Unfiled before the number was read from the subject /
+// file name: sort them again (and mark their site visits sent). Each is
+// looked at once — it gets its doc_number either way.
+function financialDocRefileUnfiled(PDO $pdo, int $limit = 200): int {
+    $s = $pdo->prepare("SELECT d.id, d.category, d.title, v.original_filename FROM documents d
+                          LEFT JOIN document_versions v ON v.document_id = d.id AND v.version_number = 1
+                         WHERE d.project_number = ? AND d.source = 'email' AND d.doc_number IS NULL AND d.is_active = 1
+                           AND d.category IN ('estimate', 'invoice') ORDER BY d.id LIMIT " . (int) $limit);
+    $s->execute([FIN_UNFILED]);
+    $moved = 0;
+    foreach ($s->fetchAll() as $d) {
+        $named = financialDocNumberFromName((string) $d['title'], (string) $d['original_filename']);
+        if (!$named) continue;
+        [$type, $number] = $named;
+        [$project, $confidence] = financialDocPlace($pdo, $type, $number, [$d['title'], $d['original_filename']], [$d['title'], $d['original_filename']]);
+        $pdo->prepare('UPDATE documents SET category = ?, doc_number = ?, project_number = ?, match_confidence = ? WHERE id = ?')
+            ->execute([$type, $number, $project, $confidence, $d['id']]);
+        if ($project !== FIN_UNFILED) $moved++;
+        if ($type === 'estimate') {
+            try {
+                require_once __DIR__ . '/../quote-requests/_common.php';
+                qrMatchEstimateDoc($pdo, (int) $d['id'], $number, []);
+            } catch (Throwable $e) { error_log('refile → quote link: ' . $e->getMessage()); }
+        }
+    }
+    return $moved;
 }
 
 // The Estimate # printed on an InvoiceToGo estimate ("Estimate # 4602",
@@ -119,12 +184,15 @@ function storeFinancialDoc(
     $text = $ext === 'pdf' ? financialDocText($srcPath) : '';
     $haystacks = [$meta['subject'] ?? '', $originalName, $text, $meta['body_text'] ?? ''];
 
-    $type = financialDocType($meta['type'] ?? null, $haystacks);
+    // The subject / file name say what it is and its number, when InvoiceToGo sent it.
+    $named = financialDocNumberFromName((string) ($meta['subject'] ?? ''), $originalName);
+    $type = financialDocType($meta['type'] ?? ($named[0] ?? null), $haystacks);
+    if (empty($meta['doc_number']) && $named && $named[0] === $type) $meta['doc_number'] = $named[1];
 
     $projectNumber = trim((string) ($meta['project_number'] ?? ''));
     $confidence    = null;
     if (!preg_match('/^\d{4}$/', $projectNumber)) {
-        [$projectNumber, $confidence] = financialDocMatch($pdo, $haystacks);
+        [$projectNumber, $confidence] = financialDocPlace($pdo, $type, $meta['doc_number'] ?? null, $haystacks, [$meta['subject'] ?? '', $originalName]);
     } elseif ($source === 'email') {
         $confidence = 'high';
     }

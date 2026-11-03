@@ -86,6 +86,11 @@ $fromInvoiceToGo = function ($header, string $subject, string $body): bool {
     return (bool) preg_match('/invoice\s*2\s*go|invoicetogo|invoice\s+to\s+go/i', $who . ' ' . $subject . ' ' . $body);
 };
 
+// Earlier PDFs left Unfiled before the Estimate # was read from the subject.
+try {
+    if ($moved = financialDocRefileUnfiled($pdo)) $log("Re-sorted $moved Unfiled PDF(s) onto their projects.");
+} catch (Throwable $e) { $log('Re-sorting Unfiled failed: ' . $e->getMessage()); }
+
 $filed = 0; $skipped = 0; $handled = 0;
 foreach ($ids as $num) {
     if ($handled >= $batch || microtime(true) - $started > $budget) {
