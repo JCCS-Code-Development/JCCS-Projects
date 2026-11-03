@@ -1,8 +1,14 @@
 <?php
 // Email → depot poller. Reads a dedicated mailbox (BCC it on every
-// InvoiceToGo estimate/invoice), files each PDF under its project by the
-// 4-digit Estimate # found in the subject / filename / PDF text, and drops
-// anything unmatched into the Unfiled tray.
+// InvoiceToGo estimate/invoice), files each InvoiceToGo PDF under its project
+// by the 4-digit Estimate # found in the subject / filename / PDF text, and
+// drops anything unmatched into the Unfiled tray. An estimate PDF also marks
+// the site visit waiting on its number as sent.
+//
+// Only PDFs from InvoiceToGo are filed. Any other mail is left in the inbox
+// and flagged (starred) so a person can look at it. At most DEPOT_BATCH
+// emails (default 20) are handled per run, and a run stops early before the
+// host's time limit, so a backlog clears a batch at a time.
 //
 // Run from cron, e.g. every 5 min:
 //   */5 * * * * php /home/USER/public_html/projects/api/cron/ingest-invoicetogo.php >> ~/depot-ingest.log 2>&1
@@ -21,10 +27,22 @@ require_once __DIR__ . '/../financial-docs/_ingest.php';
 $isCli = PHP_SAPI === 'cli';
 if (!$isCli) {
     header('Content-Type: text/plain; charset=utf-8');
+    header('X-Accel-Buffering: no');
     $ok = defined('CRON_SECRET') && CRON_SECRET !== '' && hash_equals((string) CRON_SECRET, (string) ($_GET['secret'] ?? ''));
     if (!$ok) { http_response_code(403); exit("forbidden\n"); }
 }
-$log = function (string $m) { echo '[' . date('Y-m-d H:i:s') . '] ' . $m . "\n"; };
+// Each line shows up as it happens (also in the browser).
+while (ob_get_level() > 0) ob_end_flush();
+$log = function (string $m) { echo '[' . date('Y-m-d H:i:s') . '] ' . $m . "\n"; flush(); };
+// If PHP itself dies (memory, time limit), say so instead of just stopping.
+register_shutdown_function(function () use ($log) {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR], true)) $log('STOPPED: ' . $e['message']);
+});
+@set_time_limit($isCli ? 300 : 60);
+$started = microtime(true);
+$budget  = $isCli ? 240 : 20;   // seconds of work per run, under the host's limit
+$batch   = defined('DEPOT_BATCH') ? max(1, (int) DEPOT_BATCH) : 20;
 
 if (!function_exists('imap_open')) {
     $log('PHP imap extension not installed — cannot poll. Ask the host to enable it.');
@@ -48,26 +66,45 @@ if (!$imap) {
 }
 
 $pdo = getPDO();
-$ids = imap_search($imap, 'UNSEEN') ?: [];
-$log(count($ids) . ' new message(s).');
+// Unread and not already set aside as "not InvoiceToGo".
+$ids = imap_search($imap, 'UNSEEN UNFLAGGED') ?: [];
+$log(count($ids) . ' new message(s).' . (count($ids) > $batch ? " Handling up to $batch now; the rest on the next runs." : ''));
+$log('PDF text reader: ' . (!financialDocHasReader() ? 'NOT available on this server — matching uses the subject and file name only' : 'available'));
 
-$filed = 0;
+// InvoiceToGo's emails name it in the sender, the subject or the body.
+$fromInvoiceToGo = function ($header, string $subject, string $body): bool {
+    $who = '';
+    foreach (['from', 'sender', 'reply_to'] as $k) {
+        foreach ($header->$k ?? [] as $a) $who .= ' ' . ($a->mailbox ?? '') . '@' . ($a->host ?? '') . ' ' . (isset($a->personal) ? imap_utf8($a->personal) : '');
+    }
+    return (bool) preg_match('/invoice\s*2\s*go|invoicetogo|invoice\s+to\s+go/i', $who . ' ' . $subject . ' ' . $body);
+};
+
+$filed = 0; $skipped = 0; $handled = 0;
 foreach ($ids as $num) {
+    if ($handled >= $batch || microtime(true) - $started > $budget) {
+        $log('Stopping here for this run — ' . (count($ids) - $handled) . ' left for the next one.');
+        break;
+    }
+    $handled++;
+  try {
     $header  = imap_headerinfo($imap, $num);
     $subject = isset($header->subject) ? imap_utf8($header->subject) : '';
     $struct  = imap_fetchstructure($imap, $num);
 
     $bodyText = '';
+    $htmlText = '';
     $attachments = [];   // [ [name, bytes], ... ]
 
-    $walk = function ($struct, $prefix) use (&$walk, $imap, $num, &$bodyText, &$attachments) {
+    $walk = function ($struct, $prefix) use (&$walk, $imap, $num, &$bodyText, &$htmlText, &$attachments) {
         $parts = $struct->parts ?? [$struct];
         foreach ($parts as $i => $part) {
             $section = $prefix === '' ? (string) ($i + 1) : "$prefix." . ($i + 1);
             $isMultipart = ($part->type ?? 0) === 1;
             if ($isMultipart) { $walk($part, $prefix === '' ? '' : $section); continue; }
 
-            $raw = imap_fetchbody($imap, $num, $prefix === '' && !isset($struct->parts) ? '1' : $section);
+            // FT_PEEK: reading doesn't mark it read — only a finished email is.
+            $raw = imap_fetchbody($imap, $num, $prefix === '' && !isset($struct->parts) ? '1' : $section, FT_PEEK);
             $enc = $part->encoding ?? 0;
             if ($enc === 3) $raw = base64_decode($raw);
             elseif ($enc === 4) $raw = quoted_printable_decode($raw);
@@ -79,18 +116,29 @@ foreach ($ids as $num) {
             $subtype = strtolower($part->subtype ?? '');
 
             if ($filename !== '' || ($part->type ?? 0) === 3 /* application */) {
-                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-                if (in_array($ext, ['pdf', 'png', 'jpg', 'jpeg'], true)) {
-                    $attachments[] = [$filename, $raw];
+                // PDFs only — images in an email are logos and signatures.
+                if (strtolower(pathinfo($filename, PATHINFO_EXTENSION)) === 'pdf' || $subtype === 'pdf') {
+                    $attachments[] = [$filename !== '' ? $filename : 'attachment.pdf', $raw];
                 }
             } elseif (($part->type ?? 0) === 0 && $subtype === 'plain') {
                 $bodyText .= "\n" . $raw;
+            } elseif (($part->type ?? 0) === 0 && $subtype === 'html') {
+                // HTML-only emails (InvoiceToGo's usually are): used only to
+                // recognise InvoiceToGo, not for matching numbers (years, zips…).
+                $htmlText .= "\n" . html_entity_decode(strip_tags($raw));
             }
         }
     };
     $walk($struct, '');
 
-    if (!$attachments) { $log("  \"$subject\" — no PDF attachment, skipping."); imap_setflag_full($imap, (string) $num, '\\Seen'); continue; }
+    if (!$attachments || !$fromInvoiceToGo($header, $subject, $bodyText . ' ' . $htmlText . ' ' . implode(' ', array_column($attachments, 0)))) {
+        // Not an InvoiceToGo PDF: leave it unread in the inbox, starred, for a person.
+        imap_setflag_full($imap, (string) $num, '\\Flagged');
+        imap_clearflag_full($imap, (string) $num, '\\Seen');
+        $skipped++;
+        $log("  \"$subject\" — " . ($attachments ? 'not from InvoiceToGo' : 'no PDF attached') . ', left in the inbox (starred).');
+        continue;
+    }
 
     foreach ($attachments as [$name, $bytes]) {
         $tmp = tempnam(sys_get_temp_dir(), 'depot_');
@@ -111,7 +159,12 @@ foreach ($ids as $num) {
         }
     }
     imap_setflag_full($imap, (string) $num, '\\Seen');
+  } catch (Throwable $e) {
+    // One bad email doesn't stop the rest; it's starred so it isn't retried forever.
+    $log("  ERROR on message $num: " . $e->getMessage() . ' — starred in the inbox.');
+    @imap_setflag_full($imap, (string) $num, '\\Flagged');
+  }
 }
 
 imap_close($imap);
-$log("Done. $filed document(s) filed.");
+$log("Done. $filed document(s) filed, $skipped set aside (starred) as not InvoiceToGo.");

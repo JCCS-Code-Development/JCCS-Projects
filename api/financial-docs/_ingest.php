@@ -16,18 +16,24 @@ const FIN_ALLOWED_EXT   = ['pdf', 'png', 'jpg', 'jpeg'];
 // Pull text out of a PDF, best-effort. Uses `pdftotext` (poppler) if the host
 // has it; returns '' otherwise. Never throws, never emits a warning that a
 // strict error handler could turn fatal.
+// Where pdftotext lives on this server, or null when it isn't installed.
+function financialDocReader(): ?string {
+    foreach (['/usr/bin/pdftotext', '/usr/local/bin/pdftotext', '/opt/homebrew/bin/pdftotext'] as $c) {
+        if (@is_file($c) && @is_executable($c)) return $c;
+    }
+    if (function_exists('shell_exec')) {
+        $found = @shell_exec('command -v pdftotext 2>/dev/null');
+        $found = is_string($found) ? trim($found) : '';
+        if ($found !== '' && @is_executable($found)) return $found;
+    }
+    return null;
+}
+function financialDocHasReader(): bool { return financialDocReader() !== null; }
+
 function financialDocText(string $path): string {
     if (!is_file($path)) return '';
     // Locate the binary without ever handing proc_open a bad path.
-    $bin = null;
-    foreach (['/usr/bin/pdftotext', '/usr/local/bin/pdftotext', '/opt/homebrew/bin/pdftotext'] as $c) {
-        if (@is_file($c) && @is_executable($c)) { $bin = $c; break; }
-    }
-    if ($bin === null && function_exists('shell_exec')) {
-        $found = @shell_exec('command -v pdftotext 2>/dev/null');
-        $found = is_string($found) ? trim($found) : '';
-        if ($found !== '' && @is_executable($found)) $bin = $found;
-    }
+    $bin = financialDocReader();
     if ($bin === null) return '';
 
     $prev = set_error_handler(static fn() => true); // swallow proc warnings here only
