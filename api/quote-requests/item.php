@@ -119,6 +119,8 @@ if ($method === 'GET') {
         }
         if ($recipientIds !== null) qrSetRecipients($pdo, $id, $recipientIds);
         if ($keep) qrAssignNumber($pdo, $id);
+        // An office edit (not a hand-picked estimator) makes them the estimator.
+        if (!array_key_exists('assigned_to', $body)) qrClaimEstimator($pdo, $id, $auth);
         $updated = qrLoadVisible($pdo, $auth, $id);
 
         if ($scopeChanged) {

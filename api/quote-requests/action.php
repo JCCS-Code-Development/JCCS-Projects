@@ -154,6 +154,7 @@ try {
     $updated = $stmt->fetch();
 
     qrLogActivity($pdo, $id, $auth, $action, $from, $to, $note !== '' ? $note : null);
+    qrClaimEstimator($pdo, $id, $auth);
 
     // Side effects: version snapshots, thread entries, notifications.
     $title = $updated['title'];

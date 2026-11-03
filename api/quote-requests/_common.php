@@ -476,6 +476,18 @@ function qrMatchEstimateDoc(PDO $pdo, int $docId, ?string $docNumber, array $hay
     return $matched;
 }
 
+// The office member who works on a quote — edits it, links its Estimate #,
+// moves it along — becomes its estimator, when it has none yet. An estimator
+// already set (by hand or earlier) is kept. Returns true when it was set.
+function qrClaimEstimator(PDO $pdo, int $id, array $auth): bool {
+    if (!qrIsAdmin($auth) || empty($auth['user_id'])) return false;
+    $s = $pdo->prepare('UPDATE quote_requests SET assigned_to = ?, assigned_to_name = ? WHERE id = ? AND assigned_to IS NULL');
+    $s->execute([$auth['user_id'], mb_substr((string) $auth['name'], 0, 150), $id]);
+    if (!$s->rowCount()) return false;
+    qrLogActivity($pdo, $id, $auth, 'assigned_estimator', null, null, $auth['name']);
+    return true;
+}
+
 // Site visits waiting on an estimate whose PDF is already in the depot (e.g.
 // the number was typed in before this check existed): mark them sent now.
 function qrSweepEstimateDocs(PDO $pdo): int {
