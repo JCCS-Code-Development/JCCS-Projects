@@ -462,9 +462,6 @@
       "estimateNumber": "Estimado # de InvoiceToGo",
       "requestNo": "Solicitud #",
       "recipients": "El estimado va para",
-      "recipientsSearch": "Agrega un cliente — busca nombre, empresa o correo",
-      "recipientsNone": "Ningún cliente coincide. Agrégalo en Usuarios → Agregar usuario → Cliente.",
-      "recipientsHint": "Usuarios cliente de la lista de Usuarios. Para un adicional, los clientes del proyecto se agregan automáticamente.",
       "scheduled": "Programado",
       "completed": "Terminado",
       "invoiceNumber": "# de factura",
@@ -635,7 +632,10 @@
       "created": "Creado — sin enviar",
       "sent": "Estimado enviado",
       "jobs": "Trabajos sin PO",
-      "closed": "Cerrados"
+      "closed": "Cerrados",
+      "showMore": "Ver {{count}} más",
+      "estimateNo": "Estimado #",
+      "link": "Vincular"
     },
     "manageLibrary": "Biblioteca de materiales",
     "addonShort": "Adicional",

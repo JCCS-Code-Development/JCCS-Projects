@@ -476,6 +476,20 @@ function qrMatchEstimateDoc(PDO $pdo, int $docId, ?string $docNumber, array $hay
     return $matched;
 }
 
+// Site visits waiting on an estimate whose PDF is already in the depot (e.g.
+// the number was typed in before this check existed): mark them sent now.
+function qrSweepEstimateDocs(PDO $pdo): int {
+    $rows = $pdo->query("SELECT * FROM quote_requests WHERE status = 'estimate_created' AND billing = 'po' AND estimate_number IS NOT NULL")->fetchAll();
+    $n = 0;
+    foreach ($rows as $row) {
+        if ($docId = qrFindEstimateDoc($pdo, (string)$row['estimate_number'])) {
+            qrMarkEstimateSent($pdo, $row, $docId, QR_DEPOT_ACTOR);
+            $n++;
+        }
+    }
+    return $n;
+}
+
 function qrRegisterCustomerToProject(PDO $pdo, array $row): ?string {
     if (empty($row['project_number']) || empty($row['customer_id'])) return null;
     $customer = qrCustomer($pdo, (int)$row['customer_id']);

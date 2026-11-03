@@ -5,7 +5,7 @@ import Card from '../../components/ui/Card'
 import PageHeader from '../../components/ui/PageHeader'
 import { useToast } from '../../components/ToastProvider'
 import { useAuthStore } from '../../store/authStore'
-import { listQuoteRequests, createQuoteRequest } from '../../api/quoteRequests'
+import { listQuoteRequests, createQuoteRequest, quoteAction } from '../../api/quoteRequests'
 import { StatusPill, FlagPills, QuoteWho } from './QuoteParts'
 import { BOARD_COLUMNS, CLOSED_STATUSES, quoteFlags, fmtDate } from './quoteUtils'
 
@@ -41,12 +41,49 @@ function ThumbStrip({ urls = [], count = 0 }) {
   )
 }
 
-function QuoteCard({ q, showFieldManager }) {
+// Pending review, no Estimate # yet: the office types it right on the card
+// (Enter) — no need to open the quote. Moves it on to "Created — not sent",
+// or straight to "Estimate sent" when its PDF is already in the depot.
+function QuickEstimateNumber({ q, onLinked }) {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const [number, setNumber] = useState('')
+  const [busy, setBusy] = useState(false)
+  const save = async (e) => {
+    e.preventDefault()
+    if (!number.trim()) return
+    setBusy(true)
+    try {
+      const res = await quoteAction(q.id, 'set_estimate', { estimate_number: number.trim() })
+      toast.success(res.status === 'sent' ? t('quotes.statusCard.linkedSent') : t('quotes.statusCard.linked'))
+      onLinked()
+    } catch (err) {
+      toast.error(err?.response?.data?.error ?? t('common.couldNotSave'))
+      setBusy(false)
+    }
+  }
+  return (
+    <form onSubmit={save} className="flex flex-col gap-1 border-t border-gray-100 bg-gray-50 px-3 py-2">
+      <label htmlFor={`est-${q.id}`} className="text-[11px] font-bold uppercase tracking-wide text-gray-500">{t('quotes.board.estimateNo')}</label>
+      <div className="flex items-center gap-1.5">
+      <input id={`est-${q.id}`} value={number} onChange={(e) => setNumber(e.target.value)} inputMode="numeric" autoComplete="off" placeholder="4602"
+        className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+      <button type="submit" disabled={busy || !number.trim()}
+        className="shrink-0 rounded-lg bg-brand-500 px-2.5 py-1.5 text-xs font-bold text-white disabled:opacity-40">
+        {busy ? '…' : t('quotes.board.link')}
+      </button>
+      </div>
+    </form>
+  )
+}
+
+function QuoteCard({ q, showFieldManager, onLinked }) {
   const { t, i18n } = useTranslation()
   const flagged = quoteFlags(q).some((f) => f === 'overdue' || f === 'followUpDue')
+  const quickLink = onLinked && q.status === 'pending_review' && (q.billing ?? 'po') === 'po' && !q.estimate_number
   return (
-    <Link to={`/quotes/${q.id}`}
-      className={`block bg-white rounded-2xl shadow-sm border overflow-hidden transition-all hover:shadow-md active:scale-[0.99] ${flagged ? 'border-red-200' : 'border-gray-100 hover:border-brand-400'}`}>
+    <div className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all hover:shadow-md ${flagged ? 'border-red-200' : 'border-gray-100 hover:border-brand-400'}`}>
+    <Link to={`/quotes/${q.id}`} className="block active:bg-gray-50">
       <ThumbStrip urls={q.thumb_urls} count={q.photo_count} />
       <div className="px-3.5 py-3 flex flex-col gap-1.5 min-w-0">
         <div className="flex items-center justify-between gap-2">
@@ -70,8 +107,17 @@ function QuoteCard({ q, showFieldManager }) {
         )}
       </div>
     </Link>
+    {quickLink && <QuickEstimateNumber q={q} onLinked={onLinked} />}
+    </div>
   )
 }
+
+// Phones / iPads: a tab shows this many cards, then "Show more".
+const PAGE = 12
+
+// When it was sent to the office (or created, for drafts) — oldest first.
+const sentAt = (q) => String(q.submitted_at ?? q.created_at ?? '')
+const byOldest = (a, b) => sentAt(a).localeCompare(sentAt(b)) || a.id - b.id
 
 export default function QuotesHome() {
   const { t, i18n } = useTranslation()
@@ -85,6 +131,10 @@ export default function QuotesHome() {
   const [filter, setFilter] = useState('all')
   const [showClosed, setShowClosed] = useState(false)
   const [tab, setTab] = useState(null)
+  const [shown, setShown] = useState(PAGE)
+  const [reload, setReload] = useState(0)
+  const reloadList = () => setReload((n) => n + 1)
+  const pickTab = (key) => { setTab(key); setShown(PAGE) }
   const [starting, setStarting] = useState(false)
   const navigate = useNavigate()
 
@@ -110,7 +160,7 @@ export default function QuotesHome() {
       // Show the server's reason — a missing migration, say — not a generic "save" error.
       .catch((err) => toast.error(`${t('quotes.loadFailed')}${err?.response?.data?.error ? ` (${err.response.data.error})` : ''}`))
       .finally(() => setLoading(false))
-  }, [showClosed, toast, t])
+  }, [showClosed, reload, toast, t])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -123,9 +173,10 @@ export default function QuotesHome() {
     })
   }, [quotes, query, filter, user?.id])
 
+  // Oldest first: what's been waiting longest is at the top of each column.
   const columns = BOARD_COLUMNS
     .filter((c) => showClosed || c.key !== 'closed')
-    .map((c) => ({ ...c, items: filtered.filter((q) => c.statuses.includes(q.status)) }))
+    .map((c) => ({ ...c, items: filtered.filter((q) => c.statuses.includes(q.status)).sort(byOldest) }))
 
   // Tabs (below xl): remember the user's pick; until then open the first
   // status that actually has something in it.
@@ -135,7 +186,7 @@ export default function QuotesHome() {
 
   // Field managers: drafts and anything the office sent back first.
   const fieldOrder = ['needs_info', 'scheduled', 'draft', 'pending_review', 'estimate_created', 'sent', 'done', ...CLOSED_STATUSES]
-  const fieldList = [...filtered].sort((a, b) => fieldOrder.indexOf(a.status) - fieldOrder.indexOf(b.status))
+  const fieldList = [...filtered].sort((a, b) => fieldOrder.indexOf(a.status) - fieldOrder.indexOf(b.status) || byOldest(a, b))
 
   return (
     <div className="flex flex-col gap-5">
@@ -200,7 +251,7 @@ export default function QuotesHome() {
           <div className="xl:hidden flex flex-col gap-3">
             <div className="flex gap-5 overflow-x-auto -mx-4 px-4 border-b border-gray-200 sm:mx-0 sm:px-0 sm:justify-center [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {columns.map((col) => (
-                <button key={col.key} onClick={() => setTab(col.key)}
+                <button key={col.key} onClick={() => pickTab(col.key)}
                   className={`shrink-0 -mb-px border-b-2 pb-2 pt-1 text-sm font-semibold transition-colors ${
                     activeTab === col.key ? 'border-brand-500 text-gray-900' : 'border-transparent text-gray-400'
                   }`}>
@@ -212,22 +263,33 @@ export default function QuotesHome() {
             {activeItems.length === 0 ? (
               <Card><p className="text-sm text-gray-400 text-center">{t('quotes.noResults')}</p></Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {activeItems.map((q) => <QuoteCard key={q.id} q={q} showFieldManager />)}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {activeItems.slice(0, shown).map((q) => <QuoteCard key={q.id} q={q} showFieldManager onLinked={reloadList} />)}
+                </div>
+                {activeItems.length > shown && (
+                  <button type="button" onClick={() => setShown((n) => n + PAGE)}
+                    className="self-center rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-gray-700 shadow-sm active:bg-gray-50">
+                    {t('quotes.board.showMore', { count: activeItems.length - shown })}
+                  </button>
+                )}
+              </>
             )}
           </div>
 
-          {/* Wide desktop: the full board. */}
-          <div className="hidden xl:grid gap-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
+          {/* Wide desktop: the full board. Each column scrolls on its own, so a
+              long one (Pending review) doesn't stretch the whole page. */}
+          <div className="hidden xl:grid gap-4 items-start" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
             {columns.map((col) => (
-              <div key={col.key} className="flex flex-col gap-2 min-w-0">
-                <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">
-                  {t(`quotes.board.${col.key}`)} <span className="text-gray-300">({col.items.length})</span>
+              <div key={col.key} className="flex flex-col min-w-0 rounded-2xl bg-gray-100/60 max-h-[calc(100vh-15rem)]">
+                <h2 className="shrink-0 px-3 pt-3 pb-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  {t(`quotes.board.${col.key}`)} <span className="text-gray-400">({col.items.length})</span>
                 </h2>
-                {col.items.length === 0
-                  ? <div className="rounded-2xl border border-dashed border-gray-200 py-6" />
-                  : col.items.map((q) => <QuoteCard key={q.id} q={q} showFieldManager />)}
+                <div className="flex flex-col gap-2 overflow-y-auto overscroll-contain px-2 pb-2 [scrollbar-width:thin]">
+                  {col.items.length === 0
+                    ? <div className="rounded-2xl border border-dashed border-gray-200 py-6" />
+                    : col.items.map((q) => <QuoteCard key={q.id} q={q} showFieldManager onLinked={reloadList} />)}
+                </div>
               </div>
             ))}
           </div>

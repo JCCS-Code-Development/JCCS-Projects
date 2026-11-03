@@ -462,9 +462,6 @@
       "estimateNumber": "InvoiceToGo Estimate #",
       "requestNo": "Request #",
       "recipients": "Estimate goes to",
-      "recipientsSearch": "Add a client — search name, company or email",
-      "recipientsNone": "No client matches. Add them under Users → Add user → Client.",
-      "recipientsHint": "Client users from the Users list. For an add-on, the project’s clients are added automatically.",
       "scheduled": "Scheduled",
       "completed": "Done",
       "invoiceNumber": "Invoice #",
@@ -635,7 +632,10 @@
       "created": "Created — not sent",
       "sent": "Estimate sent",
       "jobs": "No-PO jobs",
-      "closed": "Closed"
+      "closed": "Closed",
+      "showMore": "Show {{count}} more",
+      "estimateNo": "Estimate #",
+      "link": "Link"
     },
     "manageLibrary": "Materials library",
     "addonShort": "Add-on",

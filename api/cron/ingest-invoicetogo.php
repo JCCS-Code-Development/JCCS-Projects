@@ -133,6 +133,12 @@ try {
     if ($moved = financialDocRefileUnfiled($pdo)) $log("Re-sorted $moved Unfiled estimate(s) onto their projects.");
 } catch (Throwable $e) { $log('Re-sorting Unfiled failed: ' . $e->getMessage()); }
 
+// Site visits whose estimate PDF is already here: marked sent.
+try {
+    require_once __DIR__ . '/../quote-requests/_common.php';
+    if ($sent = qrSweepEstimateDocs($pdo)) $log("Marked $sent site visit(s) sent — their estimate PDFs were already in the depot.");
+} catch (Throwable $e) { $log('Checking waiting site visits failed: ' . $e->getMessage()); }
+
 $filed = 0; $invoices = 0; $skipped = 0; $estimates = 0; $done = 0;
 foreach ($ids as $num) {
     // Filing an estimate is the slow part; invoices and estimates already in
