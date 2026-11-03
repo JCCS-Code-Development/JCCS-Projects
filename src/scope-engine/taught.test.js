@@ -55,3 +55,39 @@ describe('work taught in the Materials library', () => {
     expect(form.cats.taught.on).toBe(false)
   })
 })
+
+// The office's lessons (migration 2026-11-03e), checked for words that would
+// fire on the wrong job.
+import LESSONS from './lessons.fixture.json'
+const LIB = [LVP, ...LESSONS].map((l, i) => ({ ...l, id: i + 1 }))
+const taughtNames = (note) => (formFromNotes({ generalNotes: note, library: LIB }).form.cats.taught.items ?? []).map((it) => it.name)
+
+describe('the office lessons', () => {
+  it('picks the specific lesson, not every lesson that shares a word', () => {
+    expect(taughtNames('carpet tile in the waiting room 20 x 30')).toEqual(['Carpet tile'])
+    expect(taughtNames('new carpet in offices')).toEqual(['Carpet'])
+    expect(taughtNames('install a barn door at the nurse station')).toEqual(['Barn door'])
+    expect(taughtNames('laminate countertop at the break room, 12 LF')).toEqual(['Laminate countertop'])
+    expect(taughtNames('new Corian countertop 8 LF')).toEqual(['Solid-surface countertop'])
+    expect(taughtNames('replace ceiling tile and grid in corridor')).toEqual(['Acoustical ceiling'])
+    expect(taughtNames('2 access panels in ceiling, access panel for valves')).toEqual(['Access panel'])
+  })
+
+  it('stays quiet on words that only describe other work', () => {
+    expect(taughtNames('patch drywall next to the door frame and paint')).toEqual([])
+    expect(taughtNames('cove base along the tile floor')).toEqual([])
+  })
+
+  it('lets the Handrail lesson write handrails instead of wall protection', () => {
+    const { form } = formFromNotes({ generalNotes: 'install handrail along corridor 40 LF', library: LIB })
+    expect(form.cats.wallProtection.on).toBe(false)
+    expect(generateScope(form).description).toContain('• Fabricate and install approximately 40 linear feet of handrail along corridor.')
+  })
+
+  it('writes counts, and "the" when no count is given', () => {
+    const one = generateScope(formFromNotes({ generalNotes: 'install 2 barn door', library: LIB }).form).description
+    expect(one).toContain('• Provide and install two barn door and rail system within the designated areas.')
+    const none = generateScope(formFromNotes({ generalNotes: 'install access panel', library: LIB }).form).description
+    expect(none).toContain('• Provide and install the access panel within the designated areas.')
+  })
+})

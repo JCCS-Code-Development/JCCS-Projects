@@ -89,7 +89,8 @@ function findLinearFeet(raw) {
 // "throughout the hallways on hospital side" → "throughout the hallways on the hospital side"
 function findWhere(raw) {
   const m = raw.match(/\b(throughout|along)\s+([^,.;\n]+)/i)
-  if (m) return `${m[1].toLowerCase()} ${m[2].trim().replace(/\bon (?!the\b)([\w-]+ side)\b/i, 'on the $1')}`
+  // "along corridor 40 LF" → "along corridor": the quantity isn't part of where.
+  if (m) return `${m[1].toLowerCase()} ${m[2].replace(/\s+(?:approx\w*\.?\s+|about\s+|~\s*)?\d.*$/i, '').trim().replace(/\bon (?!the\b)([\w-]+ side)\b/i, 'on the $1')}`
   if (/pasillos?/i.test(raw)) return 'throughout the hallways'
   return ''
 }
@@ -106,12 +107,17 @@ function findExclusion(raw) {
 
 // ── Work taught in the Materials library ──
 // An entry with scope wording is "taught": its name or any of the words crews
-// use for it ("lvp, luxury vinyl, vinyl plank") turns it on.
+// use for it ("lvp, luxury vinyl, vinyl plank") turns it on. The more
+// specific phrase wins: "carpet tile" is Carpet tile, not also Carpet;
+// "barn door" is Barn door, not also Door and frame.
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const wordsOf = (l) => uniq([l.label, ...String(l.aliases ?? '').split(',')].map((w) => fold(w).trim()).filter((w) => w.length > 1))
-const mentions = (t, w) => new RegExp(`(^|[^a-z0-9])${esc(w)}([^a-z0-9]|$)`).test(t)
+const spansOf = (t, w) => [...t.matchAll(new RegExp(`(^|[^a-z0-9])${esc(w)}(?=[^a-z0-9]|$)`, 'g'))]
+  .map((m) => { const a = m.index + m[1].length; return [a, a + w.length] })
 function findTaught(t, library) {
-  return library.filter((l) => (l.scope_text ?? '').trim() && wordsOf(l).some((w) => mentions(t, w)))
+  const hits = library.filter((l) => (l.scope_text ?? '').trim()).map((l) => ({ l, spans: wordsOf(l).flatMap((w) => spansOf(t, w)) }))
+  const inside = ([a, b], l) => hits.some((o) => o.l !== l && o.spans.some(([c, d]) => c <= a && d >= b && d - c > b - a))
+  return hits.filter(({ l, spans }) => spans.some((sp) => !inside(sp, l))).map((h) => h.l)
 }
 
 // Areas measured in the notes, in feet: "45 x 16", "9 by 7", "12' x 10'",
@@ -159,6 +165,9 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
   const c = f.cats
   const remarks = []
 
+  const taughtEntries = findTaught(t, library)
+  const taughtCovers = (re) => taughtEntries.some((l) => wordsOf(l).some((w) => re.test(w)))
+
   const rooms = findRooms(raw)
   const where = rooms || (locationDetail ?? '').trim()
   f.locations = rooms
@@ -193,7 +202,7 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
   }
 
   // ── Ceilings ──
-  if (has(t, ...W.ceilingTile)) remarks.push('notes mention ceiling tile / grid — tile & grid work isn’t a form category yet; add it under Other if needed')
+  if (has(t, ...W.ceilingTile) && !taughtEntries.some((l) => l.kind === 'ceiling_tile')) remarks.push('notes mention ceiling tile / grid — tile & grid work isn’t a form category yet; add it under Other if needed')
   if (has(t, ...W.ceilingHard)) {
     c.ceiling.on = true
     if (c.demo.on && c.demo.mode === 'affected') c.demo.solidCeiling = true
@@ -246,7 +255,9 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
   // ── Wall protection ──
   const exclusion = findExclusion(raw)
   const along = findWhere(raw)
-  if (has(t, ...W.wallProt)) {
+  // A taught Handrail lesson writes handrails itself.
+  const wallProtWords = taughtCovers(/hand ?rail|pasamanos/) ? W.wallProt.filter((p) => !/hand|pasamanos/.test(p.source)) : W.wallProt
+  if (has(t, ...wallProtWords)) {
     const product = /crash ?rail|bumper/.test(t) ? 'crash rails' : /hand ?rail|pasamanos/.test(t) ? 'handrails'
       : /corner ?guard|esquinero/.test(t) && !/wall protection|proteccion/.test(t) ? 'corner guards'
       : /wall panel/.test(t) ? 'wall panels' : 'wall protection'
@@ -263,7 +274,6 @@ export function formFromNotes({ notes = [], generalNotes = '', title = '', locat
     f.leaveArea = 'the affected areas'
   }
   // ── Work taught in the Materials library ──
-  const taughtEntries = findTaught(t, library)
   const floorTaught = taughtEntries.some((l) => l.kind === 'flooring')
   let areas = []
   if (taughtEntries.length) {

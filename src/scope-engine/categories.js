@@ -358,7 +358,8 @@ const UNIT_WORDS = { SF: 'square feet', LF: 'linear feet' }
 const lines = (s) => String(s ?? '').split('\n').map((l) => l.trim().replace(/^[-•*·]\s*/, '')).filter(Boolean)
 function fillTaught(text, it) {
   const n = Number(String(it.qty ?? '').replace(/,/g, ''))
-  const amount = !n ? '' : it.unit === 'EA' ? `${countWord(n)} ` : `approximately ${n.toLocaleString('en-US')} ${UNIT_WORDS[it.unit] ?? it.unit ?? ''} of `
+  // A count that wasn't found reads "the access panel", not "access panel".
+  const amount = !n ? (it.unit === 'EA' ? 'the ' : '') : it.unit === 'EA' ? `${countWord(n)} ` : `approximately ${n.toLocaleString('en-US')} ${UNIT_WORDS[it.unit] ?? it.unit ?? ''} of `
   const where = (it.where ?? '').trim()
   return text
     .replace(/\{amount\}\s*/gi, amount)
