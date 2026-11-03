@@ -110,8 +110,11 @@ function ImportModal({ existing, onClose }) {
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(0)
 
-  const known = new Set(existing.map((c) => c.name.trim().toLowerCase()))
-  const fresh = parsed?.clients.filter((c) => !known.has(c.name.toLowerCase())).length ?? 0
+  // Already on the list = same email, or same name (what the import matches on).
+  const knownNames = new Set(existing.map((c) => c.name.trim().toLowerCase()))
+  const knownEmails = new Set(existing.map((c) => (c.email ?? '').trim().toLowerCase()).filter(Boolean))
+  const isKnown = (c) => knownNames.has(c.name.toLowerCase()) || (!!c.email && knownEmails.has(c.email.toLowerCase()))
+  const fresh = parsed?.clients.filter((c) => !isKnown(c)).length ?? 0
 
   const onFile = async (e) => {
     const f = e.target.files?.[0]
@@ -175,7 +178,7 @@ function ImportModal({ existing, onClose }) {
                   <li key={c.name} className="px-3 py-2">
                     <span className="block text-sm font-semibold text-gray-900">
                       {c.name}
-                      {known.has(c.name.toLowerCase()) && <span className="ml-1.5 text-[11px] font-semibold text-gray-400">{t('quotes.clients.onList')}</span>}
+                      {isKnown(c) && <span className="ml-1.5 text-[11px] font-semibold text-gray-400">{t('quotes.clients.onList')}</span>}
                     </span>
                     {c.email && <span className="block text-xs text-gray-400 truncate">{c.email}</span>}
                   </li>
